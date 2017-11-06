@@ -1,0 +1,44 @@
+@import "~vars";
+
+.highlight {
+  background-color: whitesmoke;
+  color: $warning;
+  font-weight: bold;
+  padding-left: 3px;
+  padding-right: 3px;
+}
+
+.section {
+  & h1 {
+    text-align: left;
+    font-size: 30px;
+    border-bottom: 1px solid $light;
+  }
+
+  & h2 {
+    text-align: left;
+    font-size: 22px;
+
+    &::before {
+      content: '# ';
+      color: $warning;
+    }
+  }
+
+  & p {
+    text-align: justify;
+    margin: 20px 0;
+    line-height: 1.4em;
+  }
+  &:first-child {
+    padding-top: 10px;
+  }
+  &-highlight {
+    border-left: 2px solid;
+  }
+}
+
+pre {
+  padding: 0px!important;
+  text-align: left;
+}
