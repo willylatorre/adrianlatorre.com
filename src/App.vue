@@ -52,7 +52,7 @@ header {
   padding: 0 16px 0 24px;
   background-color: white;
   color: $grey;
-  display: flex;
+  display: flex!important;
   justify-content: space-between;
   align-items: center;
 
