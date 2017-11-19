@@ -3,13 +3,20 @@
     <header>
       <span>Adrian Latorre Crespo</span>
       <div id="social-media">
-        <icon name="github" scale="1.1"></icon>
-        <icon name="facebook" scale="1.1"></icon>
+        <a href="https://github.com/willylatorre" target="_new"><icon name="github" scale="1.1"></icon></a>
+        <a href="https://www.linkedin.com/in/adrianlatorre" target="_new"><icon name="linkedin" scale="1.1"></icon></a>
       </div>
     </header>
     <main>
       <router-view></router-view>
     </main>
+    <footer>
+      <a href="mailto:a.latorrecrespo@gmail.com">a.latorrecrespo@gmail.com</a>
+      <div id="social-media">
+        <a href="https://github.com/willylatorre" target="_new"><icon name="github" scale="1.1"></icon></a>
+        <a href="https://www.linkedin.com/in/adrianlatorre" target="_new"><icon name="linkedin" scale="1.1"></icon></a>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -59,12 +66,27 @@ header {
 
 #social-media {
   display: flex;
+  & a {
+    color: $grey!important;
+  }
   & svg {
     margin: 0 10px;
     cursor: pointer;
     &:hover {
       color: black;
     }
+  }
+}
+
+footer {
+  display: flex;
+  padding: 20px;
+  font-size: 14px;
+  justify-content: space-around;
+  flex-wrap: wrap;
+
+  & a {
+    color: $grey!important;
   }
 }
 

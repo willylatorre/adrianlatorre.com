@@ -13,7 +13,10 @@ import './styles/bulma.scss'
 import './styles/common.scss'
 // Icons (we are importing them separately to reduce the bundle size)
 import 'vue-awesome/icons/github'
-import 'vue-awesome/icons/facebook'
+import 'vue-awesome/icons/linkedin'
+import 'vue-awesome/icons/file-text'
+import 'vue-awesome/icons/envelope'
+import 'vue-awesome/icons/phone'
 import 'vue-awesome/icons/heart'
 import Icon from 'vue-awesome/components/Icon'
 Vue.component('icon', Icon)

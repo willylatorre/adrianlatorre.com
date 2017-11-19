@@ -8,7 +8,13 @@
   padding-right: 3px;
 }
 
+.strike {
+  text-decoration: line-through;
+}
+
 .section {
+  padding-top: 1.5em;
+  
   & h1 {
     text-align: left;
     font-size: 30px;
@@ -25,6 +31,10 @@
     }
   }
 
+  & h3 {
+    text-align: left;
+  }
+
   & p {
     text-align: justify;
     margin: 20px 0;
@@ -35,6 +45,15 @@
   }
   &-highlight {
     border-left: 2px solid;
+  }
+
+  ul {
+    margin: 10px;
+    list-style: square;
+
+    & li {
+      margin: 5px 0;
+    }
   }
 }
 

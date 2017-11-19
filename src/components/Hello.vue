@@ -42,8 +42,10 @@
 </template>
 
 <script>
-import Bio from './Bio'
-import Work from './Work'
+import Demos from './Demos'
+import Libraries from './Libraries'
+import Usage from './Usage'
+import Media from './Media'
 import sections from './sections'
 import StickySidebar from 'sticky-sidebar'
 import zenscroll from 'zenscroll'
@@ -83,8 +85,10 @@ export default {
     }
   },
   components: {
-    Bio,
-    Work
+    Demos,
+    Libraries,
+    Usage,
+    Media
   }
 }
 </script>
@@ -108,11 +112,16 @@ export default {
 
   &_content {
     flex: 1;
+    max-width: 100%;
   }
 
   &_sidebar {
     flex: 0 0 200px;
     text-align: left;
+
+    @media(max-width: 900px) {
+      display: none;
+    }
 
     &_inner {
       border-left: 1px solid rgba(0,0,0,0.1);
