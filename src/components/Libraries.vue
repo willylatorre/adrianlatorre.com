@@ -5,7 +5,7 @@
       Some libraries that are using <span class="highlight">a</span> in production (crazy), so here is a big shoutout to them.
     </p>
     <h2> Glovoapp </h2>
-    <h3> Barcelona, 2016 - in production currently</h3>
+    <h3> Barcelona, Sept 2015 - in production currently</h3>
     <p>
       One of the biggest companies in the delivery ecosystem right now. Glovoapp has worked with <span class="highlight">a</span> as
       <strong>Technical Lead</strong> and has done pretty cool things with it:
@@ -27,7 +27,7 @@
     </p>
 
     <h2> Oliva App </h2>
-    <h3> Barcelona, Sept 2015 - Jun 2015</h3>
+    <h3> Barcelona, Feb 2015 - Sept 2015</h3>
     <p>
       Small startup with a focus on delivering a high-tech solution to improve the filedity amongst merchants.
       Oliva used <span class="highlight">a</span> alone to build the whole <strong>Android application and website</strong>
