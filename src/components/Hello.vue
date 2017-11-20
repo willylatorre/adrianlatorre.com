@@ -1,7 +1,7 @@
 <template>
   <div class="hello">
     <div class="hello_intro">
-      <img src="../assets/a.svg" />
+      <img src="../assets/a.svg" alt="a" />
       <div class="hello_intro_explanation">
         <span class="highlight">a</span> is the new library by <strong>Adrian Latorre</strong>.<br/>
         The library is still in development, but it's safe to use in production (at your own risk).

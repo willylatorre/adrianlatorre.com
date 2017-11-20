@@ -8,12 +8,12 @@
 
     <h2>Talks</h2>
     <p>
-      <iframe src="https://www.youtube.com/embed/t6en3oPbYTI" frameborder="0" gesture="media" allowfullscreen></iframe>
-      <iframe src="https://www.youtube.com/embed/wQlmEspvC98" frameborder="0" gesture="media" allowfullscreen></iframe>
+      <iframe title="TEDx talk" src="https://www.youtube.com/embed/t6en3oPbYTI" frameborder="0" gesture="media" allowfullscreen></iframe>
+      <iframe title="Meetup talk" src="https://www.youtube.com/embed/wQlmEspvC98" frameborder="0" gesture="media" allowfullscreen></iframe>
     </p>
     <p>
-      <iframe src="https://www.youtube.com/embed/asUqQjPAGY4" frameborder="0" gesture="media" allowfullscreen></iframe>
-      <iframe src="https://www.youtube.com/embed/nBr2fJ_0Xrk" frameborder="0" gesture="media" allowfullscreen></iframe>
+      <iframe title="Fabricafutur talk" src="https://www.youtube.com/embed/asUqQjPAGY4" frameborder="0" gesture="media" allowfullscreen></iframe>
+      <iframe title="Impulsa talk" src="https://www.youtube.com/embed/nBr2fJ_0Xrk" frameborder="0" gesture="media" allowfullscreen></iframe>
     </p>
 
     <h2>Articles</h2>

@@ -2,9 +2,9 @@
   <div id="app">
     <header>
       <span>Adrian Latorre Crespo</span>
-      <div id="social-media">
-        <a href="https://github.com/willylatorre" target="_new"><icon name="github" scale="1.1"></icon></a>
-        <a href="https://www.linkedin.com/in/adrianlatorre" target="_new"><icon name="linkedin" scale="1.1"></icon></a>
+      <div class="social-media">
+        <a href="https://github.com/willylatorre" target="_new" name="github"><icon name="github" scale="1.1"></icon></a>
+        <a href="https://www.linkedin.com/in/adrianlatorre" target="_new" name="linkedin"><icon name="linkedin" scale="1.1"></icon></a>
       </div>
     </header>
     <main>
@@ -12,9 +12,9 @@
     </main>
     <footer>
       <a href="mailto:a.latorrecrespo@gmail.com">a.latorrecrespo@gmail.com</a>
-      <div id="social-media">
-        <a href="https://github.com/willylatorre" target="_new"><icon name="github" scale="1.1"></icon></a>
-        <a href="https://www.linkedin.com/in/adrianlatorre" target="_new"><icon name="linkedin" scale="1.1"></icon></a>
+      <div class="social-media">
+        <a href="https://github.com/willylatorre" target="_new" name="github"><icon name="github" scale="1.1"></icon></a>
+        <a href="https://www.linkedin.com/in/adrianlatorre" target="_new" name="linkedin"><icon name="linkedin" scale="1.1"></icon></a>
       </div>
     </footer>
   </div>
@@ -64,7 +64,7 @@ header {
   }
 }
 
-#social-media {
+.social-media {
   display: flex;
   & a {
     color: $grey!important;
@@ -79,7 +79,7 @@ header {
 }
 
 footer {
-  display: flex;
+  display: flex!important;
   padding: 20px;
   font-size: 14px;
   justify-content: space-around;
