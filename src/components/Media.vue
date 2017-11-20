@@ -7,14 +7,12 @@
     </p>
 
     <h2>Talks</h2>
-    <p>
-      <iframe title="TEDx talk" src="https://www.youtube.com/embed/t6en3oPbYTI" frameborder="0" gesture="media" allowfullscreen></iframe>
-      <iframe title="Meetup talk" src="https://www.youtube.com/embed/wQlmEspvC98" frameborder="0" gesture="media" allowfullscreen></iframe>
-    </p>
-    <p>
-      <iframe title="Fabricafutur talk" src="https://www.youtube.com/embed/asUqQjPAGY4" frameborder="0" gesture="media" allowfullscreen></iframe>
-      <iframe title="Impulsa talk" src="https://www.youtube.com/embed/nBr2fJ_0Xrk" frameborder="0" gesture="media" allowfullscreen></iframe>
-    </p>
+    <div class="videos">
+      <youtube-video id="t6en3oPbYTI"></youtube-video>
+      <youtube-video id="wQlmEspvC98"></youtube-video>
+      <youtube-video id="asUqQjPAGY4"></youtube-video>
+      <youtube-video id="nBr2fJ_0Xrk"></youtube-video>
+    </div>
 
     <h2>Articles</h2>
     <p>
@@ -33,10 +31,21 @@
 </template>
 
 <script>
+import YoutubeVideo from './YoutubeVideo'
 export default {
-  name: 'Bio'
+  name: 'Bio',
+  components: {
+    YoutubeVideo
+  }
 }
 </script>
 
 <style lang="scss">
+.videos {
+  display: flex;
+  flex-wrap: wrap;
+  & div {
+    margin: 10px;
+  }
+}
 </style>
