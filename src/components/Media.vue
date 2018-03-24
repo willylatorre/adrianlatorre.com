@@ -1,5 +1,5 @@
 <template lang="html">
-  <div class="section" id="section-media">
+  <div class="section" id="section-media" :class="{'section_dark': darkMode}">
     <h1>Media</h1>
     <p>
       Yes, <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> <span class="strike">was</span> is famous and has appeared in the media.

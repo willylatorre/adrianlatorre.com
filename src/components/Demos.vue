@@ -1,5 +1,5 @@
 <template lang="html">
-  <div class="section" id="section-demos">
+  <div class="section" id="section-demos" :class="{'section_dark': darkMode}">
     <h1>Demos</h1>
     <p>
       But <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> is not only used in serious companies. It can be used for a lot of things. Here are some examples.

@@ -1,5 +1,5 @@
 <template lang="html">
-  <div class="section" id="section-libraries">
+  <div class="section" id="section-libraries" :class="{'section_dark': darkMode}">
     <h1>Libraries using it</h1>
     <p>
       Some libraries that are using <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> in production (crazy), so here is a big shoutout to them.

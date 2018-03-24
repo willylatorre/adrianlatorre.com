@@ -1,5 +1,5 @@
 <template lang="html">
-  <div class="section" id="section-usage">
+  <div class="section" id="section-usage" :class="{'section_dark': darkMode}">
     <h1>How it works</h1>
     <p>
       The usage of <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> is pretty straightforward. Here are some examples:
