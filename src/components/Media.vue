@@ -2,7 +2,7 @@
   <div class="section" id="section-media">
     <h1>Media</h1>
     <p>
-      Yes, <span class="highlight">a</span> <span class="strike">was</span> is famous and has appeared in the media.
+      Yes, <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> <span class="strike">was</span> is famous and has appeared in the media.
       Sharing knowledge has been always a must.
     </p>
 
@@ -33,7 +33,8 @@
 <script>
 import YoutubeVideo from './YoutubeVideo'
 export default {
-  name: 'Bio',
+  name: 'Media',
+  store: ['darkMode'],
   components: {
     YoutubeVideo
   }

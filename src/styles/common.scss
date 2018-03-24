@@ -6,6 +6,19 @@
   font-weight: bold;
   padding-left: 3px;
   padding-right: 3px;
+
+  &_dark {
+    background-color: #073642;
+  }
+}
+
+.bold {
+  color: #363636;
+  font-weight: 700;
+
+  &_dark {
+    color: #93a1a1;
+  }
 }
 
 .strike {
@@ -14,7 +27,7 @@
 
 .section {
   padding-top: 1.5em;
-  
+
   & h1 {
     text-align: left;
     font-size: 30px;

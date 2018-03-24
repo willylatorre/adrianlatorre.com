@@ -2,7 +2,7 @@
   <div class="section" id="section-usage">
     <h1>How it works</h1>
     <p>
-      The usage of <span class="highlight">a</span> is pretty straightforward. Here are some examples:
+      The usage of <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> is pretty straightforward. Here are some examples:
     </p>
     <pre><code class="javascript">
       // import the library first
@@ -34,7 +34,7 @@
     <h2>Dependencies</h2>
 
     <p>
-      Without those libraries, <span class="strike">he</span> <span class="highlight">a</span> wouldn't work. Contrary to what is common, more and more dependencies are beeing
+      Without those libraries, <span class="strike">he</span> <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> wouldn't work. Contrary to what is common, more and more dependencies are beeing
       added as time passes.
     </p>
 
@@ -80,7 +80,8 @@
 
 <script>
 export default {
-  name: 'Bio'
+  name: 'Usage',
+  store: ['darkMode']
 }
 </script>
 

@@ -1,9 +1,14 @@
 <template>
   <div class="hello">
     <div class="hello_intro">
-      <img src="../assets/a.svg" alt="a" />
+      <template v-if="darkMode">
+        <img src="../assets/a_dark.svg" alt="a" />
+      </template>
+      <template v-else>
+        <img src="../assets/a.svg" alt="a" />
+      </template>
       <div class="hello_intro_explanation">
-        <span class="highlight">a</span> is the new library by <strong>Adrian Latorre</strong>.<br/>
+        <span class="highlight" :class="{ 'highlight_dark': darkMode }">a</span> is the new library by <span class="bold" :class="{ 'bold_dark': darkMode }">Adrian Latorre</span>.<br/>
         The library is still in development, but it's safe to use in production (at your own risk).
       </div>
       <div class="hello_badges">
@@ -53,7 +58,8 @@ import hljs from 'highlight.js'
 global.hljs = hljs
 
 export default {
-  name: 'hello',
+  name: 'Hello',
+  store: ['darkMode'],
   data () {
     return {
       visibleSection: null,

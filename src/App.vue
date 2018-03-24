@@ -1,8 +1,16 @@
 <template>
-  <div id="app">
+  <div
+    id="app"
+    :style="themeStyle">
     <header>
       <span>Adrian Latorre Crespo</span>
       <div class="social-media">
+        <div class="switch">
+          <icon name="sun-o" scale="1.1" />
+          <switches v-model="darkMode" :theme="switchStyle" color="default" />
+          <icon name="moon-o" scale="1.1" />
+        </div>
+
         <a href="https://github.com/willylatorre" target="_new" name="github"><icon name="github" scale="1.1"></icon></a>
         <a href="https://www.linkedin.com/in/adrianlatorre" target="_new" name="linkedin"><icon name="linkedin" scale="1.1"></icon></a>
       </div>
@@ -21,8 +29,33 @@
 </template>
 
 <script>
+import Switches from 'vue-switches'
 export default {
-  name: 'app'
+  name: 'app',
+  store: ['darkMode'],
+  components: {
+    Switches
+  },
+  data: () => ({
+    themeColors: {
+      light: {
+        background: 'white',
+        color: '#2c3e50'
+      },
+      dark: {
+        background: '#002b36',
+        color: '#839496'
+      }
+    }
+  }),
+  computed: {
+    themeStyle () {
+      return this.darkMode ? this.themeColors.dark : this.themeColors.light
+    },
+    switchStyle () {
+      return this.darkMode ? 'default' : 'bulma'
+    }
+  }
 }
 </script>
 
@@ -33,11 +66,20 @@ body {
   margin: 0;
 }
 
+a, a:visited {
+  color: $grey;
+
+  &:hover {
+    color:black;
+  }
+}
+
 #app {
   font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
+  backgroun: white;
 }
 
 main {
@@ -50,7 +92,6 @@ header {
   margin: 0;
   height: 56px;
   padding: 0 16px 0 24px;
-  background-color: white;
   color: $grey;
   display: flex!important;
   justify-content: space-between;
@@ -66,15 +107,10 @@ header {
 
 .social-media {
   display: flex;
-  & a {
-    color: $grey!important;
-  }
+
   & svg {
     margin: 0 10px;
-    cursor: pointer;
-    &:hover {
-      color: black;
-    }
+    // cursor: pointer;
   }
 }
 
@@ -84,10 +120,6 @@ footer {
   font-size: 14px;
   justify-content: space-around;
   flex-wrap: wrap;
-
-  & a {
-    color: $grey!important;
-  }
 }
 
 </style>
