@@ -67,7 +67,7 @@ body {
 }
 
 a, a:visited {
-  color: $grey;
+  color: $grey!important;
 
   &:hover {
     color:black;
