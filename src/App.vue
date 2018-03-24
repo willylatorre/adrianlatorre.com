@@ -67,7 +67,7 @@ body {
 }
 
 a, a:visited {
-  color: $grey!important;
+  color: $grey;
 
   &:hover {
     color:black;
@@ -107,6 +107,10 @@ header {
 
 .social-media {
   display: flex;
+
+  & a {
+    color: $grey!important;
+  }
 
   & svg {
     margin: 0 10px;
