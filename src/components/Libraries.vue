@@ -11,17 +11,18 @@
       <span class="bold" :class="{ 'bold_dark': darkMode }">Technical Lead</span> and has done pretty cool things with it:
       <ul>
         <li>
+          Lead the Frontend stack of Glovo (Vue.js, Nuxt.js, HeadlessCMS)
+        </li>
+        <li>
+          Lead the Growth / B2B team
+        </li>
+        <li>Implement & A/B Test multiple RPO improvements</li>
+        <li>Implement Glovo Prime</li>
+        <li>Implement Glovo Member Get Member program</li>
+        <li>Implement Glovo Business</li>
+        <li>
           Migration of the Glovo webapp from Angular to Vue.js. Here is a great summary of it
           <a href="http://tech.glovoapp.com/a-wonderful-journey-migrating-from-angular-to-vue-js/" target="_new">A wonderful journey: migrating from Angular to Vue (and why not React)</a>
-        </li>
-        <li>
-          Updated the old admin panel, from Django to Vue.js + Java
-        </li>
-        <li>
-          Created a partners webapp that connects to ECS/POS bluetooth printers
-        </li>
-        <li>
-          Refactored the Android application to use Kotlin in several places.
         </li>
       </ul>
     </p>

@@ -51,12 +51,14 @@
       },
       devDependencies: {
         vuejs,
-        angular-js,
-        intro-to-react,
+        gridsome,
+        nuxt,
+        react-hooks,
+        gatsby,
         vuex,
         async-await-polyfill
         babel,
-        axios,
+        date-fn,
         cool-css-animations,
         github-addict,
       }
@@ -86,7 +88,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.buttons, .box {
+.buttons,
+.box {
   & svg {
     margin-right: 5px;
   }

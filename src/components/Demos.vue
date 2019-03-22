@@ -29,8 +29,11 @@
 
     <h2>Other projects</h2>
     <p>
-      Yep, <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> is also used in more private projects, such as friends/family webpages, but nothing worth to be shown.
+      Yep, <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> is also used in more private projects, such as friends/family webpages. A must check is <a href="https://holameraki.com" target="_new" rel="nofollow">Espacio Meraki</a>
     </p>
+    <a href="https://holameraki.com" target="_new" rel="nofollow">
+    <img src="../assets/holameraki.png" alt="espacio meraki">
+    </a>
   </div>
 </template>
 
@@ -41,5 +44,8 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
+img {
+  max-width: 300px;
+}
 </style>
