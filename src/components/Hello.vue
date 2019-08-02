@@ -52,7 +52,6 @@ import Libraries from './Libraries'
 import Usage from './Usage'
 import Media from './Media'
 import sections from './sections'
-import StickySidebar from 'sticky-sidebar'
 import zenscroll from 'zenscroll'
 import hljs from 'highlight.js'
 
@@ -67,6 +66,7 @@ export default {
   },
   mounted () {
     // Sticky
+    const StickySidebar = require('sticky-sidebar')
     const sticky = new StickySidebar('.hello_sidebar', {
       topSpacing: 20,
       bottomSpacing: 20,

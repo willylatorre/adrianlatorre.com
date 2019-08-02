@@ -19,13 +19,17 @@ import 'vue-awesome/icons/heart'
 import 'vue-awesome/icons/sun'
 import 'vue-awesome/icons/moon'
 
-export default function (Vue, { appOptions }) {
+export default function (Vue, { appOptions, isClient }) {
   Vue.component('Layout', DefaultLayout)
   Vue.component('Switches', Switches)
   Vue.component('v-icon', Icon)
 
-  Vue.use(VueObserveVisibility)
   Vue.use(VueStash)
+
+  if (isClient) {
+    Vue.use(VueObserveVisibility)
+
+  }
 
   appOptions.data = {
     store: {
