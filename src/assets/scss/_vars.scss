@@ -1,0 +1,14 @@
+$black: rgba(0,0,0,0.8);
+$black-light: rgba(0,0,0, 0.6);
+$warning: #ff6666;
+$grey: #7e888b;
+$light: rgba(0,0,0,0.1);
+
+$dark: #839496;
+
+@mixin placeholder {
+  ::-webkit-input-placeholder {@content}
+  :-moz-placeholder           {@content}
+  ::-moz-placeholder          {@content}
+  :-ms-input-placeholder      {@content}
+}

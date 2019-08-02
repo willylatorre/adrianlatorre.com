@@ -1,0 +1,83 @@
+@import "./vars";
+@import './bulma';
+
+.highlight {
+  background-color: whitesmoke;
+  color: $warning;
+  font-weight: bold;
+  padding-left: 3px;
+  padding-right: 3px;
+
+  &_dark {
+    background-color: #073642;
+  }
+}
+
+.bold {
+  color: #363636;
+  font-weight: 700;
+
+  &_dark {
+    color: #93a1a1;
+  }
+}
+
+.strike {
+  text-decoration: line-through;
+}
+
+.section {
+  padding-top: 1.5em;
+
+  & h1 {
+    text-align: left;
+    font-size: 30px;
+    border-bottom: 1px solid $light;
+  }
+
+  &_dark {
+    & h1 {
+      border-bottom: 1px solid $dark;
+    }
+  }
+
+  & h2 {
+    text-align: left;
+    font-size: 22px;
+
+    &::before {
+      content: '# ';
+      color: $warning;
+    }
+  }
+
+  & h3 {
+    text-align: left;
+  }
+
+  & p {
+    text-align: justify;
+    margin: 20px 0;
+    line-height: 1.4em;
+  }
+  &:first-child {
+    padding-top: 10px;
+  }
+  &-highlight {
+    border-left: 2px solid;
+  }
+
+  ul {
+    margin: 10px;
+    list-style: square;
+
+    & li {
+      margin: 5px 0;
+    }
+  }
+}
+
+pre {
+  padding: 0px!important;
+  text-align: left;
+}
