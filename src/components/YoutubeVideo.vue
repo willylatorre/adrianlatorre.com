@@ -17,6 +17,7 @@ export default {
       var div = document.createElement('div')
       var image = new Image()
       image.src = `https://img.youtube.com/vi/${this.id}/hqdefault.jpg`
+      image.alt = 'youtube preview'
       image.addEventListener('load', () => {
         youtube.appendChild(image)
       })

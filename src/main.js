@@ -28,7 +28,6 @@ export default function (Vue, { appOptions, isClient }) {
 
   if (isClient) {
     Vue.use(VueObserveVisibility)
-
   }
 
   appOptions.data = {

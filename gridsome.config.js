@@ -12,7 +12,18 @@ function addStyleResource (rule) {
 
 module.exports = {
   siteName: 'Adrian Latorre',
-  plugins: [],
+  siteDescription: 'Personal website of Adrian Latorre. Frontend development, Vuejs, tech and much more.',
+  siteUrl: 'https://adrianlatorre.com',
+  plugins: [
+    {
+      use: '@gridsome/plugin-critical',
+      options: {
+        paths: ['/'],
+        width: 1300,
+        height: 900
+      }
+    }
+  ],
   chainWebpack (config) {
     const types = ['vue-modules', 'vue', 'normal-modules', 'normal']
 

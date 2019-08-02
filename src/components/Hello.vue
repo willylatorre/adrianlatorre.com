@@ -12,10 +12,10 @@
         The library is still in development, but it's safe to use in production (at your own risk).
       </div>
       <div class="hello_badges">
-        <g-image src="~/assets/img/build.svg" />
-        <g-image src="~/assets/img/coverage.svg" />
-        <g-image src="~/assets/img/license.svg" />
-        <g-image src="~/assets/img/allstar.svg" />
+        <g-image src="~/assets/img/build.svg" alt="build badge"/>
+        <g-image src="~/assets/img/coverage.svg" alt="coverage badge" />
+        <g-image src="~/assets/img/license.svg" alt="license badge" />
+        <g-image src="~/assets/img/allstar.svg" alt="allstar badge" />
       </div>
     </div>
     <div class="hello_docs">
@@ -66,6 +66,14 @@ export default {
   },
   mounted () {
     // Sticky
+    console.log('hello')
+    let sidebar = document.getElementsByClassName(".hello_sidebar")
+    console.log('sidebar')
+    if (!sidebar.length) {
+      return
+    }
+
+    console.log('end')
     const StickySidebar = require('sticky-sidebar')
     const sticky = new StickySidebar('.hello_sidebar', {
       topSpacing: 20,

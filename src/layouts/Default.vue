@@ -2,11 +2,11 @@
   <div class="layout" :style="themeStyle">
     <div class="layout__wrapper">
       <header class="header">
-        <span>Adrian Latorre Crespo</span>
+        <span>Adrian Latorre</span>
         <div class="social-media">
           <div class="switch">
             <v-icon name="sun" scale="1.1" />
-            <switches v-model="darkMode" :theme="switchStyle" color="default" />
+            <switches v-model="darkMode" :theme="switchStyle" color="default" label="" />
             <v-icon name="moon" scale="1.1" />
           </div>
 
