@@ -69,7 +69,7 @@
     <p>
       If you prefer, you can download a Code Visual also known as CV here.
     </p>
-    <a href="/static/docs/cv_adrian_latorre.pdf" rel="nofollow">
+    <a href="/docs/cv_adrian_latorre.pdf" rel="nofollow">
       <div class="box">
         <v-icon name="file" />
         Download CV

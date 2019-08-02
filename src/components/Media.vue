@@ -23,7 +23,7 @@
         </li>
         <li>
           Más allá del conocimiento [ES]: Thoughts about learning business in an IT career.
-          <a href="/static/docs/articulotelecoscat.pdf">Read</a>
+          <a href="/docs/articulotelecoscat.pdf">Read</a>
         </li>
       </ul>
     </p>
