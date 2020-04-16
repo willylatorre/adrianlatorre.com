@@ -9,6 +9,9 @@
     <p>
       <ul>
         <li>
+          <span class="bold" :class="{ 'bold_dark': darkMode }"><a href="https://github.com/Housfy/vue-enabled">vue-enabled</a></span>: A simple Vuejs library to dynamically enbale properties.
+        </li>
+        <li>
           <span class="bold" :class="{ 'bold_dark': darkMode }"><a href="https://github.com/Glovo/vue-multianalytics">vue-multianalytics</a></span>: A Vuejs library to implement event tracking over multiple platforms.
         </li>
         <li>
