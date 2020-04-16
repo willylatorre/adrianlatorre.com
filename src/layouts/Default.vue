@@ -41,7 +41,7 @@ query {
       <header class="header">
 
         <div class="flex items-center">
-        <span class="mr-2">Adrian Latorre</span> | 
+        <g-link to="/" class="mr-2 text-black text-xl">Adrian Latorre</g-link> | 
         <g-link to="/blog" class="ml-2"> Blog </g-link>
         </div>
 
@@ -110,7 +110,6 @@ a:visited {
 }
 
 main {
-  text-align: center;
   margin-top: 40px;
   padding: 20px;
 }

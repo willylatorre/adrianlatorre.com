@@ -17,7 +17,7 @@ query {
     edges {
       node {
         title
-        content
+        summary
         date  (format: "YYYY-MM-DD")
         path
       }

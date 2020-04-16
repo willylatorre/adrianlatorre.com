@@ -77,6 +77,56 @@
   }
 }
 
+.post {
+  min-height: 100vh;
+
+  & h1 {
+    text-align: left;
+    font-size: 30px;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid $light;
+  }
+
+  strong {
+    color: #363636;
+    font-weight: 700;
+  
+    
+  }
+  
+
+  &_dark {
+    & h1 {
+      border-bottom: 1px solid $dark;
+    }
+
+
+  strong {
+    color: #93a1a1;
+    font-weight: 700;
+  
+   
+      
+
+  }
+  
+  }
+
+  & h2 {
+    text-align: left;
+    font-size: 22px;
+
+    &::before {
+      content: '# ';
+      color: $warning;
+    }
+  }
+
+  
+
+}
+
+
 pre {
   padding: 0px!important;
   text-align: left;
