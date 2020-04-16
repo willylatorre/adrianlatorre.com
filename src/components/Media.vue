@@ -1,3 +1,14 @@
+<script>
+import YoutubeVideo from './YoutubeVideo'
+export default {
+  name: 'Media',
+  store: ['darkMode'],
+  components: {
+    YoutubeVideo
+  }
+}
+</script>
+
 <template lang="html">
   <div class="section" id="section-media" :class="{'section_dark': darkMode}">
     <h1>Media</h1>
@@ -14,9 +25,12 @@
       <youtube-video id="nBr2fJ_0Xrk"></youtube-video>
     </div>
 
-    <h2>Articles</h2>
+    <h2 class="mt-4">Articles</h2>
     <p>
       <ul>
+        <li>
+          Checkout the <g-link to="/blog"> Blog </g-link>
+        </li>
         <li>
           Migration of the Glovo webapp from Angular to Vue.js. Here is a great summary of it
           <a href="http://tech.glovoapp.com/a-wonderful-journey-migrating-from-angular-to-vue-js/" target="_new">A wonderful journey: migrating from Angular to Vue (and why not React)</a>
@@ -30,16 +44,7 @@
   </div>
 </template>
 
-<script>
-import YoutubeVideo from './YoutubeVideo'
-export default {
-  name: 'Media',
-  store: ['darkMode'],
-  components: {
-    YoutubeVideo
-  }
-}
-</script>
+
 
 <style lang="scss">
 .videos {

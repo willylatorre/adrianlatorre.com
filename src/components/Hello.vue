@@ -1,51 +1,3 @@
-<template>
-  <div class="hello">
-    <div class="hello_intro">
-      <template v-if="darkMode">
-        <g-image src="~/assets/img/a_dark.svg" alt="a" />
-      </template>
-      <template v-else>
-        <g-image src="~/assets/img/a.svg" alt="a" />
-      </template>
-      <div class="hello_intro_explanation">
-        <span class="highlight" :class="{ 'highlight_dark': darkMode }">a</span> is the new library by <span class="bold" :class="{ 'bold_dark': darkMode }">Adrian Latorre</span>.<br/>
-        The library is still in development, but it's safe to use in production (at your own risk).
-      </div>
-      <div class="hello_badges">
-        <g-image src="~/assets/img/build.svg" alt="build badge"/>
-        <g-image src="~/assets/img/coverage.svg" alt="coverage badge" />
-        <g-image src="~/assets/img/license.svg" alt="license badge" />
-        <g-image src="~/assets/img/allstar.svg" alt="allstar badge" />
-      </div>
-    </div>
-    <div class="hello_docs">
-      <div class="hello_content">
-        <component
-          v-for="section in sections"
-          :key="section.name"
-          v-observe-visibility="visibilityChanged"
-          :is="section.component">
-        </component>
-      </div>
-      <div class="hello_sidebar">
-        <div class="hello_sidebar_inner">
-          <h2>QUICK START</h2>
-          <ul>
-            <li
-              v-for="section in sections"
-              :key="section.name"
-              @click="goToSection(section.name)"
-              :class="{'section-highlight': section.name === visibleSection}">
-              {{section.label}}
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</template>
-
 <script>
 import Demos from './Demos'
 import Libraries from './Libraries'
@@ -58,40 +10,30 @@ import hljs from 'highlight.js'
 export default {
   name: 'Hello',
   store: ['darkMode'],
-  data () {
+  data() {
     return {
       visibleSection: null,
       sections: sections
     }
   },
-  mounted () {
-    // Sticky
-    console.log('hello')
-    let sidebar = document.getElementsByClassName(".hello_sidebar")
-    console.log('sidebar')
-    if (!sidebar.length) {
-      return
+  computed: {
+    mainImg() {
+      return require(`~/assets/img/${this.darkMode ? 'a_dark.svg' : 'a.svg'}`)
     }
-
-    console.log('end')
-    const StickySidebar = require('sticky-sidebar')
-    const sticky = new StickySidebar('.hello_sidebar', {
-      topSpacing: 20,
-      bottomSpacing: 20,
-      containerSelector: '.hello_docs',
-      innerWrapperSelector: '.hello_sidebar_inner'
-    })
+  },
+  mounted() {
+    
 
     // highlight
     hljs.initHighlightingOnLoad()
   },
   methods: {
-    goToSection (section) {
+    goToSection(section) {
       zenscroll.to(document.getElementById(section), 100, () => {
         this.visibleSection = section
       })
     },
-    visibilityChanged (isVisible, entry) {
+    visibilityChanged(isVisible, entry) {
       if (isVisible) {
         this.visibleSection = entry.target.id
       }
@@ -105,41 +47,93 @@ export default {
   }
 }
 </script>
+
+
+<template>
+  <div class="hello">
+    <div class="flex flex-col items-center mb-10">
+      <g-image :src="mainImg" alt="a" width="160" />
+
+      <div class="mb-4">
+        <span class="highlight" :class="{ highlight_dark: darkMode }">a</span>
+        is the new library by
+        <span class="bold" :class="{ bold_dark: darkMode }">Adrian Latorre</span
+        >.<br />
+        The library is still in development, but it's safe to use in production
+        (at your own risk).
+      </div>
+      <div class="flex flex-wrap">
+        <g-image src="~/assets/img/build.svg" alt="build badge" class="m-1" />
+        <g-image
+          src="~/assets/img/coverage.svg"
+          alt="coverage badge"
+          class="m-1"
+        />
+        <g-image
+          src="~/assets/img/license.svg"
+          alt="license badge"
+          class="m-1"
+        />
+        <g-image
+          src="~/assets/img/allstar.svg"
+          alt="allstar badge"
+          class="m-1"
+        />
+      </div>
+    </div>
+    <div class="hello_docs">
+      <div class="hello_content">
+        <component
+          v-for="section in sections"
+          :key="section.name"
+          v-observe-visibility="visibilityChanged"
+          :is="section.component"
+        >
+        </component>
+      </div>
+      <div class="hello_sidebar sticky top-0">
+        <h2>QUICK START</h2>
+        <ul>
+          <li
+            v-for="section in sections"
+            :key="section.name"
+            @click="goToSection(section.name)"
+            :class="{ 'section-highlight': section.name === visibleSection }"
+          >
+            {{ section.label }}
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</template>
+
 <style lang="scss" scoped>
 .hello {
-
-  &_intro {
-    margin-bottom: 60px;
-
-    &_explanation {
-      margin: 20px 0;
-      & svg {
-      }
-    }
-  }
-
   &_docs {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-areas: 'sidebar' 'content';
+
+    @media (min-width: 1024px) {
+      grid-template-columns: 1fr 200px;
+      grid-template-areas: 'content sidebar';
+    }
   }
 
   &_content {
-    flex: 1;
-    max-width: 100%;
+    grid-area: content;
   }
 
   &_sidebar {
-    flex: 0 0 200px;
+    grid-area: sidebar;
+
     text-align: left;
 
-    @media(max-width: 900px) {
-      display: none;
-    }
-
     &_inner {
-      border-left: 1px solid rgba(0,0,0,0.1);
+      border-left: 1px solid rgba(0, 0, 0, 0.1);
       padding: 0px 10px 10px 0;
     }
-
 
     & h2 {
       padding-left: 10px;
@@ -151,5 +145,4 @@ export default {
     }
   }
 }
-
 </style>

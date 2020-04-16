@@ -1,3 +1,10 @@
+<script>
+export default {
+  name: 'Libraries',
+  store: ['darkMode']
+}
+</script>
+
 <template lang="html">
   <div class="section" id="section-libraries" :class="{'section_dark': darkMode}">
     <h1>Libraries using it</h1>
@@ -62,12 +69,7 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'Libraries',
-  store: ['darkMode']
-}
-</script>
+
 
 <style lang="scss">
 </style>

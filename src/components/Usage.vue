@@ -1,3 +1,10 @@
+<script>
+export default {
+  name: "Usage",
+  store: ["darkMode"]
+};
+</script>
+
 <template lang="html">
   <div class="section" id="section-usage" :class="{'section_dark': darkMode}">
     <h1>How it works</h1>
@@ -80,12 +87,7 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "Usage",
-  store: ["darkMode"]
-};
-</script>
+
 
 <style lang="scss" scoped>
 .buttons,

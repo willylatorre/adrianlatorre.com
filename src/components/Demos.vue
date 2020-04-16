@@ -1,3 +1,10 @@
+<script>
+export default {
+  name: 'Demos',
+  store: ['darkMode']
+}
+</script>
+
 <template lang="html">
   <div class="section" id="section-demos" :class="{'section_dark': darkMode}">
     <h1>Demos</h1>
@@ -40,12 +47,6 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'Demos',
-  store: ['darkMode']
-}
-</script>
 
 <style lang="scss" scoped>
 img {

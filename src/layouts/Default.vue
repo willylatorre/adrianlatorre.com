@@ -1,8 +1,51 @@
+
+<script>
+export default {
+  store: ["darkMode"],
+  data() {
+    return {
+      themeColors: {
+        light: {
+          background: "white",
+          color: "#2c3e50"
+        },
+        dark: {
+          background: "#002b36",
+          color: "#839496"
+        }
+      }
+    };
+  },
+  computed: {
+    themeStyle() {
+      return this.darkMode ? this.themeColors.dark : this.themeColors.light;
+    },
+    switchStyle() {
+      return this.darkMode ? "default" : "bulma";
+    }
+  }
+};
+</script>
+
+<static-query>
+query {
+  metadata {
+    siteName
+  }
+}
+</static-query>
+
 <template>
   <div class="layout" :style="themeStyle">
     <div class="layout__wrapper">
       <header class="header">
-        <span>Adrian Latorre</span>
+
+        <div class="flex items-center">
+        <span class="mr-2">Adrian Latorre</span> | 
+        <g-link to="/blog" class="ml-2"> Blog </g-link>
+        </div>
+
+
         <div class="social-media">
           <div class="switch">
             <v-icon name="sun" scale="1.1" />
@@ -36,40 +79,7 @@
   </div>
 </template>
 
-<static-query>
-query {
-  metaData {
-    siteName
-  }
-}
-</static-query>
-<script>
-export default {
-  store: ["darkMode"],
-  data() {
-    return {
-      themeColors: {
-        light: {
-          background: "white",
-          color: "#2c3e50"
-        },
-        dark: {
-          background: "#002b36",
-          color: "#839496"
-        }
-      }
-    };
-  },
-  computed: {
-    themeStyle() {
-      return this.darkMode ? this.themeColors.dark : this.themeColors.light;
-    },
-    switchStyle() {
-      return this.darkMode ? "default" : "bulma";
-    }
-  }
-};
-</script>
+
 
 
 <style lang="scss">

@@ -14,14 +14,37 @@ module.exports = {
   siteName: 'Adrian Latorre',
   siteDescription: 'Personal website of Adrian Latorre. Frontend development, Vuejs, tech and much more.',
   siteUrl: 'https://adrianlatorre.com',
+  transformers: {
+    remark: {}
+  },
   plugins: [
+    // {
+    //   use: '@gridsome/plugin-critical',
+    //   options: {
+    //     paths: ['/'],
+    //     width: 1300,
+    //     height: 900
+    //   }
+    // },
     {
-      use: '@gridsome/plugin-critical',
+      use: "@gridsome/source-filesystem",
       options: {
-        paths: ['/'],
-        width: 1300,
-        height: 900
+        path: "blog/**/*.md",
+        typeName: "Post"
       }
+    },
+    {
+      use: 'gridsome-plugin-tailwindcss',
+      /* These are the default options. You don't need to set any options to get going.
+      options: {
+        tailwindConfig: './some/file/js',
+        purgeConfig: {},
+        presetEnvConfig: {},
+        shouldPurge: true,
+        shouldImport: true,
+        shouldTimeTravel: true
+      }
+      */
     }
   ],
   chainWebpack (config) {

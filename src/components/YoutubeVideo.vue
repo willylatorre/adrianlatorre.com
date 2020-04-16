@@ -1,9 +1,3 @@
-<template lang="html">
-  <div class="youtube" :id="'yt-' + id">
-    <div class="play-button"></div>
-  </div>
-</template>
-
 <script>
 export default {
   name: 'YoutubeVideo',
@@ -39,6 +33,14 @@ export default {
   }
 }
 </script>
+
+
+<template lang="html">
+  <div class="youtube" :id="'yt-' + id">
+    <div class="play-button"></div>
+  </div>
+</template>
+
 
 <style lang="scss" scoped>
 .youtube {
