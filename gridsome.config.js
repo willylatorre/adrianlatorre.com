@@ -35,16 +35,14 @@ module.exports = {
     },
     {
       use: 'gridsome-plugin-tailwindcss',
-      /* These are the default options. You don't need to set any options to get going.
       options: {
         tailwindConfig: './some/file/js',
         purgeConfig: {},
         presetEnvConfig: {},
-        shouldPurge: true,
+        shouldPurge: false,
         shouldImport: true,
         shouldTimeTravel: true
       }
-      */
     }
   ],
   chainWebpack (config) {
