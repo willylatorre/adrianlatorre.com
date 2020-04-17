@@ -36,12 +36,8 @@ module.exports = {
     {
       use: 'gridsome-plugin-tailwindcss',
       options: {
-        tailwindConfig: './some/file/js',
         purgeConfig: {},
-        presetEnvConfig: {},
         shouldPurge: false,
-        shouldImport: true,
-        shouldTimeTravel: true
       }
     }
   ],
