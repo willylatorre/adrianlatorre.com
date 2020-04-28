@@ -16,6 +16,10 @@ export default {
     <p>
       <ul>
         <li>
+          <span class="bold" :class="{ 'bold_dark': darkMode }"><a href="https://github.com/willylatorre/tabeditor">tabeditor</a></span>: Add a rich-text editor for your "new tab" page.
+          <g-image src="~/assets/img/tabeditor.png" alt="tabeditor" />
+        </li>
+        <li>
           <span class="bold" :class="{ 'bold_dark': darkMode }"><a href="https://github.com/Housfy/vue-enabled">vue-enabled</a></span>: A simple Vuejs library to dynamically enbale properties.
         </li>
         <li>
