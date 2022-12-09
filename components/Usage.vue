@@ -1,4 +1,8 @@
 <script setup>
+import OpenSvg from '../assets/img/open.svg'
+import EnvelopeSvg from '../assets/img/envelope.svg'
+import PhoneSvg from '../assets/img/phone.svg'
+
 const darkMode = useState('darkMode', () => false)
 const { $termino } = useNuxtApp()
 let term = null
@@ -103,7 +107,7 @@ onUnmounted(() => {
     <div class="buttons">
       <a href="mailto:a.latorrecrespo@gmail.com" class="button is-danger">
         <span class="icon is-small">
-          <img src="../assets/img/envelope.svg" class="icon text-white" />
+          <EnvelopeSvg class="icon text-white" />
         </span>
         <span>
           a.contact()
@@ -111,7 +115,7 @@ onUnmounted(() => {
       </a>
       <a href="tel:+34661858060" class="button is-default">
         <span class="icon is-small">
-          <img src="../assets/img/phone.svg" class="icon" />
+          <PhoneSvg class="icon" />
         </span>
         <span>
           a.call()
@@ -136,7 +140,7 @@ onUnmounted(() => {
     <a href="/docs/cv_adrian_latorre.pdf" rel="nofollow" class="button">
 
       <span class="icon is-small">
-        <img src="../assets/img/open.svg" class="icon" />
+        <OpenSvg class="icon" />
       </span>
       <span class="ml-3">
         Download CV

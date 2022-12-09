@@ -26,6 +26,10 @@ export default defineNuxtConfig({
         '@nuxtjs/tailwindcss'
     ],
 
+    experimental: {
+        viteNode: true
+    },
+
     vite: {
         plugins: [
             svgLoader()

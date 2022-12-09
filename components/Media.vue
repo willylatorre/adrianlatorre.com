@@ -21,11 +21,7 @@ const darkMode = useState('darkMode', () => false)
     </div>
 
     <h2 class="mt-4">Articles</h2>
-    <p>
     <ul>
-      <!-- <li>
-          Checkout the <NuxtLink to="/blog"> Blog </NuxtLink>
-        </li> -->
       <li>
         Migration of the Glovo webapp from Angular to Vue.js. Here is a great summary of it
         <a href="http://tech.glovoapp.com/a-wonderful-journey-migrating-from-angular-to-vue-js/" target="_new">A
@@ -36,7 +32,6 @@ const darkMode = useState('darkMode', () => false)
         <a href="/docs/articulotelecoscat.pdf">Read</a>
       </li>
     </ul>
-    </p>
   </div>
 </template>
 

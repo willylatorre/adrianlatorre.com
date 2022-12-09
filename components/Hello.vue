@@ -5,6 +5,10 @@ import _sections from './sections'
 
 import A from '../assets/img/a.svg?url'
 import A_Dark from '../assets/img/a_dark.svg?url'
+import BuildSvg from '../assets/img/build.svg'
+import CoverageSvg from '../assets/img/coverage.svg'
+import LicenseSvg from '../assets/img/license.svg'
+import AllstarSvg from '../assets/img/allstar.svg'
 
 const sections = ref(_sections)
 const darkMode = useState('darkMode', () => false)
@@ -26,10 +30,10 @@ const mainImg = computed(() => darkMode ? A_Dark : A)
         (at your own risk).
       </div>
       <div class="flex flex-wrap">
-        <img src="../assets/img/build.svg" alt="build badge" class="m-1" />
-        <img src="../assets/img/coverage.svg" alt="coverage badge" class="m-1" />
-        <img src="../assets/img/license.svg" alt="license badge" class="m-1" />
-        <img src="../assets/img/allstar.svg" alt="allstar badge" class="m-1" />
+        <BuildSvg alt="build badge" class="m-1" />
+        <CoverageSvg alt="coverage badge" class="m-1" />
+        <LicenseSvg alt="license badge" class="m-1" />
+        <AllstarSvg alt="allstar badge" class="m-1" />
       </div>
     </div>
     <div class="hello_docs">
