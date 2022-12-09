@@ -1,11 +1,8 @@
-<script>
-export default {
-  name: 'Demos',
-  store: ['darkMode']
-}
+<script setup>
+const darkMode = useState('darkMode', () => false)
 </script>
 
-<template lang="html">
+<template>
   <div class="section" id="section-demos" :class="{'section_dark': darkMode}">
     <h1>Demos</h1>
     <p>
@@ -17,7 +14,7 @@ export default {
       <ul>
         <li>
           <span class="bold" :class="{ 'bold_dark': darkMode }"><a href="https://github.com/willylatorre/tabeditor">tabeditor</a></span>: Add a rich-text editor for your "new tab" page.
-          <g-image src="~/assets/img/tabeditor.png" alt="tabeditor" />
+          <img src="~/assets/img/tabeditor.png" alt="tabeditor" />
         </li>
         <li>
           <span class="bold" :class="{ 'bold_dark': darkMode }"><a href="https://github.com/Housfy/vue-enabled">vue-enabled</a></span>: A simple Vuejs library to dynamically enbale properties.
@@ -46,7 +43,7 @@ export default {
       Yep, <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> is also used in more private projects, such as friends/family webpages. A must check is <a href="https://holameraki.com" target="_new" rel="nofollow">Espacio Meraki</a>
     </p>
     <a href="https://holameraki.com" target="_new" rel="nofollow">
-    <g-image src="~/assets/img/holameraki.png" alt="espacio meraki" />
+    <img src="~/assets/img/holameraki.png" alt="espacio meraki" />
     </a>
   </div>
 </template>

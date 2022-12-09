@@ -1,42 +1,43 @@
-<script>
-export default {
-  name: 'YoutubeVideo',
-  props: ['id'],
-  mounted() {
-    this.initYT()
-  },
-  methods: {
-    initYT() {
-      var youtube = document.getElementById('yt-' + this.id)
-      var div = document.createElement('div')
-      var image = new Image()
-      image.src = `https://img.youtube.com/vi/${this.id}/hqdefault.jpg`
-      image.alt = 'youtube preview'
-      image.addEventListener('load', () => {
-        youtube.appendChild(image)
-      })
+<script setup>
+
+const props = defineProps({
+  id: {
+    type: String,
+    required: true
+  }
+})
+
+const bgImg = computed(() =>  `https://img.youtube.com/vi/${props.id}/hqdefault.jpg`)
+
+function initYT() {
+      const youtube = document.getElementById('yt-' + props.id)
       youtube.addEventListener('click', () => {
         youtube.innerHTML = ''
-        youtube.appendChild(this.labnolIframe())
+        youtube.appendChild(loadIframe())
       })
-    },
-    labnolIframe() {
-      var iframe = document.createElement('iframe')
-      var embed = `https://www.youtube.com/embed/${this.id}?autoplay=1`
+    }
+
+    function loadIframe() {
+      const iframe = document.createElement('iframe')
+      const embed = `https://www.youtube.com/embed/${props.id}?autoplay=1`
       iframe.setAttribute('src', embed)
-      iframe.setAttribute(this.$options._scopeId, '')
       iframe.setAttribute('class', 'youtube-iframe')
+      // iframe.setAttribute('style', `backgroundImage: url(${bgImg})`)
       iframe.setAttribute('frameborder', '0')
       iframe.setAttribute('allowfullscreen', '1')
       return iframe
     }
-  }
-}
+  
+
+onMounted(() => {
+  initYT()
+})
+
 </script>
 
 
-<template lang="html">
-  <div class="youtube" :id="'yt-' + id">
+<template>
+  <div class="youtube" :id="'yt-' + id" :style="{ backgroundImage: `url(${bgImg}`}">
     <div class="play-button"></div>
   </div>
 </template>
@@ -50,6 +51,9 @@ export default {
   position: relative;
   overflow: hidden;
   cursor: pointer;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 .youtube img {
   width: 100%;
@@ -87,8 +91,7 @@ export default {
   left: 50%;
   transform: translate3d(-50%, -50%, 0);
 }
-.youtube iframe,
-.youtube-iframe {
+:deep(.youtube-iframe) {
   height: 100%;
   width: 100%;
   top: 0;

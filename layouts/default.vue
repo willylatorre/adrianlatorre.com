@@ -1,10 +1,13 @@
 
-<script>
-export default {
-  store: ["darkMode"],
-  data() {
-    return {
-      themeColors: {
+<script setup>
+import Linkedin from '../assets/img/linkedin.svg'
+import Github from '../assets/img/github.svg'
+import Sun from '../assets/img/sun.svg'
+import Moon from '../assets/img/moon.svg'
+
+const darkMode = useState('darkMode', () => false)
+const  themeColors =
+  {
         light: {
           background: "white",
           color: "#2c3e50"
@@ -14,26 +17,10 @@ export default {
           color: "#839496"
         }
       }
-    };
-  },
-  computed: {
-    themeStyle() {
-      return this.darkMode ? this.themeColors.dark : this.themeColors.light;
-    },
-    switchStyle() {
-      return this.darkMode ? "default" : "bulma";
-    }
-  }
-};
-</script>
 
-<static-query>
-query {
-  metadata {
-    siteName
-  }
-}
-</static-query>
+
+const themeStyle = computed(() => darkMode.value ? themeColors.dark : themeColors.light)
+</script>
 
 <template>
   <div class="layout" :style="themeStyle">
@@ -41,23 +28,23 @@ query {
       <header class="header">
 
         <div class="flex items-center">
-        <g-link to="/" class="mr-2 text-black text-xl">Adrian Latorre</g-link> | 
-        <g-link to="/blog" class="ml-2"> Blog </g-link>
+        <NuxtLink to="/" class="mr-2 text-xl">Adrian Latorre</NuxtLink>
+        <!-- <NuxtLink to="/blog" class="ml-2"> Blog </NuxtLink> -->
         </div>
 
 
         <div class="social-media">
-          <div class="switch">
-            <v-icon name="sun" scale="1.1" />
-            <switches v-model="darkMode" :theme="switchStyle" color="default" label="" />
-            <v-icon name="moon" scale="1.1" />
+          <div class="flex items-center">
+            <Sun class="w-6" name="sun"  />
+            <Switch  />
+            <Moon class="w-6"  />
           </div>
 
           <a href="https://github.com/willylatorre" target="_new" name="github">
-            <v-icon name="brands/github" scale="1.1" />
+            <Github class="w-6"  />
           </a>
           <a href="https://www.linkedin.com/in/adrianlatorre" target="_new" name="linkedin">
-            <v-icon name="brands/linkedin" scale="1.1" />
+            <Linkedin  />
           </a>
         </div>
       </header>
@@ -68,10 +55,10 @@ query {
         <a href="mailto:a.latorrecrespo@gmail.com">a.latorrecrespo@gmail.com</a>
         <div class="social-media">
           <a href="https://github.com/willylatorre" target="_new" name="github">
-            <v-icon name="brands/github" scale="1.1" />
+            <Github />
           </a>
           <a href="https://www.linkedin.com/in/adrianlatorre" target="_new" name="linkedin">
-            <v-icon name="brands/linkedin" scale="1.1" />
+            <Linkedin />
           </a>
         </div>
       </footer>
@@ -83,18 +70,20 @@ query {
 
 
 <style lang="scss">
+@import '../assets/scss/vars';
+
 body {
   margin: 0;
 }
 
-a,
-a:visited {
-  color: $grey;
+// a,
+// a:visited {
+//   color: $black;
 
-  &:hover {
-    color: black;
-  }
-}
+//   &:hover {
+//     color: $warning;
+//   }
+// }
 
 .layout {
   font-family: "Avenir", Helvetica, Arial, sans-serif;
@@ -133,6 +122,7 @@ header {
 
 .social-media {
   display: flex;
+  align-items: center;
 
   & a {
     color: $grey !important;

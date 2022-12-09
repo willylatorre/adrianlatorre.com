@@ -1,19 +1,34 @@
-<script>
-export default {
-  name: 'Libraries',
-  store: ['darkMode']
-}
+<script setup>
+const darkMode = useState('darkMode', () => false)
 </script>
 
-<template lang="html">
+<template >
   <div class="section" id="section-libraries" :class="{'section_dark': darkMode}">
     <h1>Libraries using it</h1>
     <p>
       Some libraries that are using <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> in production (crazy), so here is a big shoutout to them.
     </p>
 
+    <h2> <a href="https://adyen.com">Adyen</a> </h2>
+    <h3> Amsterdam, August 2020 - in production currently</h3>
+    <p>
+      After a proper analysis, one of the most important companies in the <span class="bold" :class="{ 'bold_dark': darkMode }">Fintech sector</span> has decided to work with <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> :
+      <ul>
+        <li>
+          Currently, Frontend Engineer in charge of the main Adyen.com and derivates websites.
+        </li>
+        <li>
+          Previously, Frontend Engineer at the Billing Stream
+        </li>
+        <li>Improve the invoicing experience for both merchants and AMs</li>
+        <li>
+          Develop internal tools related to invoices and contracts
+        </li>
+      </ul>
+    </p>
+
 <h2> Housfy </h2>
-    <h3> Barcelona, March 2019 - in production currently</h3>
+    <h3> Barcelona, March 2019 - August 2020</h3>
     <p>
       First usage of <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> in the <span class="bold" :class="{ 'bold_dark': darkMode }">PropTech Sector</span>:
       <ul>

@@ -1,5 +1,5 @@
 
-import DefaultLayout from '~/layouts/Default.vue'
+import DefaultLayout from '~~/layouts/default.vue'
 import Switches from 'vue-switches'
 
 import VueObserveVisibility from 'vue-observe-visibility'

@@ -1,11 +1,9 @@
-<script>
-export default {
-  name: "Usage",
-  store: ["darkMode"]
-};
+<script setup>
+const darkMode = useState('darkMode', () => false)
 </script>
 
-<template lang="html">
+
+<template >
   <div class="section" id="section-usage" :class="{'section_dark': darkMode}">
     <h1>How it works</h1>
     <p>
@@ -28,12 +26,20 @@ export default {
     </p>
     <div class="buttons">
       <a href="mailto:a.latorrecrespo@gmail.com" class="button is-danger">
-        <v-icon name="envelope"/>
-        a.contact()
+        <span class="icon is-small">
+          <img src="../assets/img/envelope.svg" class="icon text-white" />
+        </span>
+        <span>
+          a.contact()
+        </span>
       </a>
       <a href="tel:+34661858060" class="button is-default">
-        <v-icon name="phone"/>
+        <span class="icon is-small">
+         <img src="../assets/img/phone.svg"  class="icon" />
+        </span>
+        <span>
         a.call()
+        </span>
       </a>
     </div>
 
@@ -76,11 +82,15 @@ export default {
     <p>
       If you prefer, you can download a Code Visual also known as CV here.
     </p>
-    <a href="/docs/cv_adrian_latorre.pdf" rel="nofollow">
-      <div class="box">
-        <v-icon name="file" />
-        Download CV
-      </div>
+    <a href="/docs/cv_adrian_latorre.pdf" rel="nofollow" class="button">
+
+        <span class="icon is-small">
+         <img src="../assets/img/open.svg"  class="icon" />
+        </span>
+        <span class="ml-3">
+         Download CV
+        </span>
+
     </a>
 
 
@@ -90,10 +100,9 @@ export default {
 
 
 <style lang="scss" scoped>
-.buttons,
-.box {
-  & svg {
-    margin-right: 5px;
-  }
+
+.icon {
+  width: 24px;
+  height: 24px;
 }
 </style>

@@ -1,15 +1,9 @@
-<script>
-import YoutubeVideo from './YoutubeVideo'
-export default {
-  name: 'Media',
-  store: ['darkMode'],
-  components: {
-    YoutubeVideo
-  }
-}
+<script setup>
+const darkMode = useState('darkMode', () => false)
 </script>
 
-<template lang="html">
+
+<template>
   <div class="section" id="section-media" :class="{'section_dark': darkMode}">
     <h1>Media</h1>
     <p>
@@ -29,7 +23,7 @@ export default {
     <p>
       <ul>
         <li>
-          Checkout the <g-link to="/blog"> Blog </g-link>
+          Checkout the <NuxtLink to="/blog"> Blog </NuxtLink>
         </li>
         <li>
           Migration of the Glovo webapp from Angular to Vue.js. Here is a great summary of it

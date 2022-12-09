@@ -26,7 +26,7 @@ export default {
 
     <ul class="mt-4 list-none">
       <li v-for="post in formattedPosts" :key="post.path">
-        <g-link :to="post.path">
+        <NuxtLink :to="post.path">
           <article
             class="border border-light p-4 block rounded bg-white hover:bg-warningLight cursor-pointer"
           >
@@ -41,7 +41,7 @@ export default {
 
             <div>{{ post.summary }} ...</div>
           </article>
-        </g-link>
+        </NuxtLink>
       </li>
     </ul>
   </div>

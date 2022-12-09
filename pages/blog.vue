@@ -28,9 +28,7 @@ query {
 
 
 <template>
-  <Layout>
     <BlogPostsList :posts="$page.posts" />
-  </Layout>
 </template>
 
 

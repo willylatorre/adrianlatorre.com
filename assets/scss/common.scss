@@ -1,5 +1,5 @@
 @import "./vars";
-@import './bulma';
+// @import './bulma';
 
 .highlight {
   background-color: whitesmoke;
@@ -60,9 +60,11 @@
     margin: 20px 0;
     line-height: 1.4em;
   }
+
   &:first-child {
     padding-top: 10px;
   }
+
   &-highlight {
     border-left: 2px solid;
   }
@@ -90,10 +92,10 @@
   strong {
     color: #363636;
     font-weight: 700;
-  
-    
+
+
   }
-  
+
 
   &_dark {
     & h1 {
@@ -101,15 +103,15 @@
     }
 
 
-  strong {
-    color: #93a1a1;
-    font-weight: 700;
-  
-   
-      
+    strong {
+      color: #93a1a1;
+      font-weight: 700;
 
-  }
-  
+
+
+
+    }
+
   }
 
   & h2 {
@@ -122,12 +124,12 @@
     }
   }
 
-  
+
 
 }
 
 
 pre {
-  padding: 0px!important;
+  padding: 0px !important;
   text-align: left;
 }
