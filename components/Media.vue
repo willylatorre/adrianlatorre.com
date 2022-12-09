@@ -4,10 +4,11 @@ const darkMode = useState('darkMode', () => false)
 
 
 <template>
-  <div class="section" id="section-media" :class="{'section_dark': darkMode}">
+  <div class="section" id="section-media" :class="{ 'section_dark': darkMode }">
     <h1>Media</h1>
     <p>
-      Yes, <span class="highlight" :class="{'highlight_dark': darkMode}">a</span> <span class="strike">was</span> is famous and has appeared in the media.
+      Yes, <span class="highlight" :class="{ 'highlight_dark': darkMode }">a</span> <span class="strike">was</span> is
+      famous and has appeared in the media.
       Sharing knowledge has been always a must.
     </p>
 
@@ -21,19 +22,20 @@ const darkMode = useState('darkMode', () => false)
 
     <h2 class="mt-4">Articles</h2>
     <p>
-      <ul>
-        <li>
+    <ul>
+      <!-- <li>
           Checkout the <NuxtLink to="/blog"> Blog </NuxtLink>
-        </li>
-        <li>
-          Migration of the Glovo webapp from Angular to Vue.js. Here is a great summary of it
-          <a href="http://tech.glovoapp.com/a-wonderful-journey-migrating-from-angular-to-vue-js/" target="_new">A wonderful journey: migrating from Angular to Vue (and why not React)</a>
-        </li>
-        <li>
-          Más allá del conocimiento [ES]: Thoughts about learning business in an IT career.
-          <a href="/docs/articulotelecoscat.pdf">Read</a>
-        </li>
-      </ul>
+        </li> -->
+      <li>
+        Migration of the Glovo webapp from Angular to Vue.js. Here is a great summary of it
+        <a href="http://tech.glovoapp.com/a-wonderful-journey-migrating-from-angular-to-vue-js/" target="_new">A
+          wonderful journey: migrating from Angular to Vue (and why not React)</a>
+      </li>
+      <li>
+        Más allá del conocimiento [ES]: Thoughts about learning business in an IT career.
+        <a href="/docs/articulotelecoscat.pdf">Read</a>
+      </li>
+    </ul>
     </p>
   </div>
 </template>
@@ -44,6 +46,7 @@ const darkMode = useState('darkMode', () => false)
 .videos {
   display: flex;
   flex-wrap: wrap;
+
   & div {
     margin: 10px;
   }

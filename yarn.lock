@@ -4636,11 +4636,6 @@
   "resolved" "https://registry.npmjs.org/std-env/-/std-env-3.3.1.tgz"
   "version" "3.3.1"
 
-"sticky-sidebar@^3.3.1":
-  "integrity" "sha512-9ljX5GP9B1sov0kzGmQeQL5CdearSGH5y9cy3wE3wiGiLtgo577EekE8tNgnqr5ys/d++2+MlCCf4ICbNoaJ3A=="
-  "resolved" "https://registry.npmjs.org/sticky-sidebar/-/sticky-sidebar-3.3.1.tgz"
-  "version" "3.3.1"
-
 "streamsearch@^1.1.0":
   "integrity" "sha512-Mcc5wHehp9aXz1ax6bZUyY5afg9u2rv5cqQI3mRrYkGC8rW2hM02jWuwjtL++LS5qinSyhj2QfLyNsuc+VsExg=="
   "resolved" "https://registry.npmjs.org/streamsearch/-/streamsearch-1.1.0.tgz"
@@ -5204,18 +5199,6 @@
   "version" "4.1.6"
   dependencies:
     "@vue/devtools-api" "^6.4.5"
-
-"vue-switches@^2.0.1":
-  "integrity" "sha512-rDqBtK3TKy1pEvyZeWmnSHVeXqAcn+ozch7LiNThBzr1QMjg5rhvqBY7uWeli/baDDslf6CXmBJbHPwASJLqoA=="
-  "resolved" "https://registry.npmjs.org/vue-switches/-/vue-switches-2.0.1.tgz"
-  "version" "2.0.1"
-  dependencies:
-    "vue" "^2.2.6"
-
-"vue@^2.2.6":
-  "integrity" "sha512-VfPwgcGABbGAue9+sfrD4PuwFar7gPb1yl1UK1MwXoQPAw0BKSqWfoYCT/ThFrdEVWoI51dBuyCoiNU9bZDZxQ=="
-  "resolved" "https://registry.npmjs.org/vue/-/vue-2.6.11.tgz"
-  "version" "2.6.11"
 
 "vue@^3.0.0", "vue@^3.2.0", "vue@^3.2.25", "vue@^3.2.45", "vue@>=2.7 || >=3", "vue@3.2.45":
   "integrity" "sha512-9Nx/Mg2b2xWlXykmCwiTUCWHbWIj53bnkizBxKai1g61f2Xit700A1ljowpTIM11e3uipOeiPcSqnmBg6gyiaA=="

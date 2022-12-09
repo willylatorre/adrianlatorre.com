@@ -17,9 +17,7 @@
     "postcss": "^8.4.19",
     "sass": "^1.56.1",
     "sass-loader": "^13.2.0",
-    "sticky-sidebar": "^3.3.1",
     "tailwindcss": "^3.2.4",
-    "vue-switches": "^2.0.1",
     "zenscroll": "^4.0.2"
   },
   "dependencies": {
