@@ -6,17 +6,17 @@ import Sun from '../assets/img/sun.svg'
 import Moon from '../assets/img/moon.svg'
 
 const darkMode = useState('darkMode', () => false)
-const  themeColors =
-  {
-        light: {
-          background: "white",
-          color: "#2c3e50"
-        },
-        dark: {
-          background: "#002b36",
-          color: "#839496"
-        }
-      }
+const themeColors =
+{
+  light: {
+    background: "white",
+    color: "#2c3e50"
+  },
+  dark: {
+    background: "#002b36",
+    color: "#839496"
+  }
+}
 
 
 const themeStyle = computed(() => darkMode.value ? themeColors.dark : themeColors.light)
@@ -28,23 +28,23 @@ const themeStyle = computed(() => darkMode.value ? themeColors.dark : themeColor
       <header class="header">
 
         <div class="flex items-center">
-        <NuxtLink to="/" class="mr-2 text-xl">Adrian Latorre</NuxtLink>
-        <!-- <NuxtLink to="/blog" class="ml-2"> Blog </NuxtLink> -->
+          <NuxtLink to="/" class="mr-2 md:text-xl">Adrian Latorre</NuxtLink>
+          <!-- <NuxtLink to="/blog" class="ml-2"> Blog </NuxtLink> -->
         </div>
 
 
         <div class="social-media">
           <div class="flex items-center">
-            <Sun class="w-6" name="sun"  />
-            <Switch  />
-            <Moon class="w-6"  />
+            <Sun class="w-6" name="sun" />
+            <Switch />
+            <Moon class="w-6" />
           </div>
 
           <a href="https://github.com/willylatorre" target="_new" name="github">
-            <Github class="w-6"  />
+            <Github class="w-6" />
           </a>
           <a href="https://www.linkedin.com/in/adrianlatorre" target="_new" name="linkedin">
-            <Linkedin  />
+            <Linkedin />
           </a>
         </div>
       </header>
