@@ -16,6 +16,23 @@
         </p>
       </div>
 
+      <!-- Source Code Alert -->
+      <UAlert
+        title="Check the Source Code!"
+        description="This entire Vue + Go application is open source. Explore the complete implementation at GitHub."
+        icon="i-lucide-github"
+        color="success"
+        variant="soft"
+        :actions="[
+          {
+            label: 'View on GitHub',
+            to: 'https://github.com/willylatorre/adrianlatorre.com',
+            target: '_blank',
+            icon: 'i-lucide-external-link',
+          },
+        ]"
+      />
+
       <!-- Why Vue + Go -->
       <div>
         <h2 class="text-xl font-semibold mb-4">Why Vue + Go?</h2>
@@ -78,6 +95,29 @@
         </div>
       </div>
 
+      <!-- Deploy to Coolify -->
+      <div>
+        <h2 class="text-xl font-semibold mb-4">Deploy to Coolify</h2>
+        <p class="text-slate-700 mb-4">
+          Deploying complex applications with multiple technologies can be challenging. The easiest
+          way to deploy a Vue + Go application is using Docker, which packages everything into a
+          single container. Here's our Dockerfile that handles the multi-stage build:
+        </p>
+        <div class="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto">
+          <pre class="text-sm"><code>{{ dockerfileCode }}</code></pre>
+        </div>
+        <p class="text-slate-700 mt-4">This Dockerfile uses multi-stage builds to:</p>
+        <ul class="text-slate-700 ml-4 space-y-1">
+          <li>• Build the Vue frontend with Node.js</li>
+          <li>• Build the Go server with CGO enabled (required for SQLite)</li>
+          <li>• Create a minimal Alpine runtime image</li>
+        </ul>
+        <p class="text-slate-700 mt-4">
+          In Coolify, simply connect your repository and point it to this Dockerfile for seamless
+          deployment.
+        </p>
+      </div>
+
       <!-- Demo -->
       <div>
         <h2 class="text-xl font-semibold mb-4">Live Demo</h2>
@@ -96,6 +136,23 @@
           Demo: My portfolio website showcasing Vue + Go in production
         </p>
       </div>
+
+      <!-- Final Source Code CTA -->
+      <UAlert
+        title="Ready to Build Your Own?"
+        description="Fork this repository and adapt it for your own Vue + Go projects. The complete source code is available on GitHub."
+        icon="i-lucide-code"
+        color="success"
+        variant="soft"
+        :actions="[
+          {
+            label: 'Fork on GitHub',
+            to: 'https://github.com/willylatorre/adrianlatorre.com',
+            target: '_blank',
+            icon: 'i-lucide-git-fork',
+          },
+        ]"
+      />
     </div>
   </div>
 </template>
@@ -104,6 +161,67 @@
 export default {
   data() {
     return {
+      dockerfileCode: `# Multi-stage build for Vue (Vite) + Go (Gin + SQLite)
+
+# 1) Build frontend
+FROM node:22-alpine AS client
+WORKDIR /app
+
+# Install deps
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy sources and build only the client (avoid running package.json build which also builds Go)
+COPY . .
+RUN npx vite build
+
+# 2) Build Go server with CGO (required for github.com/mattn/go-sqlite3)
+FROM golang:1.24-alpine AS server
+WORKDIR /app/server
+
+# Required toolchain for CGO/sqlite
+RUN apk add --no-cache build-base
+
+# Cache go modules first
+COPY server/go.mod server/go.sum ./
+RUN go mod download
+
+# Copy server sources
+COPY server/ .
+
+# Build statically-linked-ish binary with CGO enabled
+ENV CGO_ENABLED=1
+ENV GOOS=linux
+# Use default arch to let builder pick suitable target
+RUN go build -o /app/server/server-binary .
+
+# 3) Final runtime image
+FROM alpine:3.20
+WORKDIR /app/server
+
+# CA certs and timezone data (TLS & logs)
+RUN apk add --no-cache ca-certificates tzdata
+
+# Copy server binary
+COPY --from=server /app/server/server-binary ./server-binary
+
+# Copy built frontend into server/dist so the Go server can serve it from ./dist
+COPY --from=client /app/dist ./dist
+
+# Copy Vue source pages for context loader (server expects ../src/pages relative to this working dir)
+COPY --from=client /app/src/pages /app/src/pages
+
+# Expose the app port (configurable via PORT env)
+EXPOSE 8080
+
+# Default environment configuration
+ENV PORT=8080
+# Recommend overriding to a volume path in Coolify, e.g. /data/adrian.db
+ENV DB_PATH=/app/data/adrian.db
+ENV ENV=production
+
+# Run the server
+CMD ["./server-binary"]`,
       goServerCode: `package main
 
 import (
