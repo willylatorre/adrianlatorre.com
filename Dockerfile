@@ -41,15 +41,14 @@ RUN apk add --no-cache ca-certificates tzdata
 # Create a non-root user and group for security best practices
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Create a directory for the database and give ownership to the app user
-# This is the recommended target for your persistent volume mount.
-RUN mkdir -p /app/data && chown -R appuser:appgroup /app/data
-
-# Copy built artifacts and set permissions
+# Copy built artifacts first
 COPY --from=server /server-binary /app/server-binary
 COPY --from=client /app/dist /app/dist
 COPY --from=client /app/src/pages /app/src/pages
-RUN chown -R appuser:appgroup /app
+
+# Create a directory for the database and give ownership to the app user
+# This is the recommended target for your persistent volume mount.
+RUN mkdir -p /app/data && chown -R appuser:appgroup /app && chmod -R 755 /app
 
 # Switch to the non-root user
 USER appuser

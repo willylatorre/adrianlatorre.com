@@ -71,6 +71,11 @@ func main() {
 	r.Use(middleware.CORS())
 	log.Println("CORS middleware applied")
 
+	// Health check endpoint (no auth required)
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+
 	// API routes
 	log.Printf("Setting up API routes... for %v", gin.Mode())
 	api := r.Group("/api")
