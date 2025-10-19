@@ -47,3 +47,4 @@ Vagrantfile
 *.out
 coverage.out
 vendor/
+server-binary
