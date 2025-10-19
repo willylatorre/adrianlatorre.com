@@ -27,6 +27,7 @@ COPY server/ .
 # Build a statically-linked binary with CGO enabled
 ENV CGO_ENABLED=1
 ENV GOOS=linux
+ENV GIN_MODE=release
 RUN go build -o /server-binary .
 
 # ---- Stage 3: Create the Final Production Image ----
@@ -47,7 +48,8 @@ RUN mkdir -p /app/data && chown -R appuser:appgroup /app/data
 # Copy built artifacts and set permissions
 COPY --from=server /server-binary /app/server-binary
 COPY --from=client /app/dist /app/dist
-RUN chown appuser:appgroup /app/server-binary
+COPY --from=client /app/src/pages /app/src/pages
+RUN chown -R appuser:appgroup /app
 
 # Switch to the non-root user
 USER appuser

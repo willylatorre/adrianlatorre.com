@@ -20,6 +20,11 @@ import (
 
 func main() {
 	log.Println("Starting Playground server...")
+	
+	// Log working directory for debugging
+	if wd, err := os.Getwd(); err == nil {
+		log.Printf("Working directory: %s", wd)
+	}
 
 	// Load configuration
 	cfg := config.Load()
