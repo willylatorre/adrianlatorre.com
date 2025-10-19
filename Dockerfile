@@ -55,7 +55,8 @@ COPY --from=client /app/src/pages /app/src/pages
 RUN chown -R appuser:appgroup /app
 
 # Switch to the non-root user
-USER appuser
+# Temporarily commented out for debugging
+# USER appuser
 
 # Expose the app port (configurable via PORT env)
 EXPOSE 8080
