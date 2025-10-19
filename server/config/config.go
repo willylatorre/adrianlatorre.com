@@ -20,9 +20,9 @@ type Config struct {
 
 // Load reads configuration from environment variables with sensible defaults
 func Load() *Config {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Failed to load environment variables: %v", err)
+	// Load .env if present; ignore if missing (production typically injects env vars)
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found; using environment variables")
 	}
 
 	return &Config{
@@ -37,8 +37,6 @@ func Load() *Config {
 
 // getEnv retrieves an environment variable or returns a default value
 func getEnv(key, defaultValue string) string {
-	godotenv.Load()
-
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
@@ -47,8 +45,6 @@ func getEnv(key, defaultValue string) string {
 
 // getEnvAsInt retrieves an environment variable as int or returns a default value
 func getEnvAsInt(key string, defaultValue int) int {
-	godotenv.Load()
-
 	if value := os.Getenv(key); value != "" {
 		if intVal, err := strconv.Atoi(value); err == nil {
 			return intVal
