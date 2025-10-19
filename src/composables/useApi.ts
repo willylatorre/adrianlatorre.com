@@ -1,7 +1,7 @@
 import { ref, type Ref } from 'vue'
 import type { Coffee, ChatMessage, ImageGenerationResponse } from '@/types/api-generated'
 
-const API_BASE_URL = 'http://localhost:8080/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 export function useApi() {
   const loading: Ref<boolean> = ref(false)
@@ -44,7 +44,7 @@ export function useApi() {
     prompt: string,
     onChunk: (chunk: string) => void,
     onComplete: () => void,
-    onError: (error: string) => void
+    onError: (error: string) => void,
   ): Promise<void> => {
     try {
       const response = await fetch(`${API_BASE_URL}/chat/message`, {
