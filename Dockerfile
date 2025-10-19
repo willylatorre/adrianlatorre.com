@@ -11,7 +11,7 @@ COPY . .
 RUN npx vite build
 
 # ---- Stage 2: Build the Go Backend ----
-FROM golang:1.23-alpine AS server
+FROM golang:1.25-alpine AS server
 WORKDIR /app/server
 
 # Required toolchain for CGO (for github.com/mattn/go-sqlite3)
