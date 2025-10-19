@@ -4,12 +4,19 @@ import { useApi } from './useApi'
 
 type ChatRole = 'assistant' | 'user' | 'system'
 
+type MessagePart = { type: 'text'; text: string } | { type: 'image'; url: string; alt?: string }
+
 type UIChatMessage = Omit<ChatMessage, 'role'> & {
   role: ChatRole
-  parts: { type: 'text'; text: string }[]
+  parts: MessagePart[]
 }
 
-const createTextPart = (text: string) => ({ type: 'text' as const, text })
+const createTextPart = (text: string): MessagePart => ({ type: 'text' as const, text })
+const createImagePart = (url: string, alt?: string): MessagePart => ({
+  type: 'image' as const,
+  url,
+  alt,
+})
 
 const ensureFirstPart = (message: UIChatMessage) => {
   if (!message.parts.length) {
@@ -19,39 +26,27 @@ const ensureFirstPart = (message: UIChatMessage) => {
 }
 
 export function useChat() {
-  const { sendChatMessage } = useApi()
+  const { sendChatMessage, generateImage } = useApi()
 
   const messages = ref<UIChatMessage[]>([
     {
       id: '1',
       role: 'assistant',
       content:
-        "Hey! 👋 I'm an AI assistant built with Go and OpenAI. I'm here to help you learn about web development, Go, Vue, and clean architecture. Feel free to ask me anything, or try to find some easter eggs! 🥚",
+        "Hey there! 👋 I'm Adrian Latorre, and I'm excited to chat with you today. Feel free to ask me anything about my life, experiences, career, hobbies, or whatever you're curious about. What would you like to know?",
       parts: [
         createTextPart(
-          "Hey! 👋 I'm an AI assistant built with Go and OpenAI. I'm here to help you learn about web development, Go, Vue, and clean architecture. Feel free to ask me anything, or try to find some easter eggs! 🥚",
+          "Hey there! 👋 I'm Adrian Latorre, and I'm excited to chat with you today. Feel free to ask me anything about my life, experiences, career, hobbies, or whatever you're curious about. What would you like to know?",
         ),
       ],
       timestamp: new Date(Date.now() - 60000).toISOString(),
     },
     {
       id: '2',
-      role: 'user',
-      content: 'What is this project about?',
-      parts: [createTextPart('What is this project about?')],
-      timestamp: new Date(Date.now() - 45000).toISOString(),
-    },
-    {
-      id: '3',
       role: 'assistant',
-      content:
-        'This is a learning playground exploring the intersection of Go backends and modern Vue frontends. It demonstrates clean architecture, type safety with TypeScript, SQLite databases, and AI integration with OpenAI streaming. The entire codebase is designed to be educational and showcase best practices!',
-      parts: [
-        createTextPart(
-          'This is a learning playground exploring the intersection of Go backends and modern Vue frontends. It demonstrates clean architecture, type safety with TypeScript, SQLite databases, and AI integration with OpenAI streaming. The entire codebase is designed to be educational and showcase best practices!',
-        ),
-      ],
-      timestamp: new Date(Date.now() - 30000).toISOString(),
+      content: ' ',
+      parts: [createImagePart('/interview-prompt.png')],
+      timestamp: new Date(Date.now() - 60000).toISOString(),
     },
   ])
 
@@ -89,7 +84,7 @@ export function useChat() {
       timestamp: new Date().toISOString(),
     }
 
-    const assistantTextPart = ensureFirstPart(assistantMessage)
+    const assistantTextPart = ensureFirstPart(assistantMessage) as { type: 'text'; text: string }
 
     messages.value.push(assistantMessage)
     currentAssistantMessage.value = ''
@@ -101,17 +96,64 @@ export function useChat() {
       prompt,
       (chunk: string) => {
         // Append chunk to current message
+        console.log('📦 Chunk received:', chunk)
         status.value = 'streaming'
         currentAssistantMessage.value += chunk
         assistantMessage.content = currentAssistantMessage.value
-        if (assistantTextPart) {
-          assistantTextPart.text = currentAssistantMessage.value
-        }
+        // Update the text part and trigger reactivity
+        assistantMessage.parts = [createTextPart(currentAssistantMessage.value)]
       },
-      () => {
+      async () => {
         // Streaming complete
+        console.log('🎉 Streaming complete!')
         status.value = 'ready'
+        const finalContent = currentAssistantMessage.value
+        console.log('📝 Final content:', finalContent)
         currentAssistantMessage.value = ''
+
+        // Add system message indicating image generation
+        if (finalContent.trim()) {
+          console.log('🖼️ Starting image generation...')
+          const imageGenMessage: UIChatMessage = {
+            id: (Date.now() + 2).toString(),
+            role: 'system',
+            content: 'Generating an image to illustrate...',
+            parts: [createTextPart('Generating an image to illustrate...')],
+            timestamp: new Date().toISOString(),
+          }
+          messages.value.push(imageGenMessage)
+          console.log('✅ System message added:', imageGenMessage)
+
+          // Generate image
+          const imageUrl = await generateImage(finalContent)
+          console.log('🎨 Image URL:', imageUrl)
+
+          // Update system message with image or error
+          if (imageUrl) {
+            // Force reactivity by finding and updating the message in the array
+            const msgIndex = messages.value.findIndex(m => m.id === imageGenMessage.id)
+            if (msgIndex !== -1) {
+              messages.value[msgIndex] = {
+                ...imageGenMessage,
+                content: '',
+                parts: [createImagePart(imageUrl, 'Generated illustration')]
+              }
+            }
+            console.log('✅ Image part added')
+          } else {
+            const msgIndex = messages.value.findIndex(m => m.id === imageGenMessage.id)
+            if (msgIndex !== -1) {
+              messages.value[msgIndex] = {
+                ...imageGenMessage,
+                content: 'Could not generate image',
+                parts: [createTextPart('Could not generate image')]
+              }
+            }
+            console.log('❌ Image generation failed')
+          }
+        } else {
+          console.log('⚠️ No content to generate image from')
+        }
       },
       (error: string) => {
         // Error occurred

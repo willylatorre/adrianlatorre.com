@@ -48,3 +48,31 @@ func (h *ChatHandler) SendMessage(c *gin.Context) {
 		log.Printf("ERROR: Stream error: %v", err)
 	}
 }
+
+// GenerateImage handles image generation requests
+func (h *ChatHandler) GenerateImage(c *gin.Context) {
+	var req models.ImageGenerationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("ERROR: Invalid image generation request: %v", err)
+		c.JSON(400, gin.H{
+			"error": "Invalid request format",
+		})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 1*time.Minute)
+	defer cancel()
+
+	imageURL, err := h.chatService.GenerateImage(ctx, req.Prompt)
+	if err != nil {
+		log.Printf("ERROR: Image generation error: %v", err)
+		c.JSON(500, gin.H{
+			"error": "Failed to generate image",
+		})
+		return
+	}
+
+	c.JSON(200, models.ImageGenerationResponse{
+		ImageURL: imageURL,
+	})
+}

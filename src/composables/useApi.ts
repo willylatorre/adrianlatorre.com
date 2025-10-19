@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue'
-import type { Coffee, ChatMessage } from '@/types/api-generated'
+import type { Coffee, ChatMessage, ImageGenerationResponse } from '@/types/api-generated'
 
 const API_BASE_URL = 'http://localhost:8080/api'
 
@@ -123,11 +123,35 @@ export function useApi() {
     }
   }
 
+  const generateImage = async (prompt: string): Promise<string | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/chat/generate-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      })
+
+      if (!response.ok) {
+        console.error('Failed to generate image')
+        return null
+      }
+
+      const result: ImageGenerationResponse = await response.json()
+      return result.image_url
+    } catch (err) {
+      console.error('Error generating image:', err)
+      return null
+    }
+  }
+
   return {
     loading,
     error,
     getCoffee,
     incrementCoffee,
     sendChatMessage,
+    generateImage,
   }
 }

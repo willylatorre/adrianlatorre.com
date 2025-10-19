@@ -40,3 +40,15 @@ export interface ChatRequest {
 export interface ChatResponse {
   chunk: string;
 }
+/**
+ * ImageGenerationRequest represents a request to generate an image
+ */
+export interface ImageGenerationRequest {
+  prompt: string;
+}
+/**
+ * ImageGenerationResponse represents the response from image generation
+ */
+export interface ImageGenerationResponse {
+  image_url: string;
+}

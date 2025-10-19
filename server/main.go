@@ -20,7 +20,6 @@ func main() {
 	// Load configuration
 	cfg := config.Load()
 	log.Printf("Starting server in %s mode", cfg.Environment)
-	log.Printf("OpenAI API Key: %s", cfg.OpenAIAPIKey)
 
 	// Initialize database with configuration
 	db, err := database.InitDB(cfg.DatabasePath, cfg.MaxOpenConns, cfg.MaxIdleConns)
@@ -32,8 +31,9 @@ func main() {
 	// Initialize repository layer
 	coffeeRepo := repository.NewCoffeeRepository(db)
 
-	// Initialize services
-	openAIService := services.NewOpenAIService(cfg.OpenAIAPIKey)
+	// Initialize services with context from Vue pages
+	pagesDir := "../src/pages" // Relative to server directory
+	openAIService := services.NewOpenAIService(cfg.OpenAIAPIKey, pagesDir)
 
 	// Initialize handlers with dependency injection
 	coffeeHandler := handlers.NewCoffeeHandler(coffeeRepo)
@@ -55,6 +55,7 @@ func main() {
 		api.GET("/coffee", coffeeHandler.GetCoffee)
 		api.POST("/coffee/increment", coffeeHandler.IncrementCoffee)
 		api.POST("/chat/message", chatHandler.SendMessage)
+		api.POST("/chat/generate-image", chatHandler.GenerateImage)
 	}
 
 	// Catch-all handler: serve index.html for client-side routing

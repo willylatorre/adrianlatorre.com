@@ -67,3 +67,13 @@ type ChatRequest struct {
 type ChatResponse struct {
 	Chunk string `json:"chunk"`
 }
+
+// ImageGenerationRequest represents a request to generate an image
+type ImageGenerationRequest struct {
+	Prompt string `json:"prompt"`
+}
+
+// ImageGenerationResponse represents the response from image generation
+type ImageGenerationResponse struct {
+	ImageURL string `json:"image_url"`
+}

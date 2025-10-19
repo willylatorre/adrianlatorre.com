@@ -18,12 +18,11 @@ const handleSubmit = async (event?: Event) => {
   <div class="space-y-4">
     <!-- Page Header -->
     <div>
-      <h1 class="text-3xl font-bold text-slate-900 mb-2">AI Chat</h1>
+      <h1 class="text-3xl font-bold text-slate-900 mb-2">AI Interview Experiment</h1>
       <p class="text-slate-600 max-w-2xl space-y-2">
         <span>
-          Explore interactions with GenAI powered by a Golang server and OpenAI. This is a learning
-          project to understand streaming responses, clean architecture, and AI integration. Try
-          chatting and see if you can find any easter eggs! 🥚
+          Interview AI Adrian about his life and experiences. Each response generates a unique
+          32-bit pixel art visualization, creating a visual story alongside the conversation. 🎮✨
         </span>
         <span>
           Using the
@@ -35,7 +34,7 @@ const handleSubmit = async (event?: Event) => {
           >
             official openai-go SDK
           </a>
-          under the hood.
+          for chat and DALL-E for image generation.
         </span>
       </p>
     </div>
@@ -43,13 +42,48 @@ const handleSubmit = async (event?: Event) => {
     <!-- Chat Palette -->
     <div class="mt-[3rem]">
       <UChatPalette class="h-[28rem] border border-slate-200 rounded overflow-hidden">
-        <UChatMessages :messages="messages" :status="status" :should-auto-scroll="true" />
+        <UChatMessages
+          :assistant="{ variant: 'outline' }"
+          :messages="messages as any"
+          :status="status"
+          :should-auto-scroll="true"
+        >
+          <UChatMessage
+            v-for="message in messages"
+            :key="message.id"
+            v-bind="
+              {
+                ...message,
+                ...(message.role === 'user'
+                  ? { side: 'right' as const, variant: 'soft' as const }
+                  : { side: 'left' as const, variant: 'outline' as const }),
+              } as any
+            "
+          >
+            <template #content>
+              <div class="space-y-1">
+                <template v-for="(part, index) in message.parts" :key="index">
+                  <div v-if="part.type === 'text'">
+                    {{ part.text }}
+                  </div>
+                  <div v-else-if="part.type === 'image'">
+                    <img
+                      :src="part.url"
+                      :alt="part.alt || 'Generated illustration'"
+                      class="rounded w-64 h-64 object-cover shadow-md"
+                    />
+                  </div>
+                </template>
+              </div>
+            </template>
+          </UChatMessage>
+        </UChatMessages>
 
         <template #prompt>
           <UContainer class="flex flex-col gap-3 py-4 bg-slate-100">
             <UChatPrompt
               v-model="input"
-              placeholder="Ask me anything about Go, Vue, or try to find easter eggs..."
+              placeholder="Ask Adrian about his experiences..."
               @submit="handleSubmit"
             >
               <UChatPromptSubmit :status="status" />
