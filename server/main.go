@@ -78,8 +78,8 @@ func main() {
 	api := r.Group("/api")
 	{
 		// Health check endpoint (no auth required)
-		api.GET("/health", func(c *gin.Context) {
-			c.JSON(200, gin.H{"status": "ok"})
+		api.GET("/ping", func(c *gin.Context) {
+			c.String(http.StatusOK, "pong")
 		})
 		api.GET("/coffee", coffeeHandler.GetCoffee)
 		api.POST("/coffee/increment", coffeeHandler.IncrementCoffee)
