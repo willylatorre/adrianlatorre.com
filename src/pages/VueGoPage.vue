@@ -1,5 +1,185 @@
-<script setup lang="ts">
-// Vue + Go page - explaining the tech stack combination
+<script lang="ts" setup>
+const dockerfileCode = `# Multi-stage build for Vue (Vite) + Go (Gin + SQLite)
+
+# 1) Build frontend
+FROM node:22-alpine AS client
+WORKDIR /app
+
+# Install deps
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# Copy sources and build only the client (avoid running package.json build which also builds Go)
+COPY . .
+RUN npx vite build
+
+# 2) Build Go server with CGO (required for github.com/mattn/go-sqlite3)
+FROM golang:1.24-alpine AS server
+WORKDIR /app/server
+
+# Required toolchain for CGO/sqlite
+RUN apk add --no-cache build-base
+
+# Cache go modules first
+COPY server/go.mod server/go.sum ./
+RUN go mod download
+
+# Copy server sources
+COPY server/ .
+
+# Build statically-linked-ish binary with CGO enabled
+ENV CGO_ENABLED=1
+ENV GOOS=linux
+# Use default arch to let builder pick suitable target
+RUN go build -o /app/server/server-binary .
+
+# 3) Final runtime image
+FROM alpine:3.20
+WORKDIR /app/server
+
+# CA certs and timezone data (TLS & logs)
+RUN apk add --no-cache ca-certificates tzdata
+
+# Copy server binary
+COPY --from=server /app/server/server-binary ./server-binary
+
+# Copy built frontend into server/dist so the Go server can serve it from ./dist
+COPY --from=client /app/dist ./dist
+
+# Copy Vue source pages for context loader (server expects ../src/pages relative to this working dir)
+COPY --from=client /app/src/pages /app/src/pages
+
+# Expose the app port (configurable via PORT env)
+EXPOSE 8080
+
+# Default environment configuration
+ENV PORT=8080
+# Recommend overriding to a volume path in Coolify, e.g. /data/adrian.db
+ENV DB_PATH=/app/data/adrian.db
+ENV ENV=production
+
+# Run the server
+CMD ["./server-binary"]`
+const goServerCode = `package main
+
+import (
+	"log"
+	"os"
+	"os/signal"
+	"strings"
+	"net/http"
+	"path/filepath"
+	"syscall"
+
+	"github.com/gin-gonic/gin"
+	"playground-server/config"
+	"playground-server/database"
+	"playground-server/handlers"
+	"playground-server/middleware"
+	"playground-server/repository"
+	"playground-server/services"
+)
+
+func main() {
+	// Load configuration
+	cfg := config.Load()
+	log.Printf("Starting server in %s mode", cfg.Environment)
+
+	// Initialize database with configuration
+	db, err := database.InitDB(cfg.DatabasePath, cfg.MaxOpenConns, cfg.MaxIdleConns)
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	defer db.Close()
+
+
+    // All of those are my server initializations, you will probably not have those
+	// Initialize repository layer
+	coffeeRepo := repository.NewCoffeeRepository(db)
+
+	// Initialize services with context from Vue pages
+	openAIService := services.NewOpenAIService(cfg.OpenAIAPIKey)
+
+	// Initialize handlers with dependency injection
+	coffeeHandler := handlers.NewCoffeeHandler(coffeeRepo)
+	chatHandler := handlers.NewChatHandler(openAIService)
+
+	// Initialize Gin router
+	r := gin.Default()
+
+	// Configure trusted proxies (development: trust localhost only)
+	r.SetTrustedProxies(nil)
+
+	// Apply middleware
+	r.Use(middleware.CORS())
+
+	// API routes, whatever the backend is
+	api := r.Group("/api")
+	{
+		api.GET("/coffee", coffeeHandler.GetCoffee)
+		api.POST("/coffee/increment", coffeeHandler.IncrementCoffee)
+		api.POST("/chat/message", chatHandler.SendMessage)
+		api.POST("/chat/generate-image", chatHandler.GenerateImage)
+        ...
+	}
+
+	// Static file serving for VUE
+	r.StaticFS("/assets", http.Dir(filepath.Join(".", "dist", "assets")))
+	r.StaticFile("/favicon.png", filepath.Join(".", "dist", "favicon.png"))
+	r.StaticFile("/profile-2.jpg", filepath.Join(".", "dist", "profile-2.jpg"))
+	r.StaticFile("/interview-prompt.png", filepath.Join(".", "dist", "interview-prompt.png"))
+
+	// Catch-all handler: serve index.html for client-side routing, the VUE part basically
+	r.NoRoute(func(c *gin.Context) {
+		// Only serve the Vue app for non-API routes
+		if !strings.HasPrefix(c.Request.URL.Path, "/api") {
+			c.File(filepath.Join(".", "dist", "index.html"))
+		}
+	})
+
+	// Start server
+	port := ":" + cfg.ServerPort
+	log.Printf("Server starting on port %s", port)
+	go func() {
+		if err := r.Run(port); err != nil {
+			log.Fatalf("Failed to start server: %v", err)
+		}
+	}()
+}`
+
+const packageCommands = [
+  {
+    name: 'Development',
+    command: 'npm run dev',
+    description: 'Run both Vue dev server and Go server concurrently',
+  },
+  {
+    name: 'Vue Dev Server',
+    command: 'vite --host',
+    description: 'Start Vite development server for Vue',
+  },
+  {
+    name: 'Go Server',
+    command: 'cd server && go run main.go',
+    description: 'Start Go server from server directory',
+  },
+  {
+    name: 'Build',
+    command: 'vite build && (cd server && go build -o ../server-binary .)',
+    description:
+      'Build Vue app and compile Go binary. The Go binary will be in the root directory.',
+  },
+  {
+    name: 'Production',
+    command: './server-binary',
+    description: 'Run the compiled Go binary with built Vue assets',
+  },
+  {
+    name: 'Type Generation',
+    command: 'cd server && ~/go/bin/tygo generate',
+    description: 'Generate TypeScript types from Go structs using tygo',
+  },
+]
 </script>
 
 <template>
@@ -156,192 +336,3 @@
     </div>
   </div>
 </template>
-
-<script lang="ts">
-export default {
-  data() {
-    return {
-      dockerfileCode: `# Multi-stage build for Vue (Vite) + Go (Gin + SQLite)
-
-# 1) Build frontend
-FROM node:22-alpine AS client
-WORKDIR /app
-
-# Install deps
-COPY package.json package-lock.json ./
-RUN npm ci
-
-# Copy sources and build only the client (avoid running package.json build which also builds Go)
-COPY . .
-RUN npx vite build
-
-# 2) Build Go server with CGO (required for github.com/mattn/go-sqlite3)
-FROM golang:1.24-alpine AS server
-WORKDIR /app/server
-
-# Required toolchain for CGO/sqlite
-RUN apk add --no-cache build-base
-
-# Cache go modules first
-COPY server/go.mod server/go.sum ./
-RUN go mod download
-
-# Copy server sources
-COPY server/ .
-
-# Build statically-linked-ish binary with CGO enabled
-ENV CGO_ENABLED=1
-ENV GOOS=linux
-# Use default arch to let builder pick suitable target
-RUN go build -o /app/server/server-binary .
-
-# 3) Final runtime image
-FROM alpine:3.20
-WORKDIR /app/server
-
-# CA certs and timezone data (TLS & logs)
-RUN apk add --no-cache ca-certificates tzdata
-
-# Copy server binary
-COPY --from=server /app/server/server-binary ./server-binary
-
-# Copy built frontend into server/dist so the Go server can serve it from ./dist
-COPY --from=client /app/dist ./dist
-
-# Copy Vue source pages for context loader (server expects ../src/pages relative to this working dir)
-COPY --from=client /app/src/pages /app/src/pages
-
-# Expose the app port (configurable via PORT env)
-EXPOSE 8080
-
-# Default environment configuration
-ENV PORT=8080
-# Recommend overriding to a volume path in Coolify, e.g. /data/adrian.db
-ENV DB_PATH=/app/data/adrian.db
-ENV ENV=production
-
-# Run the server
-CMD ["./server-binary"]`,
-      goServerCode: `package main
-
-import (
-	"log"
-	"os"
-	"os/signal"
-	"strings"
-	"net/http"
-	"path/filepath"
-	"syscall"
-
-	"github.com/gin-gonic/gin"
-	"playground-server/config"
-	"playground-server/database"
-	"playground-server/handlers"
-	"playground-server/middleware"
-	"playground-server/repository"
-	"playground-server/services"
-)
-
-func main() {
-	// Load configuration
-	cfg := config.Load()
-	log.Printf("Starting server in %s mode", cfg.Environment)
-
-	// Initialize database with configuration
-	db, err := database.InitDB(cfg.DatabasePath, cfg.MaxOpenConns, cfg.MaxIdleConns)
-	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
-	}
-	defer db.Close()
-
-
-    // All of those are my server initializations, you will probably not have those
-	// Initialize repository layer
-	coffeeRepo := repository.NewCoffeeRepository(db)
-
-	// Initialize services with context from Vue pages
-	openAIService := services.NewOpenAIService(cfg.OpenAIAPIKey)
-
-	// Initialize handlers with dependency injection
-	coffeeHandler := handlers.NewCoffeeHandler(coffeeRepo)
-	chatHandler := handlers.NewChatHandler(openAIService)
-
-	// Initialize Gin router
-	r := gin.Default()
-
-	// Configure trusted proxies (development: trust localhost only)
-	r.SetTrustedProxies(nil)
-
-	// Apply middleware
-	r.Use(middleware.CORS())
-
-	// API routes, whatever the backend is
-	api := r.Group("/api")
-	{
-		api.GET("/coffee", coffeeHandler.GetCoffee)
-		api.POST("/coffee/increment", coffeeHandler.IncrementCoffee)
-		api.POST("/chat/message", chatHandler.SendMessage)
-		api.POST("/chat/generate-image", chatHandler.GenerateImage)
-        ...
-	}
-
-	// Static file serving for VUE
-	r.StaticFS("/assets", http.Dir(filepath.Join(".", "dist", "assets")))
-	r.StaticFile("/favicon.png", filepath.Join(".", "dist", "favicon.png"))
-	r.StaticFile("/profile-2.jpg", filepath.Join(".", "dist", "profile-2.jpg"))
-	r.StaticFile("/interview-prompt.png", filepath.Join(".", "dist", "interview-prompt.png"))
-
-	// Catch-all handler: serve index.html for client-side routing, the VUE part basically
-	r.NoRoute(func(c *gin.Context) {
-		// Only serve the Vue app for non-API routes
-		if !strings.HasPrefix(c.Request.URL.Path, "/api") {
-			c.File(filepath.Join(".", "dist", "index.html"))
-		}
-	})
-
-	// Start server
-	port := ":" + cfg.ServerPort
-	log.Printf("Server starting on port %s", port)
-	go func() {
-		if err := r.Run(port); err != nil {
-			log.Fatalf("Failed to start server: %v", err)
-		}
-	}()
-}`,
-      packageCommands: [
-        {
-          name: 'Development',
-          command: 'npm run dev',
-          description: 'Run both Vue dev server and Go server concurrently',
-        },
-        {
-          name: 'Vue Dev Server',
-          command: 'vite --host',
-          description: 'Start Vite development server for Vue',
-        },
-        {
-          name: 'Go Server',
-          command: 'cd server && go run main.go',
-          description: 'Start Go server from server directory',
-        },
-        {
-          name: 'Build',
-          command: 'vite build && (cd server && go build -o ../server-binary .)',
-          description:
-            'Build Vue app and compile Go binary. The Go binary will be in the root directory.',
-        },
-        {
-          name: 'Production',
-          command: './server-binary',
-          description: 'Run the compiled Go binary with built Vue assets',
-        },
-        {
-          name: 'Type Generation',
-          command: 'cd server && ~/go/bin/tygo generate',
-          description: 'Generate TypeScript types from Go structs using tygo',
-        },
-      ],
-    }
-  },
-}
-</script>
