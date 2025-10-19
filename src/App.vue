@@ -67,7 +67,7 @@ const searchGroups = [
 const links = [
   {
     label: 'Links',
-    type: 'label',
+    type: 'label' as const,
   },
   {
     label: 'About Me',
@@ -100,7 +100,6 @@ const links = [
         label: 'Vue + Go',
         icon: 'i-lucide-code',
         to: '/vue-go',
-        disabled: true,
       },
     ],
   },

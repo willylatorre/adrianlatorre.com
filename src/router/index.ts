@@ -24,6 +24,11 @@ const router = createRouter({
       component: () => import('../pages/ItemsPage.vue'),
     },
     {
+      path: '/vue-go',
+      name: 'Vue + Go',
+      component: () => import('../pages/VueGoPage.vue'),
+    },
+    {
       path: '/settings',
       name: 'Settings',
       component: () => import('../pages/SettingsPage.vue'),

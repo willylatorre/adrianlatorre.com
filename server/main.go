@@ -54,7 +54,6 @@ func main() {
 	// API routes
 	api := r.Group("/api")
 	{
-		api.GET("/health", handlers.HealthCheck)
 		api.GET("/coffee", coffeeHandler.GetCoffee)
 		api.POST("/coffee/increment", coffeeHandler.IncrementCoffee)
 		api.POST("/chat/message", chatHandler.SendMessage)
