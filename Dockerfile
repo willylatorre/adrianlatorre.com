@@ -48,7 +48,11 @@ COPY --from=client /app/src/pages /app/src/pages
 
 # Create a directory for the database and give ownership to the app user
 # This is the recommended target for your persistent volume mount.
-RUN mkdir -p /app/data && chown -R appuser:appgroup /app && chmod -R 755 /app
+# Commented out for now - using in-memory database
+# RUN mkdir -p /app/data && chown -R appuser:appgroup /app && chmod -R 755 /app
+
+# Set ownership to app user (simplified for in-memory DB)
+RUN chown -R appuser:appgroup /app
 
 # Switch to the non-root user
 USER appuser
@@ -59,8 +63,14 @@ EXPOSE 8080
 # --- Environment Configuration ---
 # You can override these in Coolify's environment variables section
 ENV PORT=8080
-# The DB_PATH should point to the persistent volume directory
-ENV DB_PATH=/app/data/adrian.db
+
+# Database configuration
+# Use in-memory database for now (no persistence, resets on restart)
+ENV DB_PATH=:memory:
+# To enable persistent storage, uncomment the line below and comment out the line above:
+# ENV DB_PATH=/app/data/adrian.db
+# Also uncomment the RUN mkdir line above and add a persistent volume in Coolify to /app/data
+
 ENV GIN_MODE=release
 
 # Run the server
