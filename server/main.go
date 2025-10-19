@@ -34,7 +34,7 @@ func main() {
 	coffeeRepo := repository.NewCoffeeRepository(db)
 
 	// Initialize services with context from Vue pages
-	pagesDir := "../src/pages" // Relative to server directory
+	pagesDir := "/app/src/pages" // Relative to server directory
 	openAIService := services.NewOpenAIService(cfg.OpenAIAPIKey, pagesDir)
 
 	// Initialize handlers with dependency injection
@@ -79,7 +79,7 @@ func main() {
 	r.NoRoute(func(c *gin.Context) {
 		// Only serve the Vue app for non-API routes
 		if !strings.HasPrefix(c.Request.URL.Path, "/api") {
-			c.File(filepath.Join(".", "dist", "index.html"))
+			c.File(filepath.Join("/app/dist", "index.html"))
 		}
 	})
 
