@@ -84,7 +84,7 @@ func main() {
 		var staticPath string
 		if wd, _ := os.Getwd(); strings.HasPrefix(wd, "/app") {
 			// Docker environment: absolute path
-			staticPath = "/dist"
+			staticPath = "/app/dist"
 		} else {
 			// Local development: relative to server directory
 			staticPath = "./dist"
