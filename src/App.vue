@@ -1,7 +1,12 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import AdrianStatus from './components/AdrianStatus.vue'
 import CoffeeCounter from './components/CoffeeCounter.vue'
+import ContactModal from './components/ContactModal.vue'
 import FunFacts from './components/FunFacts.vue'
+
+// Modal state
+const isModalOpen = ref(false)
 
 // Search groups for CommandPalette
 const searchGroups = [
@@ -79,17 +84,30 @@ const links = [
         icon: 'i-lucide-message-circle',
         to: '/ai-chat',
       },
+      {
+        label: 'Stocks',
+        icon: 'i-lucide-trending-up',
+        to: '/stocks',
+        disabled: true,
+      },
+      {
+        label: 'Workflows',
+        icon: 'i-lucide-workflow',
+        to: '/workflow',
+        disabled: true,
+      },
+      {
+        label: 'Vue + Go',
+        icon: 'i-lucide-code',
+        to: '/vue-go',
+        disabled: true,
+      },
     ],
   },
   {
     label: 'Pet projects',
     icon: 'i-lucide-play-circle',
     to: '/media',
-  },
-  {
-    label: 'Settings',
-    icon: 'i-lucide-settings',
-    to: '/settings',
   },
 ]
 </script>
@@ -106,7 +124,7 @@ const links = [
               <UIcon name="i-heroicons-code-bracket" class="w-3 h-3 text-white" />
             </div>
             <div class="flex-1">
-              <h2 class="font-semibold text-slate-900">Adrian Latorre</h2>
+              <h2 class="font-semibold text-slate-900">Playground</h2>
               <p class="text-xs text-slate-500 truncate">v1.37</p>
             </div>
           </div>
@@ -119,17 +137,7 @@ const links = [
 
         <!-- Footer -->
         <template #footer>
-          <div class="px-4 py-3 border-t border-slate-200">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center">
-                <UIcon name="i-heroicons-user" class="w-4 h-4 text-slate-600" />
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-xs font-medium text-slate-900">Developer</p>
-                <p class="text-xs text-slate-500 truncate">developer@example.com</p>
-              </div>
-            </div>
-          </div>
+          <ContactModal v-model="isModalOpen" />
         </template>
       </UDashboardSidebar>
 
@@ -137,7 +145,7 @@ const links = [
       <UDashboardPanel>
         <!-- Navbar -->
         <template #header>
-          <UDashboardNavbar title="Playground" :toggle="true">
+          <UDashboardNavbar title="Adrian's Playground" :toggle="false">
             <template #right>
               <div class="flex items-center gap-4">
                 <!-- Adrian Status -->
