@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"net/http"
+	"path/filepath"
 	"syscall"
 
 	"github.com/gin-gonic/gin"
@@ -43,7 +45,8 @@ func main() {
 	r := gin.Default()
 
 	// Configure trusted proxies (development: trust localhost only)
-	r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
+	// r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
+	r.SetTrustedProxies(nil)
 
 	// Apply middleware
 	r.Use(middleware.CORS())
@@ -58,11 +61,26 @@ func main() {
 		api.POST("/chat/generate-image", chatHandler.GenerateImage)
 	}
 
+
+
+	// --- Static File Serving ---
+	// This tells Gin to serve files from the './dist' directory.
+	// For example, a request to '/assets/index-a1b2c3d4.js' will serve
+	// the file './dist/assets/index-a1b2c3d4.js'.
+	// This is the key to fixing the MIME type error.
+	r.StaticFS("/assets", http.Dir(filepath.Join(".", "dist", "assets")))
+	r.StaticFile("/favicon.png", filepath.Join(".", "dist", "favicon.png"))
+	r.StaticFile("/profile-2.jpg", filepath.Join(".", "dist", "profile-2.jpg"))
+	r.StaticFile("/interview-prompt.png", filepath.Join(".", "dist", "interview-prompt.png"))
+	// Serve other static files if they exist at the root of dist
+	r.StaticFile("/manifest.json", filepath.Join(".", "dist", "manifest.json"))
+
+
 	// Catch-all handler: serve index.html for client-side routing
 	r.NoRoute(func(c *gin.Context) {
 		// Only serve the Vue app for non-API routes
 		if !strings.HasPrefix(c.Request.URL.Path, "/api") {
-			c.File("./dist/index.html")
+			c.File(filepath.Join(".", "dist", "index.html"))
 		}
 	})
 
