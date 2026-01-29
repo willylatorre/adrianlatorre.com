@@ -3,6 +3,12 @@ export type FrontmatterParseResult = {
   content: string
 }
 
+import { load as loadYaml } from 'js-yaml'
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 /**
  * Lightweight frontmatter parser for browser usage.
  *
@@ -31,26 +37,22 @@ export function parseFrontmatter(raw: string): FrontmatterParseResult {
   const fmBlock = normalized.slice(start.length, endIdx)
   const content = normalized.slice(endIdx + endMarker.length)
 
+  // Parse YAML frontmatter in a browser-safe way.
+  // We keep the return type narrow (string values) since the UI only needs
+  // a few simple fields (title/date/description).
+  let yamlData: unknown = {}
+  try {
+    yamlData = loadYaml(fmBlock)
+  } catch {
+    yamlData = {}
+  }
+
   const data: Record<string, string> = {}
-  for (const line of fmBlock.split('\n')) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith('#')) continue
-
-    const sep = trimmed.indexOf(':')
-    if (sep === -1) continue
-
-    const key = trimmed.slice(0, sep).trim()
-    if (!key) continue
-
-    let value = trimmed.slice(sep + 1).trim()
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1)
+  if (isRecord(yamlData)) {
+    for (const [key, value] of Object.entries(yamlData)) {
+      if (typeof value === 'string') data[key] = value
+      else if (typeof value === 'number' || typeof value === 'boolean') data[key] = String(value)
     }
-
-    data[key] = value
   }
 
   return { data, content }
