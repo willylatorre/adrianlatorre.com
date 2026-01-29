@@ -1,4 +1,22 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import DashboardPage from '../pages/DashboardPage.vue'
+
+function isChunkLoadError(err: unknown) {
+  if (!(err instanceof Error)) return false
+  return /Failed to fetch dynamically imported module|ChunkLoadError|Loading chunk .* failed/i.test(
+    err.message,
+  )
+}
+
+function lazy(importer: () => Promise<unknown>) {
+  return () =>
+    importer().catch((err) => {
+      // Common in SPAs after a new deploy: the user has a cached entry chunk that
+      // references a no-longer-existing lazy chunk. Reload to pick up the latest build.
+      if (isChunkLoadError(err)) window.location.reload()
+      return Promise.reject(err)
+    })
+}
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -6,42 +24,42 @@ const router = createRouter({
     {
       path: '/',
       name: 'About Me',
-      component: () => import('../pages/DashboardPage.vue'),
+      component: DashboardPage,
     },
     {
       path: '/blog',
       name: 'Blog',
-      component: () => import('../pages/BlogListPage.vue'),
+      component: lazy(() => import('../pages/BlogListPage.vue')),
     },
     {
       path: '/blog/:slug',
       name: 'Blog Post',
-      component: () => import('../pages/BlogPostPage.vue'),
+      component: lazy(() => import('../pages/BlogPostPage.vue')),
     },
     {
       path: '/ai-chat',
       name: 'AI Chat',
-      component: () => import('../pages/AIChatPage.vue'),
+      component: lazy(() => import('../pages/AIChatPage.vue')),
     },
     {
       path: '/media',
       name: 'Media',
-      component: () => import('../pages/MediaPage.vue'),
+      component: lazy(() => import('../pages/MediaPage.vue')),
     },
     {
       path: '/items',
       name: 'Items',
-      component: () => import('../pages/ItemsPage.vue'),
+      component: lazy(() => import('../pages/ItemsPage.vue')),
     },
     {
       path: '/vue-go',
       name: 'Vue + Go',
-      component: () => import('../pages/VueGoPage.vue'),
+      component: lazy(() => import('../pages/VueGoPage.vue')),
     },
     {
       path: '/settings',
       name: 'Settings',
-      component: () => import('../pages/SettingsPage.vue'),
+      component: lazy(() => import('../pages/SettingsPage.vue')),
     },
   ],
 })
