@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import matter from 'gray-matter'
 import { computed } from 'vue'
+import { parseFrontmatter } from '@/utils/frontmatter'
 
 type BlogPost = {
   slug: string
@@ -34,7 +34,7 @@ const rawPosts = import.meta.glob('../content/blog/*.md', {
 const posts = computed<BlogPost[]>(() => {
   return Object.entries(rawPosts)
     .map(([path, raw]) => {
-      const { data, content } = matter(raw)
+      const { data, content } = parseFrontmatter(raw)
       const slug = path.split('/').pop()?.replace(/\.md$/, '') ?? path
 
       const title = typeof data.title === 'string' ? data.title : slug

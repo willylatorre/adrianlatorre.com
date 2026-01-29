@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import matter from 'gray-matter'
 import { ref, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Component } from 'vue'
+import { parseFrontmatter } from '@/utils/frontmatter'
 
 type BlogFrontmatter = {
   title: string
@@ -66,7 +66,7 @@ watchEffect((onInvalidate) => {
     const [mod, raw] = await Promise.all([loadMd(), loadRaw()])
     if (cancelled) return
 
-    const { data } = matter(raw)
+    const { data } = parseFrontmatter(raw)
     const title = typeof data.title === 'string' ? data.title : slug
     const date = typeof data.date === 'string' ? data.date : undefined
     const description = typeof data.description === 'string' ? data.description : undefined
