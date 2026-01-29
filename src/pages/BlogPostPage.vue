@@ -237,4 +237,8 @@ watchEffect((onInvalidate) => {
   background: transparent;
   padding: 0;
 }
+
+.blog-prose :deep(pre code.hljs) {
+  padding: 0;
+}
 </style>
