@@ -52,3 +52,60 @@ export interface ImageGenerationRequest {
 export interface ImageGenerationResponse {
   image_url: string
 }
+/**
+ * CalcomAttendee represents an attendee in a Cal.com booking
+ */
+export interface CalcomAttendee {
+  id: number /* int */
+  email: string
+  name: string
+  timeZone: string
+}
+/**
+ * CalcomUser represents the host user in a Cal.com booking
+ */
+export interface CalcomUser {
+  id: number /* int */
+  email: string
+  name: string
+  timeZone: string
+}
+/**
+ * CalcomPayment represents a payment associated with a Cal.com booking
+ */
+export interface CalcomPayment {
+  id: number /* int */
+  amount: number /* float64 */
+  currency: string
+  success: boolean
+}
+/**
+ * CalcomBooking represents a booking from Cal.com API
+ */
+export interface CalcomBooking {
+  id: number /* int */
+  uid: string
+  title: string
+  description: string
+  startTime: string
+  endTime: string
+  status: string
+  attendees: CalcomAttendee[]
+  user: CalcomUser
+  payment: CalcomPayment[]
+  metadata: { [key: string]: unknown }
+  eventTypeId: number /* int */
+  cancellationReason?: string
+}
+/**
+ * CalcomDashboardStats contains aggregated statistics for the wifi dashboard
+ */
+export interface CalcomDashboardStats {
+  totalStudents: number /* int */
+  lessonsThisMonth: number /* int */
+  totalEarnedThisMonth: number /* float64 */
+  currency: string
+  upcomingLessons: CalcomBooking[]
+  lastLesson: CalcomBooking | null
+  allBookings: CalcomBooking[]
+}

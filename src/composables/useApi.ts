@@ -1,5 +1,11 @@
 import { ref, type Ref } from 'vue'
-import type { Coffee, ChatMessage, ImageGenerationResponse } from '@/types/api-generated'
+import type {
+  Coffee,
+  ChatMessage,
+  ImageGenerationResponse,
+  CalcomDashboardStats,
+  CalcomBooking,
+} from '@/types/api-generated'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
@@ -146,6 +152,94 @@ export function useApi() {
     }
   }
 
+  // Cal.com API functions
+  const getCalcomStatus = async (): Promise<{ configured: boolean } | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/calcom/status`)
+      const result = await response.json()
+      return result
+    } catch (err) {
+      console.error('Failed to get Cal.com status:', err)
+      return null
+    }
+  }
+
+  const getCalcomDashboard = async (): Promise<CalcomDashboardStats | null> => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await fetch(`${API_BASE_URL}/calcom/dashboard`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch dashboard stats')
+      }
+      const result = await response.json()
+      return result.data
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch dashboard stats'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const getCalcomBookings = async (): Promise<CalcomBooking[] | null> => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await fetch(`${API_BASE_URL}/calcom/bookings`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch bookings')
+      }
+      const result = await response.json()
+      return result.data
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch bookings'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const getUpcomingBookings = async (): Promise<CalcomBooking[] | null> => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await fetch(`${API_BASE_URL}/calcom/bookings/upcoming`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch upcoming bookings')
+      }
+      const result = await response.json()
+      return result.data
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch upcoming bookings'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const getPastBookings = async (): Promise<CalcomBooking[] | null> => {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await fetch(`${API_BASE_URL}/calcom/bookings/past`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to fetch past bookings')
+      }
+      const result = await response.json()
+      return result.data
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch past bookings'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     loading,
     error,
@@ -153,5 +247,11 @@ export function useApi() {
     incrementCoffee,
     sendChatMessage,
     generateImage,
+    // Cal.com functions
+    getCalcomStatus,
+    getCalcomDashboard,
+    getCalcomBookings,
+    getUpcomingBookings,
+    getPastBookings,
   }
 }

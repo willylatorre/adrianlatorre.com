@@ -68,6 +68,18 @@ const searchGroups = [
       },
     ],
   },
+  {
+    id: 'wifi',
+    label: 'Wifi',
+    items: [
+      {
+        label: 'Wifi Dashboard',
+        suffix: 'Lessons and earnings from Cal.com',
+        to: '/wifi/dashboard',
+        icon: 'i-lucide-layout-dashboard',
+      },
+    ],
+  },
 ]
 
 const links = [
@@ -118,6 +130,18 @@ const links = [
     label: 'Pet projects',
     icon: 'i-lucide-play-circle',
     to: '/media',
+  },
+  {
+    label: 'Wifi',
+    icon: 'i-lucide-wifi',
+    defaultOpen: true,
+    children: [
+      {
+        label: 'Dashboard',
+        icon: 'i-lucide-layout-dashboard',
+        to: '/wifi/dashboard',
+      },
+    ],
   },
 ]
 </script>

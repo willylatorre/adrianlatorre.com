@@ -61,6 +61,11 @@ const router = createRouter({
       name: 'Settings',
       component: lazy(() => import('../pages/SettingsPage.vue')),
     },
+    {
+      path: '/wifi/dashboard',
+      name: 'Wifi Dashboard',
+      component: lazy(() => import('../pages/WifiDashboardPage.vue')),
+    },
   ],
 })
 
