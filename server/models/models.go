@@ -77,3 +77,55 @@ type ImageGenerationRequest struct {
 type ImageGenerationResponse struct {
 	ImageURL string `json:"image_url"`
 }
+
+// CalcomAttendee represents an attendee in a Cal.com booking
+type CalcomAttendee struct {
+	ID       int    `json:"id"`
+	Email    string `json:"email"`
+	Name     string `json:"name"`
+	TimeZone string `json:"timeZone"`
+}
+
+// CalcomUser represents the host user in a Cal.com booking
+type CalcomUser struct {
+	ID       int    `json:"id"`
+	Email    string `json:"email"`
+	Name     string `json:"name"`
+	TimeZone string `json:"timeZone"`
+}
+
+// CalcomPayment represents a payment associated with a Cal.com booking
+type CalcomPayment struct {
+	ID       int     `json:"id"`
+	Amount   float64 `json:"amount"`
+	Currency string  `json:"currency"`
+	Success  bool    `json:"success"`
+}
+
+// CalcomBooking represents a booking from Cal.com API
+type CalcomBooking struct {
+	ID                 int                    `json:"id"`
+	UID                string                 `json:"uid"`
+	Title              string                 `json:"title"`
+	Description        string                 `json:"description"`
+	StartTime          time.Time              `json:"startTime"`
+	EndTime            time.Time              `json:"endTime"`
+	Status             string                 `json:"status"`
+	Attendees          []CalcomAttendee       `json:"attendees"`
+	User               CalcomUser             `json:"user"`
+	Payment            []CalcomPayment        `json:"payment"`
+	Metadata           map[string]interface{} `json:"metadata"`
+	EventTypeID        int                    `json:"eventTypeId"`
+	CancellationReason string                 `json:"cancellationReason,omitempty"`
+}
+
+// CalcomDashboardStats contains aggregated statistics for the wifi dashboard
+type CalcomDashboardStats struct {
+	TotalStudents        int             `json:"totalStudents"`
+	LessonsThisMonth     int             `json:"lessonsThisMonth"`
+	TotalEarnedThisMonth float64         `json:"totalEarnedThisMonth"`
+	Currency             string          `json:"currency"`
+	UpcomingLessons      []CalcomBooking `json:"upcomingLessons"`
+	LastLesson           *CalcomBooking  `json:"lastLesson"`
+	AllBookings          []CalcomBooking `json:"allBookings"`
+}

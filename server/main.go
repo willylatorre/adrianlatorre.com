@@ -49,12 +49,17 @@ func main() {
 	pagesDir := "/app/src/pages" // Relative to server directory
 	log.Printf("Loading context from pages directory: %s", pagesDir)
 	openAIService := services.NewOpenAIService(cfg.OpenAIAPIKey, pagesDir)
+	
+	// Initialize Cal.com service
+	calcomService := services.NewCalcomService(cfg.CalAPIKey, cfg.CalAPIBaseURL)
+	log.Printf("Cal.com API configured: %v", calcomService.IsConfigured())
 	log.Println("Services initialized")
 
 	// Initialize handlers with dependency injection
 	log.Println("Initializing handlers...")
 	coffeeHandler := handlers.NewCoffeeHandler(coffeeRepo)
 	chatHandler := handlers.NewChatHandler(openAIService)
+	calcomHandler := handlers.NewCalcomHandler(calcomService)
 	log.Println("Handlers initialized")
 
 	// Initialize Gin router
@@ -85,6 +90,16 @@ func main() {
 		api.POST("/coffee/increment", coffeeHandler.IncrementCoffee)
 		api.POST("/chat/message", chatHandler.SendMessage)
 		api.POST("/chat/generate-image", chatHandler.GenerateImage)
+
+		// Cal.com / Wifi Dashboard routes
+		calcom := api.Group("/calcom")
+		{
+			calcom.GET("/status", calcomHandler.GetStatus)
+			calcom.GET("/dashboard", calcomHandler.GetDashboardStats)
+			calcom.GET("/bookings", calcomHandler.GetBookings)
+			calcom.GET("/bookings/upcoming", calcomHandler.GetUpcomingBookings)
+			calcom.GET("/bookings/past", calcomHandler.GetPastBookings)
+		}
 	}
 	log.Println("API routes configured")
 
