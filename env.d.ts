@@ -6,3 +6,7 @@ declare module '*.md' {
   const component: DefineComponent<Record<string, never>, Record<string, never>, unknown>
   export default component
 }
+
+declare function useToast(): {
+  add: (input: unknown) => void
+}

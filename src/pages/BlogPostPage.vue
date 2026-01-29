@@ -55,8 +55,15 @@ watchEffect((onInvalidate) => {
     return
   }
 
+  const loadMd = mdModules[mdPath]
+  const loadRaw = rawModules[rawPath]
+  if (!loadMd || !loadRaw) {
+    notFound.value = true
+    return
+  }
+
   ;(async () => {
-    const [mod, raw] = await Promise.all([mdModules[mdPath](), rawModules[rawPath]()])
+    const [mod, raw] = await Promise.all([loadMd(), loadRaw()])
     if (cancelled) return
 
     const { data } = matter(raw)
