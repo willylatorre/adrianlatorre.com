@@ -1,6 +1,6 @@
 import { fileURLToPath, URL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
-import hljs from 'highlight.js'
+import markdownItHighlightjs from 'markdown-it-highlightjs'
 
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
@@ -17,30 +17,7 @@ export default defineConfig({
         typographer: true,
       },
       markdownItSetup(md) {
-        md.options.highlight = (code: string, lang?: string) => {
-          if (lang && hljs.getLanguage(lang)) {
-            try {
-              return hljs.highlight(code, { language: lang }).value
-            } catch {
-              // fall through
-            }
-          }
-          return ''
-        }
-
-        md.renderer.rules.fence = (tokens, idx, options) => {
-          const token = tokens[idx]
-          const info = token.info ? md.utils.unescapeAll(token.info).trim() : ''
-          const langName = info ? info.split(/\s+/g)[0] : ''
-
-          let highlighted = options.highlight?.(token.content, langName, '') ?? ''
-          if (!highlighted) highlighted = md.utils.escapeHtml(token.content)
-
-          const langClass = langName ? `${options.langPrefix}${langName}` : ''
-          const codeClass = ['hljs', langClass].filter(Boolean).join(' ')
-
-          return `<pre class="hljs"><code class="${codeClass}">${highlighted}</code></pre>\n`
-        }
+        md.use(markdownItHighlightjs)
       },
     }),
     vue({
