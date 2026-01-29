@@ -18,8 +18,8 @@
           <p>
             I’m a full-stack engineer who loves building end-to-end products: the UI people use, the
             APIs behind it, and the infrastructure that keeps it reliable. My day-to-day has been
-            heavily focused on frontend (Vue/Nuxt, TypeScript), but I’m most energized when I can own
-            the full system and ship features all the way to production.
+            heavily focused on frontend (Vue/Nuxt, TypeScript), but I’m most energized when I can
+            own the full system and ship features all the way to production.
           </p>
           <p>
             Over the last few years, a big part of my work and side projects has centered on
@@ -41,8 +41,8 @@
         <h2 class="text-lg font-semibold mb-3">AI projects & experiments</h2>
         <div class="space-y-3 text-slate-700 leading-relaxed">
           <p>
-            I enjoy building small, focused projects that explore “what actually works” when you
-            put AI features in front of users. You can explore several of these around the site,
+            I enjoy building small, focused projects that explore “what actually works” when you put
+            AI features in front of users. You can explore several of these around the site,
             including the
             <RouterLink class="underline underline-offset-2" to="/ai-chat">AI Chat</RouterLink>
             playground, the
@@ -56,8 +56,8 @@
               internal workflows)
             </li>
             <li>
-              • Retrieval-augmented generation (RAG): ingestion, chunking, search, grounding, and
-              UX patterns that help users trust the output
+              • Retrieval-augmented generation (RAG): ingestion, chunking, search, grounding, and UX
+              patterns that help users trust the output
             </li>
             <li>
               • Agent/tooling patterns: function calling, orchestration, and guardrails for reliable
@@ -69,8 +69,8 @@
             </li>
           </ul>
           <p class="text-sm text-slate-600">
-            If you’re curious about the “why” behind these choices, I expand on them in longer
-            form on the
+            If you’re curious about the “why” behind these choices, I expand on them in longer form
+            on the
             <RouterLink class="underline underline-offset-2" to="/blog">blog</RouterLink>.
           </p>
         </div>
@@ -109,9 +109,7 @@
               </li>
             </ul>
             <div class="mt-4 p-4 bg-slate-50 rounded-lg">
-              <h4 class="font-medium text-slate-900 mb-2">
-                Special focus: Adyen demos platform
-              </h4>
+              <h4 class="font-medium text-slate-900 mb-2">Special focus: Adyen demos platform</h4>
               <p class="text-sm text-slate-700 mb-3 leading-relaxed">
                 I built the official internal demos platform used across sales processes and
                 <span class="font-medium">300+ events per year</span>, designed to generate
@@ -142,7 +140,9 @@
               closely with payments and growth initiatives.
             </p>
             <ul class="text-sm text-slate-700 space-y-2 ml-4">
-              <li>• Led the frontend stack (Vue.js, Nuxt.js, Tailwind) and established best practices</li>
+              <li>
+                • Led the frontend stack (Vue.js, Nuxt.js, Tailwind) and established best practices
+              </li>
               <li>
                 • Led the payments integration, improving payment processing efficiency by
                 <span class="font-medium">~40%</span>
@@ -173,7 +173,8 @@
               <li>• Migrated the web app from Angular to Vue.js</li>
             </ul>
             <p class="text-sm text-slate-600 mt-2 italic">
-              I wrote about part of this journey: migrating from Angular to Vue (and lessons learned).
+              I wrote about part of this journey: migrating from Angular to Vue (and lessons
+              learned).
             </p>
           </div>
 

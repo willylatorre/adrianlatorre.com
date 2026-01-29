@@ -131,22 +131,22 @@ export function useChat() {
           // Update system message with image or error
           if (imageUrl) {
             // Force reactivity by finding and updating the message in the array
-            const msgIndex = messages.value.findIndex(m => m.id === imageGenMessage.id)
+            const msgIndex = messages.value.findIndex((m) => m.id === imageGenMessage.id)
             if (msgIndex !== -1) {
               messages.value[msgIndex] = {
                 ...imageGenMessage,
                 content: '',
-                parts: [createImagePart(imageUrl, 'Generated illustration')]
+                parts: [createImagePart(imageUrl, 'Generated illustration')],
               }
             }
             console.log('✅ Image part added')
           } else {
-            const msgIndex = messages.value.findIndex(m => m.id === imageGenMessage.id)
+            const msgIndex = messages.value.findIndex((m) => m.id === imageGenMessage.id)
             if (msgIndex !== -1) {
               messages.value[msgIndex] = {
                 ...imageGenMessage,
                 content: 'Could not generate image',
-                parts: [createTextPart('Could not generate image')]
+                parts: [createTextPart('Could not generate image')],
               }
             }
             console.log('❌ Image generation failed')

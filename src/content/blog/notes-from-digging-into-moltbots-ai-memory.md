@@ -54,7 +54,7 @@ It’s not “AI magic”—it’s paperwork. The simplest thing that can work a
 
 ### `AGENTS.md` (the contract)
 
-Think of `AGENTS.md` as the file that teaches the agent *how to be an agent in this repo*.
+Think of `AGENTS.md` as the file that teaches the agent _how to be an agent in this repo_.
 
 Here’s the kind of content that makes the rest of the system predictable:
 
@@ -62,27 +62,33 @@ Here’s the kind of content that makes the rest of the system predictable:
 # AGENTS.md
 
 ## Operating principles
+
 - You are an assistant with long-term memory.
 - Prefer citing facts from `memory.md` over guessing.
 - When information is uncertain, ask or mark as tentative.
 
 ## Files you can edit
+
 - `logs/YYYY-MM-DD.md`: append-only daily log.
 - `memory.md`: curated long-term memory; keep it short and factual.
 
 ## What counts as memory
+
 Promote only durable facts:
+
 - stable preferences (e.g. “prefers short answers”)
 - ongoing projects + constraints
 - canonical decisions (“we use sqlite-vec for embeddings”)
 - important entities (names of internal tools, repo structure)
 
 Do NOT promote:
+
 - ephemeral chat details
 - one-off experiments
 - transient emotions
 
 ## End-of-day routine (compaction)
+
 1. Summarize today’s log into 5–15 bullets.
 2. Promote durable facts into `memory.md`.
 3. Mark the daily log as compacted (keep the raw text).
@@ -100,19 +106,23 @@ Example:
 # 2026-01-29
 
 ## What happened
+
 - Investigated why Moltbot forgets long-running decisions across sessions.
 - Found memory stored as Markdown files + embedding index.
 - Noted recurring user preference: wants concise, information-dense answers.
 
 ## Decisions
+
 - Keep blog posts in `src/content/blog/*.md` with frontmatter exports.
 - Replace dummy posts with a single, real post.
 
 ## Open questions
+
 - When do we compact logs into `memory.md`?
 - How do we avoid duplicating similar memories?
 
 ## Candidate promotions
+
 - User preference: concise, dense responses.
 - System pattern: layered memory (recent logs + curated memory + retrieval).
 ```
@@ -129,14 +139,17 @@ Example:
 # memory.md
 
 ## Preferences
+
 - Writing: concise, information-dense, minimal fluff.
 - UI: content-first, quiet layouts; avoid heavy chrome.
 
 ## Current work
+
 - Goal: improve Moltbot’s memory behavior + explain the system publicly.
 - Blog: markdown-driven, compiled to Vue via unplugin-vue-markdown.
 
 ## Decisions / architecture
+
 - Memory storage is file-based; recall uses an embedding index over fragments.
 - Context is rebuilt every turn from a small working set + retrieved fragments.
 ```
@@ -292,16 +305,19 @@ Here’s the compaction loop that makes the earlier file layout pay off:
 
 ```md
 # 2026-01-27
+
 - User dislikes long introductions.
 - We decided to store memory as Markdown files.
 - Experimented with embedding whole files (slow).
 
 # 2026-01-28
+
 - User asked for “same tone and structure” when extending posts.
 - We switched to diff-based embedding.
 - Repeated: user prefers concise answers.
 
 # 2026-01-29
+
 - Added a new blog post.
 - Repeated: memory is layered (recent + curated + retrieval).
 ```
@@ -312,10 +328,12 @@ Here’s the compaction loop that makes the earlier file layout pay off:
 
 ```md
 ## Preferences
+
 - Prefers concise, information-dense answers.
 - Wants extensions to match the original tone and structure.
 
 ## Decisions / architecture
+
 - Memory lives as Markdown files + retrieval via embedding index.
 - Use incremental (diff-based) indexing, not full-file re-embedding.
 - Context is rebuilt every turn using a small working set + top-k retrieval.
@@ -325,6 +343,7 @@ And the daily logs can be tagged as compacted, for example:
 
 ```md
 ## Compaction
+
 - status: compacted
 - promoted: Preferences, Decisions / architecture
 - note: raw details preserved below
@@ -353,7 +372,7 @@ The Moltbot split between daily logs and `memory.md` stopped looking arbitrary. 
 
 I can’t say anything meaningful about closed-source internals.
 
-But the *idea* that stood out to me is simple: recall shouldn’t happen sporadically. It should feel continuous—like the assistant is always lightly checking “what do I already know that matters here?”
+But the _idea_ that stood out to me is simple: recall shouldn’t happen sporadically. It should feel continuous—like the assistant is always lightly checking “what do I already know that matters here?”
 
 In practice, that usually means:
 
@@ -374,4 +393,3 @@ I ended it thinking less about correctness and more about flow:
 - what gets pulled back in for the next response
 
 This didn’t give me a single right answer. But it gave me a much clearer way to think about agent memory — and that alone was worth the detour.
-

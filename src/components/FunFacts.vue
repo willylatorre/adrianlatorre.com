@@ -18,7 +18,7 @@ const showRandomFact = () => {
 
 defineExpose({
   currentFunFact,
-  showRandomFact
+  showRandomFact,
 })
 </script>
 
