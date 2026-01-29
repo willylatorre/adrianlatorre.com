@@ -1,7 +1,7 @@
 ---
 title: Notes From Digging Into Moltbot’s AI Memory
 date: 2026-01-29
-description: A practical tour of how Moltbot stores, indexes, and compacts memory.
+description: A practical tour of agent memory files, indexing, and compaction.
 ---
 
 I didn’t play with Moltbot.
