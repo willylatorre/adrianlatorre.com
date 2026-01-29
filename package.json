@@ -14,6 +14,7 @@
     "build": "vite build && (cd server && go build -o ../server-binary .)",
     "preview": "vite preview",
     "start": "./server-binary",
+    "test": "vitest run",
     "type-check": "vue-tsc --build",
     "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
     "lint:eslint": "eslint . --fix",
@@ -54,6 +55,7 @@
     "unplugin-vue-markdown": "^29.2.0",
     "vite": "^7.1.7",
     "vite-plugin-vue-devtools": "^8.0.2",
+    "vitest": "^4.0.18",
     "vue-tsc": "^3.1.0"
   }
 }

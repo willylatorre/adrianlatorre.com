@@ -3,7 +3,7 @@ export type FrontmatterParseResult = {
   content: string
 }
 
-import { load as loadYaml } from 'js-yaml'
+import { JSON_SCHEMA, load as loadYaml } from 'js-yaml'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -27,22 +27,32 @@ export function parseFrontmatter(raw: string): FrontmatterParseResult {
     return { data: {}, content: raw }
   }
 
+  // Find closing marker. Support both:
+  // - '---\n...\n---\n<content>'
+  // - '---\n...\n---' (EOF)
   const endMarker = '\n---\n'
-  const endIdx = normalized.indexOf(endMarker, start.length)
-  if (endIdx === -1) {
+  let endIdx = normalized.indexOf(endMarker, start.length)
+  let content: string
+
+  if (endIdx !== -1) {
+    content = normalized.slice(endIdx + endMarker.length)
+  } else if (normalized.endsWith('\n---')) {
+    endIdx = normalized.lastIndexOf('\n---')
+    content = ''
+  } else {
     // Not valid frontmatter, treat as plain markdown.
     return { data: {}, content: raw }
   }
 
   const fmBlock = normalized.slice(start.length, endIdx)
-  const content = normalized.slice(endIdx + endMarker.length)
 
   // Parse YAML frontmatter in a browser-safe way.
   // We keep the return type narrow (string values) since the UI only needs
   // a few simple fields (title/date/description).
   let yamlData: unknown = {}
   try {
-    yamlData = loadYaml(fmBlock)
+    // Use JSON schema to avoid implicit types (e.g. timestamps -> Date).
+    yamlData = loadYaml(fmBlock, { schema: JSON_SCHEMA })
   } catch {
     yamlData = {}
   }
