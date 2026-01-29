@@ -9,6 +9,16 @@ const router = createRouter({
       component: () => import('../pages/DashboardPage.vue'),
     },
     {
+      path: '/blog',
+      name: 'Blog',
+      component: () => import('../pages/BlogListPage.vue'),
+    },
+    {
+      path: '/blog/:slug',
+      name: 'Blog Post',
+      component: () => import('../pages/BlogPostPage.vue'),
+    },
+    {
       path: '/ai-chat',
       name: 'AI Chat',
       component: () => import('../pages/AIChatPage.vue'),
