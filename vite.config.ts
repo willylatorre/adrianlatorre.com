@@ -1,6 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
-import frontMatter from 'markdown-it-front-matter'
 
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
@@ -15,11 +14,6 @@ export default defineConfig({
         html: true,
         linkify: true,
         typographer: true,
-      },
-      markdownItSetup(md) {
-        // Strip YAML frontmatter during Markdown rendering.
-        // (We parse frontmatter separately for blog metadata.)
-        md.use(frontMatter, () => {})
       },
     }),
     vue({

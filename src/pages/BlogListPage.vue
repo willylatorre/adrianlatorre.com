@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { parseFrontmatter } from '@/utils/frontmatter'
+import type { Component } from 'vue'
 
 type BlogPost = {
   slug: string
@@ -25,29 +25,25 @@ function formatDate(date: string) {
   }).format(ms)
 }
 
-const rawPosts = import.meta.glob('../content/blog/*.md', {
+type BlogModule = {
+  default: Component
+  title?: unknown
+  date?: unknown
+  description?: unknown
+}
+
+const postModules = import.meta.glob('../content/blog/*.md', {
   eager: true,
-  query: '?raw',
-  import: 'default',
-}) as Record<string, string>
+}) as Record<string, BlogModule>
 
 const posts = computed<BlogPost[]>(() => {
-  return Object.entries(rawPosts)
-    .map(([path, raw]) => {
-      const { data, content } = parseFrontmatter(raw)
+  return Object.entries(postModules)
+    .map(([path, mod]) => {
       const slug = path.split('/').pop()?.replace(/\.md$/, '') ?? path
 
-      const title = typeof data.title === 'string' ? data.title : slug
-      const date = typeof data.date === 'string' ? data.date : undefined
-      const description =
-        typeof data.description === 'string'
-          ? data.description
-          : content
-              .trim()
-              .split('\n')
-              .map((l) => l.trim())
-              .find((l) => l && !l.startsWith('#'))
-              ?.slice(0, 220)
+      const title = typeof mod.title === 'string' ? mod.title : slug
+      const date = typeof mod.date === 'string' ? mod.date : undefined
+      const description = typeof mod.description === 'string' ? mod.description : undefined
 
       return { slug, title, date, description }
     })
