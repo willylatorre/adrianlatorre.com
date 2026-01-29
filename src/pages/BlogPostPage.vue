@@ -115,13 +115,7 @@ watchEffect((onInvalidate) => {
   margin: 0 auto;
   padding: 32px 0;
   color: rgb(15 23 42);
-  font-family:
-    ui-serif,
-    Georgia,
-    Cambria,
-    'Times New Roman',
-    Times,
-    serif;
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 }
 
 .blog-header {
@@ -224,13 +218,7 @@ watchEffect((onInvalidate) => {
 
 .blog-prose :deep(code) {
   font-family:
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    'Liberation Mono',
-    'Courier New',
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
     monospace;
   font-size: 0.95em;
   background: rgba(15, 23, 42, 0.06);

@@ -81,13 +81,7 @@ const posts = computed<BlogPost[]>(() => {
   margin: 0 auto;
   padding: 32px 0;
   color: rgb(15 23 42);
-  font-family:
-    ui-serif,
-    Georgia,
-    Cambria,
-    'Times New Roman',
-    Times,
-    serif;
+  font-family: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
 }
 
 .blog-header {

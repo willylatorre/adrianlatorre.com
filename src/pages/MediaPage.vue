@@ -11,7 +11,8 @@
       <div>
         <h2 class="text-2xl font-semibold mb-6">Pet Projects</h2>
         <p class="text-slate-600 mb-8 italic">
-          When I'm not building things for work, I tinker with crazy ideas that might actually change the world... or at least make trading more fun and teaching less boring! 🚀
+          When I'm not building things for work, I tinker with crazy ideas that might actually
+          change the world... or at least make trading more fun and teaching less boring! 🚀
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -79,7 +80,8 @@
       <div>
         <h2 class="text-2xl font-semibold mb-6">Media</h2>
         <p class="text-slate-600 mb-8 italic">
-          Because who doesn't love watching me talk about tech stuff? These are my professional ramblings, conference talks, and the occasional "how I broke production" stories! 🎬
+          Because who doesn't love watching me talk about tech stuff? These are my professional
+          ramblings, conference talks, and the occasional "how I broke production" stories! 🎬
         </p>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">

@@ -1,10 +1,7 @@
 <script setup lang="ts"></script>
 
 <template>
-  <UPageHero
-    title="Items Management"
-    description="View and manage all your items"
-  />
+  <UPageHero title="Items Management" description="View and manage all your items" />
 
   <UPageSection>
     <div class="text-center py-12">

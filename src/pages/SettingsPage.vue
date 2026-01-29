@@ -1,10 +1,7 @@
 <script setup lang="ts"></script>
 
 <template>
-  <UPageHero
-    title="Settings"
-    description="Configure your application preferences"
-  />
+  <UPageHero title="Settings" description="Configure your application preferences" />
 
   <UPageSection>
     <div class="text-center py-12">
