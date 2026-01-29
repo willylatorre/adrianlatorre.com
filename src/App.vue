@@ -21,6 +21,12 @@ const searchGroups = [
         icon: 'i-lucide-user',
       },
       {
+        label: 'Blog',
+        suffix: 'Articles',
+        to: '/blog',
+        icon: 'i-lucide-newspaper',
+      },
+      {
         label: 'Contact',
         suffix: 'adrian@example.com',
         action: () => {
@@ -73,6 +79,11 @@ const links = [
     label: 'About Me',
     icon: 'i-lucide-user',
     to: '/',
+  },
+  {
+    label: 'Blog',
+    icon: 'i-lucide-newspaper',
+    to: '/blog',
   },
   {
     label: 'Playground',
