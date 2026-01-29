@@ -73,6 +73,34 @@
               </a>
             </template>
           </UCard>
+
+          <!-- Litesubs -->
+          <UCard class="hover:shadow-lg transition-shadow">
+            <template #header>
+              <h3 class="text-xl font-semibold">Litesubs</h3>
+            </template>
+
+            <p class="text-slate-700 mb-4">
+              Simple credit plans instead of heavy subscriptions
+            </p>
+            <ul class="text-sm text-slate-600 space-y-2 mb-4">
+              <li>• One-time credit bundles or auto-refill credits in one system</li>
+              <li>• Payments integration with dynamic subscription syncing via calendar hooks</li>
+              <li>• Exploring React Query performance for flexible billing UX</li>
+            </ul>
+
+            <template #footer>
+              <a
+                href="https://litesubs.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
+              >
+                <UIcon name="i-lucide-external-link" class="w-4 h-4" />
+                Visit Litesubs
+              </a>
+            </template>
+          </UCard>
         </div>
       </div>
 
