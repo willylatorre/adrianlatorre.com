@@ -84,23 +84,28 @@
             <h3 class="font-semibold text-lg">Adyen</h3>
             <p class="text-sm text-slate-600 mb-2">Amsterdam, August 2020 - Present</p>
             <p class="text-slate-700 mb-3 leading-relaxed">
-              I’ve worked across both product and platform-facing surfaces, with a strong focus on
-              building polished customer experiences and the tooling that supports internal teams.
-              My work spans everything from UX and component systems to API integration and
-              performance.
+              Senior Frontend Engineer (with full-stack scope) working across Adyen.com, internal
+              tooling, and product-facing experiences. I care a lot about UX, performance, and the
+              engineering fundamentals that keep high-traffic systems reliable.
             </p>
             <ul class="text-sm text-slate-700 space-y-2 ml-4">
               <li>
-                • Frontend Engineer owning key parts of <span class="font-medium">Adyen.com</span>
-                and related web properties
+                • Built and maintained <span class="font-medium">Adyen.com</span> and
+                <span class="font-medium">careers.adyen.com</span> with Nuxt 3 using hybrid /
+                incremental rendering
               </li>
               <li>
-                • Previously in the Billing stream, improving invoicing and contract workflows for
-                merchants and internal teams
+                • Implemented build and rendering optimizations to reliably generate
+                <span class="font-medium">20k+ static pages</span>, improving load performance and
+                overall site experience
               </li>
               <li>
-                • Built and maintained internal tools with a strong emphasis on reliability, clear
-                UX, and safe rollouts
+                • Improved invoicing workflows for both merchants and account managers through
+                better UX and safer internal tooling
+              </li>
+              <li>
+                • Integrated genAI/agent workflows (including MCP-style integrations) to enable
+                guided payment integrations via chat-driven experiences
               </li>
             </ul>
             <div class="mt-4 p-4 bg-slate-50 rounded-lg">
@@ -108,9 +113,9 @@
                 Special focus: Adyen demos platform
               </h4>
               <p class="text-sm text-slate-700 mb-3 leading-relaxed">
-                I helped create an internal demos platform that lets teams generate high-quality,
-                consistent demos quickly, and used it as a place to explore AI-driven workflows and
-                agent integrations.
+                I built the official internal demos platform used across sales processes and
+                <span class="font-medium">300+ events per year</span>, designed to generate
+                high-quality demos in under a minute while staying consistent and easy to operate.
               </p>
               <ul class="text-sm text-slate-700 space-y-2 ml-4">
                 <li>
@@ -122,8 +127,8 @@
                   tipping, giving, and more) into a single cohesive experience
                 </li>
                 <li>
-                  • Prototyped AI/agent experiences (including MCP-style integrations) to streamline
-                  demo creation and guided product exploration
+                  • Designed complex demo flows and guardrails so non-technical users can reliably
+                  generate consistent demo setups
                 </li>
               </ul>
             </div>
@@ -133,14 +138,21 @@
             <h3 class="font-semibold text-lg">Housfy</h3>
             <p class="text-sm text-slate-600 mb-2">Barcelona, March 2019 - August 2020</p>
             <p class="text-slate-700 mb-3 leading-relaxed">
-              In PropTech, I led frontend initiatives focused on performance, reliability, and a
-              product experience that could scale with the business.
+              Lead Software Engineer in PropTech, owning core frontend architecture while partnering
+              closely with payments and growth initiatives.
             </p>
             <ul class="text-sm text-slate-700 space-y-2 ml-4">
-              <li>• Led the frontend stack (Vue.js, Nuxt.js) and established best practices</li>
-              <li>• Built “MyHousfy”, a fully featured PWA that improved customer self-service</li>
-              <li>• Set up automated testing and quality gates (Jest, Cypress)</li>
-              <li>• Implemented analytics tracking to connect product decisions to real behavior</li>
+              <li>• Led the frontend stack (Vue.js, Nuxt.js, Tailwind) and established best practices</li>
+              <li>
+                • Led the payments integration, improving payment processing efficiency by
+                <span class="font-medium">~40%</span>
+              </li>
+              <li>• Implemented the new properties listing and search experience</li>
+              <li>
+                • Integrated Contentful to generate landing pages dynamically, enabling faster
+                go-to-market
+              </li>
+              <li>• Implemented and A/B tested multiple RPO improvements</li>
             </ul>
           </div>
 
@@ -148,15 +160,16 @@
             <h3 class="font-semibold text-lg">Glovoapp</h3>
             <p class="text-sm text-slate-600 mb-2">Barcelona, Sept 2015 - March 2019</p>
             <p class="text-slate-700 mb-3">
-              I joined early and grew with the company as it scaled. As a technical lead, I helped
-              ship growth initiatives, modernize the web stack, and improve the developer experience
-              for a fast-moving product org.
+              One of the initial engineers, helping scale the company from
+              <span class="font-medium">~30 to ~400 employees</span>. As team lead / senior frontend
+              engineer, I built the foundations of the web stack and shipped core growth and B2B
+              initiatives.
             </p>
             <ul class="text-sm text-slate-700 space-y-2 ml-4">
-              <li>• Led the frontend stack (Vue.js, Nuxt.js, Headless CMS)</li>
-              <li>• Led a Growth / B2B team, delivering experiments and iteration at high cadence</li>
-              <li>• Implemented and A/B tested multiple conversion improvements</li>
-              <li>• Shipped key product lines (Prime, member-get-member referrals, Glovo Business)</li>
+              <li>• Led the frontend stack (Vue.js, Nuxt.js, Node, GraphQL)</li>
+              <li>• Led the Growth / B2B team, delivering experiments at high cadence</li>
+              <li>• Implemented and A/B tested multiple RPO improvements</li>
+              <li>• Shipped key product lines (Prime, member-get-member, Glovo Business)</li>
               <li>• Migrated the web app from Angular to Vue.js</li>
             </ul>
             <p class="text-sm text-slate-600 mt-2 italic">
