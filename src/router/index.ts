@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import DashboardPage from '../pages/DashboardPage.vue'
 
 function isChunkLoadError(err: unknown) {
   if (!(err instanceof Error)) return false
@@ -23,7 +24,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'About Me',
-      component: lazy(() => import('../pages/DashboardPage.vue')),
+      component: DashboardPage,
     },
     {
       path: '/blog',
