@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 
 const adrianStatus = ref('Available')
-const statusColors = ['primary', 'secondary', 'success', 'info', 'warning', 'error'] as const
-// const randomStatus = computed(() => statusColors[Math.floor(Math.random() * statusColors.length)])
 
 const changeStatus = () => {
   const statuses = [
