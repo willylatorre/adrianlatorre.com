@@ -5,6 +5,11 @@ declare module '*.md' {
 
   const component: DefineComponent<Record<string, never>, Record<string, never>, unknown>
   export default component
+
+  // Frontmatter exports (provided by unplugin-vue-markdown).
+  export const title: string
+  export const date: string
+  export const description: string
 }
 
 declare function useToast(): {

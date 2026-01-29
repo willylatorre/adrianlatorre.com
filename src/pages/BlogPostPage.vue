@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import matter from 'gray-matter'
 import { ref, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Component } from 'vue'
@@ -22,14 +21,17 @@ function formatDate(date: string) {
 
 const route = useRoute()
 
+type BlogModule = {
+  default: Component
+  title?: unknown
+  date?: unknown
+  description?: unknown
+}
+
 const mdModules = import.meta.glob('../content/blog/*.md') as Record<
   string,
-  () => Promise<{ default: Component }>
+  () => Promise<BlogModule>
 >
-const rawModules = import.meta.glob('../content/blog/*.md', {
-  query: '?raw',
-  import: 'default',
-}) as Record<string, () => Promise<string>>
 
 const postComponent = ref<Component | null>(null)
 const frontmatter = ref<BlogFrontmatter | null>(null)
@@ -48,28 +50,25 @@ watchEffect((onInvalidate) => {
   frontmatter.value = null
 
   const mdPath = Object.keys(mdModules).find((p) => p.endsWith(`/${slug}.md`))
-  const rawPath = Object.keys(rawModules).find((p) => p.endsWith(`/${slug}.md`))
 
-  if (!mdPath || !rawPath) {
+  if (!mdPath) {
     notFound.value = true
     return
   }
 
   const loadMd = mdModules[mdPath]
-  const loadRaw = rawModules[rawPath]
-  if (!loadMd || !loadRaw) {
+  if (!loadMd) {
     notFound.value = true
     return
   }
 
   ;(async () => {
-    const [mod, raw] = await Promise.all([loadMd(), loadRaw()])
+    const mod = await loadMd()
     if (cancelled) return
 
-    const { data } = matter(raw)
-    const title = typeof data.title === 'string' ? data.title : slug
-    const date = typeof data.date === 'string' ? data.date : undefined
-    const description = typeof data.description === 'string' ? data.description : undefined
+    const title = typeof mod.title === 'string' ? mod.title : slug
+    const date = typeof mod.date === 'string' ? mod.date : undefined
+    const description = typeof mod.description === 'string' ? mod.description : undefined
 
     frontmatter.value = { title, date, description }
     postComponent.value = mod.default
