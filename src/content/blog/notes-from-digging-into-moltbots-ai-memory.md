@@ -1,10 +1,10 @@
 ---
-title: Notes From Digging Into Moltbot’s AI Memory
+title: Notes From Digging Into OpenClaw’s AI Memory
 date: 2026-01-29
 description: A practical tour of agent memory files, indexing, and compaction.
 ---
 
-I didn’t play with Moltbot.
+I didn’t play with OpenClaw.
 
 I read a lot about it—especially the part everyone seemed to repeat: it *remembers everything*.
 
@@ -12,13 +12,13 @@ That’s what got me thinking about the unglamorous question behind most “agen
 
 So I did the least mystical thing possible: I opened the code.
 
-Moltbot’s repo is here: [`moltbot/moltbot`](https://github.com/moltbot/moltbot). It’s an open-source personal assistant with a “workspace” on disk (Markdown files you can read/edit) plus a derived search index (so it can retrieve relevant fragments later).
+OpenClaw’s site is here: [`openclaw.ai`](https://openclaw.ai/). The repo is [`openclaw/openclaw`](https://github.com/openclaw/openclaw). It’s an open-source personal assistant with a “workspace” on disk (Markdown files you can read/edit) plus a derived search index (so it can retrieve relevant fragments later).
 
-Everything below is based on reading Moltbot’s repository + docs and following the memory trail.
+Everything below is based on reading OpenClaw’s repository + docs and following the memory trail.
 
 ## Starting from the simplest observation
 
-In Moltbot, “memory” is not abstract. It’s tangible.
+In OpenClaw, “memory” is not abstract. It’s tangible.
 
 It’s files. On disk. Mostly Markdown.
 
@@ -28,9 +28,9 @@ Once that clicks, the questions become very practical:
 - If I’ve been doing this for 700 days, do we load 700 days?
 - If files keep changing, do we re-index everything every time?
 
-## What Moltbot’s memory layout looks like (from the repo)
+## What OpenClaw’s memory layout looks like (from the repo)
 
-Moltbot anchors long-term memory in an agent workspace (default is `~/clawd` in their docs). The core idea is: keep a few small “always read” files, and then a daily log you can grow forever.
+OpenClaw anchors long-term memory in an agent workspace (default is `~/clawd` in their docs). The core idea is: keep a few small “always read” files, and then a daily log you can grow forever.
 
 The shape looks roughly like this:
 
@@ -53,7 +53,7 @@ Two important clarifications that the repo makes explicit:
 
 ### `AGENTS.md` (the operating instructions)
 
-In the default Moltbot setup, `AGENTS.md` is the instruction file that tells the agent how to behave and—critically—what to read/write as “memory”.
+In the default OpenClaw setup, `AGENTS.md` is the instruction file that tells the agent how to behave and—critically—what to read/write as “memory”.
 
 The default doc literally says: on session start, read `SOUL.md`, `USER.md`, `memory.md`, and today+yesterday in `memory/`.
 
@@ -73,7 +73,7 @@ The repo treats it as the compact “core-ish” layer: always available, never 
 
 My naive picture was: “memory means everything gets loaded back in.”
 
-But Moltbot’s approach (and most sane approaches) is a deliberately small working set:
+But OpenClaw’s approach (and most sane approaches) is a deliberately small working set:
 
 - `memory.md` (curated core)
 - today + yesterday from `memory/` (fresh reality)
@@ -86,7 +86,7 @@ Seen this way, memory is layered:
 
 ## How memory gets indexed (what I saw in the code)
 
-Moltbot maintains a derived index so it can search memory without rereading piles of Markdown each time.
+OpenClaw maintains a derived index so it can search memory without rereading piles of Markdown each time.
 
 From the code path, you can see three practical details that make this viable:
 
@@ -114,7 +114,7 @@ If you only remember one thing: **context is rebuilt every time**. Memory lives 
 
 If your memory is append-heavy, re-indexing entire files on every change is the fastest way to make the system hate you back.
 
-Moltbot avoids that by syncing changes incrementally and caching work in the index. The exact implementation details aren’t the point here—the point is the pattern: only process what changed, and keep the rest stable.
+OpenClaw avoids that by syncing changes incrementally and caching work in the index. The exact implementation details aren’t the point here—the point is the pattern: only process what changed, and keep the rest stable.
 
 In simplified pseudo-code, the idea is basically:
 
