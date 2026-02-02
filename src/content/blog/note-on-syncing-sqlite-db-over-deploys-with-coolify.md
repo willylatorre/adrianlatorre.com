@@ -26,6 +26,6 @@ In Coolify the matching piece is the storage volume that targets `/app/data`. Th
 
 The coffee counter on the site is using this setup, so I can redeploy without losing the counter state.
 
-<CoffeeCounter />
+<CoffeeCounterCallout />
 
 Summary: SQLite is plenty for tiny workloads, it becomes tricky under serverless deploys, and the simple VPS plus Coolify volume route works when you pair it with a Dockerfile that writes the database into a mounted directory.
