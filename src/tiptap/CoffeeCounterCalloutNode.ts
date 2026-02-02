@@ -17,7 +17,9 @@ const CoffeeCounterCalloutNode = Node.create({
   },
 
   addNodeView() {
-    return VueNodeViewRenderer(CoffeeCounterCalloutNodeView)
+    return VueNodeViewRenderer(CoffeeCounterCalloutNodeView, {
+      contentDOMElementTag: 'div',
+    })
   },
 })
 
