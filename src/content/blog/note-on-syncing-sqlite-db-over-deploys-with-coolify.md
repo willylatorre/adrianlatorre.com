@@ -5,6 +5,8 @@ description: A diary note on making SQLite survive deploys with Coolify.
 ---
 
 <script setup>
+import coolifyStorageImage from '@/assets/img/coolify-storage.png'
+
 const dockerfileSnippet = `# Create a directory for the database and give ownership to the app user
 # This is the recommended target for your persistent volume mount.
 RUN mkdir -p /app/data && chown -R appuser:appgroup /app && chmod -R 755 /app
@@ -31,7 +33,7 @@ I learned this the hard way after a bunch of trial and error. The fix that final
 
 In Coolify the matching piece is the storage volume that targets `/app/data`. That makes the database file survive image rebuilds and deploys, and it also makes the container ephemeral in the right way, because only the data is the durable part.
 
-![Coolify storage volume configuration](/img/coolify-storage.png)
+<img :src="coolifyStorageImage" alt="Coolify storage volume configuration" />
 
 The coffee counter on the site is using this setup, so I can redeploy without losing the counter state.
 
