@@ -1,8 +1,8 @@
 <template>
   <div class="flex justify-center">
-    <div class="relative inline-flex items-center justify-center">
+    <div class="relative inline-flex items-center justify-center pt-10">
       <svg
-        class="absolute -top-12 left-1/2 h-16 w-28 -translate-x-1/2 rotate-90 text-primary-500"
+        class="absolute -top-8 left-1/2 h-10 w-20 -translate-x-1/2 rotate-90 text-primary-500"
         width="120"
         height="60"
         viewBox="0 0 120 60"
