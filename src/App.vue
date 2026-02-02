@@ -155,7 +155,7 @@ const links = [
       <UDashboardPanel>
         <!-- Navbar -->
         <template #header>
-          <UDashboardNavbar title="Adrian's Playground" :toggle="false">
+          <UDashboardNavbar title="Adrian's Playground">
             <template #right>
               <div class="flex items-center gap-4">
                 <!-- Adrian Status -->
