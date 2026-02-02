@@ -4,6 +4,77 @@ date: 2026-01-29
 description: A practical tour of agent memory files, indexing, and compaction.
 ---
 
+<script setup>
+const workspaceTree = `~/clawd/
+├── AGENTS.md
+├── SOUL.md
+├── USER.md
+├── memory.md        # (or MEMORY.md)
+└── memory/
+    ├── 2026-01-29.md
+    ├── 2026-01-28.md
+    └── ...`
+
+const indexingDiagram = `Markdown files (source of truth)
+        |
+        |  chunk + index (incremental sync)
+        v
+SQLite index (FTS + vectors + metadata)
+        |
+        |  query (input -> search)
+        v
+Top-k fragments + citations`
+
+const syncIndexSnippet = `// PSEUDO-CODE: incremental updates, not full rebuilds
+async function syncIndex({ changedFiles }: { changedFiles: string[] }) {
+  for (const file of changedFiles) {
+    const chunks = chunkMarkdown(await readFile(file, 'utf8'))
+    await upsertChunksIntoIndex({ file, chunks })
+  }
+}`
+
+const recallSnippet = `// PSEUDO-CODE: retrieve a small working set
+const memories = await recallMemory(userInput, { k: 12 })
+
+const systemPrompt = \`
+You are an assistant with long-term memory.
+
+Relevant memory:
+\${memories.map((m) => \`- \${m.content}\`).join('\\n')}
+\`.trim()
+
+const response = await llm.chat({
+  system: systemPrompt,
+  user: userInput,
+})`
+
+const dailyLogSnippet = `# 2026-01-27
+
+- User dislikes long introductions.
+- We decided to store memory as Markdown files.
+- Experimented with full reindexing (slow).
+
+# 2026-01-28
+
+- Switched to incremental indexing.
+- Repeated: user prefers concise answers.
+
+# 2026-01-29
+
+- Repeated: memory is layered (core + recent + retrieval).`
+
+const memorySnippet = `## Preferences
+
+- Prefers concise, information-dense answers.
+- Wants extensions to match the original tone and structure.
+
+## Decisions / architecture
+
+- Memory lives as Markdown files; recall uses a derived search index.
+- Prefer incremental indexing over full rebuilds.
+- Rebuild context every turn from a small working set + top-k retrieval.`
+</script>
+
 I didn’t play with OpenClaw.
 
 I read a lot about it—especially the part everyone seemed to repeat: it *remembers everything*.
@@ -34,17 +105,14 @@ OpenClaw anchors long-term memory in an agent workspace (default is `~/clawd` in
 
 The shape looks roughly like this:
 
-```text
-~/clawd/
-├── AGENTS.md
-├── SOUL.md
-├── USER.md
-├── memory.md        # (or MEMORY.md)
-└── memory/
-    ├── 2026-01-29.md
-    ├── 2026-01-28.md
-    └── ...
-```
+<ProsePre
+  language="text"
+  :code="workspaceTree"
+>
+  <ProseCode class="language-text">
+{{ workspaceTree }}
+  </ProseCode>
+</ProsePre>
 
 Two important clarifications that the repo makes explicit:
 
@@ -96,17 +164,14 @@ From the code path, you can see three practical details that make this viable:
 
 The mental model is still pleasantly boring:
 
-```text
-Markdown files (source of truth)
-        |
-        |  chunk + index (incremental sync)
-        v
-SQLite index (FTS + vectors + metadata)
-        |
-        |  query (input -> search)
-        v
-Top-k fragments + citations
-```
+<ProsePre
+  language="text"
+  :code="indexingDiagram"
+>
+  <ProseCode class="language-text">
+{{ indexingDiagram }}
+  </ProseCode>
+</ProsePre>
 
 If you only remember one thing: **context is rebuilt every time**. Memory lives outside the model. Retrieval is the bridge.
 
@@ -118,15 +183,14 @@ OpenClaw avoids that by syncing changes incrementally and caching work in the in
 
 In simplified pseudo-code, the idea is basically:
 
-```ts
-// PSEUDO-CODE: incremental updates, not full rebuilds
-async function syncIndex({ changedFiles }: { changedFiles: string[] }) {
-  for (const file of changedFiles) {
-    const chunks = chunkMarkdown(await readFile(file, 'utf8'))
-    await upsertChunksIntoIndex({ file, chunks })
-  }
-}
-```
+<ProsePre
+  language="ts"
+  :code="syncIndexSnippet"
+>
+  <ProseCode class="language-ts">
+{{ syncIndexSnippet }}
+  </ProseCode>
+</ProsePre>
 
 ## How context is built (every single turn)
 
@@ -141,22 +205,14 @@ The pattern (again: unromantic, effective) is:
 
 In broad strokes, it ends up looking like:
 
-```ts
-// PSEUDO-CODE: retrieve a small working set
-const memories = await recallMemory(userInput, { k: 12 })
-
-const systemPrompt = `
-You are an assistant with long-term memory.
-
-Relevant memory:
-${memories.map((m) => `- ${m.content}`).join('\n')}
-`.trim()
-
-const response = await llm.chat({
-  system: systemPrompt,
-  user: userInput,
-})
-```
+<ProsePre
+  language="ts"
+  :code="recallSnippet"
+>
+  <ProseCode class="language-ts">
+{{ recallSnippet }}
+  </ProseCode>
+</ProsePre>
 
 The hard part isn’t querying memory. It’s deciding:
 
@@ -187,39 +243,27 @@ The loop that makes the file layout pay off looks like this:
 
 ### Before: three days of raw daily logs
 
-```md
-# 2026-01-27
-
-- User dislikes long introductions.
-- We decided to store memory as Markdown files.
-- Experimented with full reindexing (slow).
-
-# 2026-01-28
-
-- Switched to incremental indexing.
-- Repeated: user prefers concise answers.
-
-# 2026-01-29
-
-- Repeated: memory is layered (core + recent + retrieval).
-```
+<ProsePre
+  language="md"
+  :code="dailyLogSnippet"
+>
+  <ProseCode class="language-md">
+{{ dailyLogSnippet }}
+  </ProseCode>
+</ProsePre>
 
 ### After: curated core memory
 
 `memory.md` becomes:
 
-```md
-## Preferences
-
-- Prefers concise, information-dense answers.
-- Wants extensions to match the original tone and structure.
-
-## Decisions / architecture
-
-- Memory lives as Markdown files; recall uses a derived search index.
-- Prefer incremental indexing over full rebuilds.
-- Rebuild context every turn from a small working set + top-k retrieval.
-```
+<ProsePre
+  language="md"
+  :code="memorySnippet"
+>
+  <ProseCode class="language-md">
+{{ memorySnippet }}
+  </ProseCode>
+</ProsePre>
 
 Compaction is also where “forgetting” becomes intentional: you decide that some details no longer deserve prime real-estate.
 
