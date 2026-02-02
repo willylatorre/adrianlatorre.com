@@ -3,8 +3,11 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import MarkdownIt from 'markdown-it'
 import { useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
+import Underline from '@tiptap/extension-underline'
 import { useApi } from '@/composables/useApi'
 import UEditor from '@/components/UEditor.vue'
+import UEditorToolbar from '@/components/UEditorToolbar.vue'
+import type { EditorToolbarItem } from '@/types/editorToolbar'
 
 const { sendChatMessage } = useApi()
 
@@ -18,7 +21,7 @@ const rawMarkdown = ref('')
 const markdown = new MarkdownIt({ linkify: true, breaks: true })
 
 const editor = useEditor({
-  extensions: [StarterKit],
+  extensions: [StarterKit, Underline],
   content: '<p>Run the prompt to generate a Markdown summary.</p>',
   editorProps: {
     attributes: {
@@ -27,6 +30,102 @@ const editor = useEditor({
     },
   },
 })
+
+const toolbarItems: EditorToolbarItem[][] = [
+  [
+    {
+      icon: 'i-lucide-heading',
+      tooltip: { text: 'Headings' },
+      content: {
+        align: 'start',
+      },
+      items: [
+        {
+          kind: 'heading',
+          level: 1,
+          icon: 'i-lucide-heading-1',
+          label: 'Heading 1',
+        },
+        {
+          kind: 'heading',
+          level: 2,
+          icon: 'i-lucide-heading-2',
+          label: 'Heading 2',
+        },
+        {
+          kind: 'heading',
+          level: 3,
+          icon: 'i-lucide-heading-3',
+          label: 'Heading 3',
+        },
+        {
+          kind: 'heading',
+          level: 4,
+          icon: 'i-lucide-heading-4',
+          label: 'Heading 4',
+        },
+      ],
+    },
+  ],
+  [
+    {
+      kind: 'mark',
+      mark: 'bold',
+      icon: 'i-lucide-bold',
+      tooltip: { text: 'Bold' },
+    },
+    {
+      kind: 'mark',
+      mark: 'italic',
+      icon: 'i-lucide-italic',
+      tooltip: { text: 'Italic' },
+    },
+    {
+      kind: 'mark',
+      mark: 'underline',
+      icon: 'i-lucide-underline',
+      tooltip: { text: 'Underline' },
+    },
+    {
+      kind: 'mark',
+      mark: 'strike',
+      icon: 'i-lucide-strikethrough',
+      tooltip: { text: 'Strikethrough' },
+    },
+    {
+      kind: 'mark',
+      mark: 'code',
+      icon: 'i-lucide-code',
+      tooltip: { text: 'Code' },
+    },
+  ],
+  [
+    {
+      kind: 'node',
+      node: 'bulletList',
+      icon: 'i-lucide-list',
+      tooltip: { text: 'Bullet list' },
+    },
+    {
+      kind: 'node',
+      node: 'orderedList',
+      icon: 'i-lucide-list-ordered',
+      tooltip: { text: 'Ordered list' },
+    },
+    {
+      kind: 'node',
+      node: 'blockquote',
+      icon: 'i-lucide-quote',
+      tooltip: { text: 'Quote' },
+    },
+    {
+      kind: 'node',
+      node: 'codeBlock',
+      icon: 'i-lucide-code-2',
+      tooltip: { text: 'Code block' },
+    },
+  ],
+]
 
 const isBusy = computed(() => status.value === 'loading' || status.value === 'streaming')
 const statusLabel = computed(() => {
@@ -152,71 +251,7 @@ onBeforeUnmount(() => {
       <div class="space-y-4">
         <UEditor :editor="editor">
           <template #toolbar="{ editor: tiptap }">
-            <div class="flex flex-wrap gap-2">
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('bold') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleBold().run()"
-              >
-                Bold
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('italic') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleItalic().run()"
-              >
-                Italic
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('strike') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleStrike().run()"
-              >
-                Strike
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('bulletList') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleBulletList().run()"
-              >
-                Bullet list
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('orderedList') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleOrderedList().run()"
-              >
-                Ordered list
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('blockquote') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleBlockquote().run()"
-              >
-                Quote
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('codeBlock') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleCodeBlock().run()"
-              >
-                Code block
-              </UButton>
-            </div>
+            <UEditorToolbar :editor="tiptap" :items="toolbarItems" layout="bubble" />
           </template>
         </UEditor>
       </div>

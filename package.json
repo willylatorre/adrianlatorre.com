@@ -28,6 +28,7 @@
   "dependencies": {
     "@tiptap/starter-kit": "^3.4.0",
     "@tiptap/vue-3": "^3.4.0",
+    "@tiptap/extension-underline": "^3.4.0",
     "@nuxt/ui": "^4.0.1",
     "@tailwindcss/vite": "^4.1.14",
     "markdown-it": "^14.1.0",
