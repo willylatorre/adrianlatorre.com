@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import { useApi } from '@/composables/useApi'
-import CoffeeCounterCalloutNode from '@/components/tiptap/CoffeeCounterCalloutNode'
+import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
 import UEditor from '@/components/UEditor.vue'
 
 const { sendChatMessage } = useApi()
