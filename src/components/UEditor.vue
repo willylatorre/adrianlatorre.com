@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { EditorContent } from '@tiptap/vue-3'
 import type { Editor } from '@tiptap/vue-3'
+import UEditorToolbar from '@/components/UEditorToolbar.vue'
 
 defineProps<{
   editor: Editor | null
@@ -9,9 +10,9 @@ defineProps<{
 
 <template>
   <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-    <div class="editor-toolbar border-b border-slate-200 bg-slate-50 px-3 py-2">
+    <UEditorToolbar>
       <slot name="toolbar" :editor="editor" />
-    </div>
+    </UEditorToolbar>
     <div class="px-4 py-3">
       <EditorContent v-if="editor" :editor="editor" />
     </div>
