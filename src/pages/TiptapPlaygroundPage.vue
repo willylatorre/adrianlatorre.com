@@ -4,10 +4,9 @@ import MarkdownIt from 'markdown-it'
 import { useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
+import type { EditorToolbarItem } from '@nuxt/ui'
 import { useApi } from '@/composables/useApi'
 import UEditor from '@/components/UEditor.vue'
-import UEditorToolbar from '@/components/UEditorToolbar.vue'
-import type { EditorToolbarItem } from '@/types/editorToolbar'
 
 const { sendChatMessage } = useApi()
 
