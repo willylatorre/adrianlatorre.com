@@ -172,7 +172,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="space-y-8">
-    <header class="space-y-3">
+    <header class="space-y-4">
       <div>
         <h1 class="text-3xl font-bold text-slate-900">Tiptap + LLMs Playground</h1>
         <p class="text-slate-600 max-w-3xl">
@@ -193,6 +193,22 @@ onBeforeUnmount(() => {
           </a>
           that can power generation workflows alongside custom pipelines like this one.
         </p>
+      </div>
+      <div class="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2">
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900">Takeaways</h2>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
+            <li>Stream LLM Markdown into Tiptap with a tiny conversion helper.</li>
+            <li>Use a second editor to provide reliable context for improvements.</li>
+          </ul>
+        </div>
+        <div>
+          <h2 class="text-sm font-semibold text-slate-900">Try it</h2>
+          <p class="mt-2 text-sm text-slate-600">
+            Generate a summary, then highlight a sentence and ask the model to improve it with the
+            context notes.
+          </p>
+        </div>
       </div>
       <UAlert
         icon="i-lucide-sparkles"
@@ -237,16 +253,29 @@ onBeforeUnmount(() => {
       </div>
     </UCard>
 
-    <UCard>
-      <template #header>
-        <div class="space-y-1">
-          <h2 class="text-xl font-semibold text-slate-900">Markdown-driven editor</h2>
-          <p class="text-slate-600">
-            A simplified toolbar using the Nuxt UI Editor component shell, wired to Tiptap actions.
-          </p>
-        </div>
-      </template>
+    <section class="space-y-4">
+      <div class="space-y-2">
+        <h2 class="text-2xl font-semibold text-slate-900">How the demo works</h2>
+        <p class="text-slate-600 max-w-3xl">
+          The playground at the top wires together three things: the Markdown parser, a helper that
+          writes HTML into Tiptap, and the editor shell that renders the content.
+        </p>
+      </div>
+      <UCodeGroup>
+        <UCodeBlock label="binding.ts" :code="bindingSnippet" language="ts" />
+        <UCodeBlock label="improve-selection.ts" :code="improveSnippet" language="ts" />
+        <UCodeBlock label="UEditor.vue" :code="editorSnippet" language="vue" />
+      </UCodeGroup>
+    </section>
 
+    <section class="space-y-4">
+      <div class="space-y-2">
+        <h2 class="text-2xl font-semibold text-slate-900">Editable summary</h2>
+        <p class="text-slate-600 max-w-3xl">
+          The editor below is driven by the streamed Markdown output. Use the toolbar to tweak the
+          content or highlight a sentence before asking the model to improve it with context.
+        </p>
+      </div>
       <div class="space-y-4">
         <UEditor :editor="editor">
           <template #toolbar="{ editor: tiptap }">
@@ -339,47 +368,31 @@ onBeforeUnmount(() => {
           :description="improveError"
         />
       </div>
-    </UCard>
+    </section>
 
-    <UCard>
-      <template #header>
-        <div class="space-y-1">
-          <h2 class="text-xl font-semibold text-slate-900">Context editor</h2>
-          <p class="text-slate-600">
-            This read-only editor holds the background notes that guide the improvement prompt,
-            inspired by the
-            <a
-              class="text-slate-700 underline underline-offset-4"
-              href="https://tiptap.dev/docs/ui-components/components/ai-menu#getcontextandinsertateditor"
-              rel="noreferrer"
-              target="_blank"
-            >
-              getContextAndInsertAt
-            </a>
-            flow in the Tiptap AI menu examples.
-          </p>
-        </div>
-      </template>
-
-      <UEditor :editor="contextEditor" />
-    </UCard>
-
-    <UCard>
-      <template #header>
-        <div class="space-y-1">
-          <h2 class="text-xl font-semibold text-slate-900">Minimal binding snippet</h2>
-          <p class="text-slate-600">
-            A tiny reference for how the Markdown pipeline feeds the editor component.
-          </p>
-        </div>
-      </template>
-
-      <UCodeGroup>
-        <UCodeBlock label="binding.ts" :code="bindingSnippet" language="ts" />
-        <UCodeBlock label="improve-selection.ts" :code="improveSnippet" language="ts" />
-        <UCodeBlock label="UEditor.vue" :code="editorSnippet" language="vue" />
-      </UCodeGroup>
-    </UCard>
+    <section class="space-y-4">
+      <div class="space-y-2">
+        <h2 class="text-2xl font-semibold text-slate-900">Context + insertion points</h2>
+        <p class="text-slate-600 max-w-3xl">
+          Getting the right context and inserting model output where the cursor lives is often the
+          trickiest part. You have to preserve selections, handle collapsed cursors, and avoid
+          clobbering nearby content. Thankfully, Tiptap provides helper utilities like
+          <a
+            class="text-slate-700 underline underline-offset-4"
+            href="https://tiptap.dev/docs/ui-components/components/ai-menu#getcontextandinsertateditor"
+            rel="noreferrer"
+            target="_blank"
+          >
+            getContextAndInsertAt
+          </a>
+          so you can keep the insertion logic safe and predictable.
+        </p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div class="mb-3 text-sm font-semibold text-slate-700">Context editor</div>
+        <UEditor :editor="contextEditor" />
+      </div>
+    </section>
 
   </div>
 </template>
