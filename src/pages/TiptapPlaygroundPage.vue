@@ -2,6 +2,8 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
+import Underline from '@tiptap/extension-underline'
+import type { EditorToolbarItem } from '@nuxt/ui'
 import { useApi } from '@/composables/useApi'
 import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
 import UEditor from '@/components/UEditor.vue'
@@ -47,8 +49,8 @@ Selected text:
 \${selectedText}\``
 
 const editor = useEditor({
-  extensions: [StarterKit],
-  content: '<p>Run the prompt to generate an HTML summary.</p>',
+  extensions: [StarterKit, Underline],
+  content: '<p>Run the prompt to generate a Markdown summary.</p>',
   editorProps: {
     attributes: {
       class:
@@ -368,71 +370,7 @@ onBeforeUnmount(() => {
       <div class="space-y-4">
         <UEditor :editor="contextAwareEditor">
           <template #toolbar="{ editor: tiptap }">
-            <div class="flex flex-wrap gap-2">
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('bold') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleBold().run()"
-              >
-                Bold
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('italic') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleItalic().run()"
-              >
-                Italic
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('strike') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleStrike().run()"
-              >
-                Strike
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('bulletList') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleBulletList().run()"
-              >
-                Bullet list
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('orderedList') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleOrderedList().run()"
-              >
-                Ordered list
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('blockquote') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleBlockquote().run()"
-              >
-                Quote
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('codeBlock') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleCodeBlock().run()"
-              >
-                Code block
-              </UButton>
-            </div>
+            <UEditorToolbar :editor="tiptap" :items="toolbarItems" layout="bubble" />
           </template>
         </UEditor>
         <div class="flex flex-wrap items-center justify-between gap-3">
