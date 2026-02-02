@@ -39,7 +39,7 @@ ${scriptClose}
 
 const improveSnippet = `const { from, to } = editor.state.selection
 const selectedText = editor.state.doc.textBetween(from, to, '\\n')
-const contextText = contextEditor.getText()
+const contextText = contextNotes
 
 const prompt = \`Improve the highlighted text using the context.
 Context:
@@ -71,17 +71,8 @@ const contextAwareEditor = useEditor({
   },
 })
 
-const contextEditor = useEditor({
-  extensions: [StarterKit],
-  content:
-    '<h3>Context notes</h3><p>These notes give the model the voice, audience, and constraints to keep edits grounded in the story of this page.</p><ul><li>Voice: confident, friendly, a touch witty.</li><li>Audience: builders integrating LLM output into Tiptap.</li><li>Constraint: keep output structured for HTML parsing.</li></ul>',
-  editorProps: {
-    attributes: {
-      class:
-        'min-h-[12rem] focus:outline-none prose prose-slate max-w-none text-slate-700',
-    },
-  },
-})
+const contextNotes =
+  'Voice: confident, friendly, a touch witty. Audience: builders integrating LLM output into Tiptap. Constraint: keep output structured for HTML parsing.'
 
 const interactiveEditor = useEditor({
   extensions: [StarterKit, CoffeeCounterCalloutNode],
@@ -128,7 +119,7 @@ const handleImproveSelection = async () => {
   }
 
   const selectedText = contextAwareEditor.value.state.doc.textBetween(from, to, '\n')
-  const contextText = contextEditor.value?.getText() ?? ''
+  const contextText = contextNotes
   const improvePrompt = `Improve the highlighted text below using the provided context. Preserve the meaning and keep it concise.\n\nContext:\n${contextText}\n\nSelected text:\n${selectedText}`
   let buffer = ''
 
@@ -187,7 +178,6 @@ const handleGenerate = async () => {
 onBeforeUnmount(() => {
   editor.value?.destroy()
   contextAwareEditor.value?.destroy()
-  contextEditor.value?.destroy()
   interactiveEditor.value?.destroy()
 })
 </script>
@@ -375,7 +365,7 @@ onBeforeUnmount(() => {
         </UEditor>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="text-sm text-slate-500">
-            Select text in the editor and improve it using the context notes below.
+            Select text in the editor and improve it using the context notes.
           </div>
           <UButton
             size="sm"
@@ -394,10 +384,6 @@ onBeforeUnmount(() => {
           icon="i-lucide-alert-triangle"
           :description="improveError"
         />
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <div class="mb-3 text-sm font-semibold text-slate-700">Context editor</div>
-          <UEditor :editor="contextEditor" />
-        </div>
       </div>
     </section>
 
@@ -428,15 +414,15 @@ onBeforeUnmount(() => {
           <h3 class="text-sm font-semibold text-slate-900">Takeaways</h3>
           <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
             <li>Stream LLM HTML straight into Tiptap for stable structure.</li>
-            <li>Use a second editor to provide reliable context for improvements.</li>
+            <li>Use consistent context notes to guide on-demand rewrites.</li>
             <li>Node views unlock interactive UI inside the document.</li>
           </ul>
         </div>
         <div>
           <h3 class="text-sm font-semibold text-slate-900">Try it</h3>
           <p class="mt-2 text-sm text-slate-600">
-            Generate a summary, then highlight a sentence in the context editor and ask the model
-            to improve it with the notes below.
+            Generate a summary, then highlight a sentence and ask the model to improve it with the
+            context notes.
           </p>
         </div>
       </div>
