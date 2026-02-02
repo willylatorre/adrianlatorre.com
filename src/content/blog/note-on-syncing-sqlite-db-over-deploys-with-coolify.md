@@ -1,5 +1,5 @@
 ---
-title: Note on syncing sqlite db over deploys with Coolify
+title: Notes On Syncing Sqlite Over Coolify Deploys
 date: 2026-01-28
 description: A diary note on making SQLite survive deploys with Coolify.
 ---
