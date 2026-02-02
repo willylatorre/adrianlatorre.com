@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import AdrianStatus from './components/AdrianStatus.vue'
 import CoffeeCounter from './components/CoffeeCounter.vue'
 import ContactModal from './components/ContactModal.vue'
@@ -8,8 +8,54 @@ import FunFacts from './components/FunFacts.vue'
 // Modal state
 const isModalOpen = ref(false)
 
+type BlogPost = {
+  slug: string
+  title: string
+  date?: string
+  description?: string
+}
+
+type BlogModule = {
+  title?: unknown
+  date?: unknown
+  description?: unknown
+}
+
+function parseDateMs(date?: string) {
+  if (!date) return 0
+  const ms = Date.parse(date)
+  return Number.isFinite(ms) ? ms : 0
+}
+
+function formatDate(date: string) {
+  const ms = Date.parse(date)
+  if (!Number.isFinite(ms)) return date
+  return new Intl.DateTimeFormat('en', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  }).format(ms)
+}
+
+const postModules = import.meta.glob('./content/blog/*.md', {
+  eager: true,
+}) as Record<string, BlogModule>
+
+const blogPosts = computed<BlogPost[]>(() => {
+  return Object.entries(postModules)
+    .map(([path, mod]) => {
+      const slug = path.split('/').pop()?.replace(/\.md$/, '') ?? path
+      const title = typeof mod.title === 'string' ? mod.title : slug
+      const date = typeof mod.date === 'string' ? mod.date : undefined
+      const description = typeof mod.description === 'string' ? mod.description : undefined
+
+      return { slug, title, date, description }
+    })
+    .sort((a, b) => parseDateMs(b.date) - parseDateMs(a.date))
+})
+
 // Search groups for CommandPalette
-const searchGroups = [
+const baseSearchGroups = [
   {
     id: 'about-me',
     label: 'About Me',
@@ -75,6 +121,23 @@ const searchGroups = [
     ],
   },
 ]
+
+const blogSearchGroup = computed(() => {
+  const items = blogPosts.value.map((post) => ({
+    label: post.title,
+    suffix: post.description ?? (post.date ? formatDate(post.date) : undefined),
+    to: `/blog/${post.slug}`,
+    icon: 'i-lucide-file-text',
+  }))
+
+  return {
+    id: 'articles',
+    label: 'Articles',
+    items,
+  }
+})
+
+const searchGroups = computed(() => [...baseSearchGroups, blogSearchGroup.value])
 
 const links = [
   {
