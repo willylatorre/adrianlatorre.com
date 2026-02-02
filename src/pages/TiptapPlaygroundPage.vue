@@ -9,13 +9,46 @@ import UEditor from '@/components/UEditor.vue'
 const { sendChatMessage } = useApi()
 
 const prompt = ref(
-  'Generate a brief summary about the advantages of using tip-tap editor over a simple WYSIWYG editor (use a Markdown response). Highlight that one of the trickiest points is maintaining the response format outcome consistent and the interaction with the editor.',
+  'Generate a brief summary about the advantages of using tip-tap editor over a simple WYSIWYG editor (use a Markdown response). Include a short heading and a bullet list. Highlight that one of the trickiest points is maintaining the response format outcome consistent and the interaction with the editor.',
 )
 const status = ref<'idle' | 'loading' | 'streaming' | 'done' | 'error'>('idle')
 const errorMessage = ref('')
 const rawMarkdown = ref('')
+const improveStatus = ref<'idle' | 'loading' | 'streaming' | 'done' | 'error'>('idle')
+const improveError = ref('')
 
 const markdown = new MarkdownIt({ linkify: true, breaks: true })
+const scriptClose = '</scr' + 'ipt>'
+
+const bindingSnippet = `const markdown = new MarkdownIt({ linkify: true, breaks: true })
+
+const setEditorFromMarkdown = (value: string) => {
+  if (!editor.value) return
+  const html = markdown.render(value)
+  editor.value.commands.setContent(html, false)
+}`
+
+const editorSnippet = `<script setup lang="ts">
+import { EditorContent } from '@tiptap/vue-3'
+import type { Editor } from '@tiptap/vue-3'
+
+defineProps<{ editor: Editor | null }>()
+${scriptClose}
+
+<template>
+  <EditorContent v-if="editor" :editor="editor" />
+</template>`
+
+const improveSnippet = `const { from, to } = editor.state.selection
+const selectedText = editor.state.doc.textBetween(from, to, '\\n')
+const contextText = contextEditor.getText()
+
+const prompt = \`Improve the highlighted text using the context.
+Context:
+\${contextText}
+
+Selected text:
+\${selectedText}\``
 
 const editor = useEditor({
   extensions: [StarterKit],
@@ -25,6 +58,19 @@ const editor = useEditor({
       class:
         'min-h-[16rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
     },
+  },
+})
+
+const contextEditor = useEditor({
+  extensions: [StarterKit],
+  content:
+    '<h3>Context notes</h3><p>This context editor stores background notes about a feature. It can include product tone, audience, or constraints. Select text in the main editor to ask the LLM to improve it using this context.</p>',
+  editorProps: {
+    attributes: {
+      class:
+        'min-h-[12rem] focus:outline-none prose prose-slate max-w-none text-slate-700',
+    },
+    editable: () => false,
   },
 })
 
@@ -45,9 +91,48 @@ const statusLabel = computed(() => {
 })
 
 const setEditorFromMarkdown = (value: string) => {
-  if (!editor) return
+  if (!editor.value) return
   const html = markdown.render(value)
-  editor.commands.setContent(html, false)
+  editor.value.commands.setContent(html, false)
+}
+
+const handleImproveSelection = async () => {
+  improveError.value = ''
+  if (!editor.value) return
+  const { from, to } = editor.value.state.selection
+
+  if (from === to) {
+    improveStatus.value = 'error'
+    improveError.value = 'Select some text in the editor to improve it.'
+    return
+  }
+
+  const selectedText = editor.value.state.doc.textBetween(from, to, '\n')
+  const contextText = contextEditor.value?.getText() ?? ''
+  const improvePrompt = `Improve the highlighted text below using the provided context. Preserve the meaning and keep it concise.\n\nContext:\n${contextText}\n\nSelected text:\n${selectedText}`
+  let buffer = ''
+
+  improveStatus.value = 'loading'
+
+  await sendChatMessage(
+    [],
+    improvePrompt,
+    (chunk) => {
+      improveStatus.value = 'streaming'
+      buffer += chunk
+    },
+    () => {
+      improveStatus.value = 'done'
+      const improved = buffer.trim()
+      if (improved) {
+        editor.value?.commands.insertContentAt({ from, to }, improved)
+      }
+    },
+    (error) => {
+      improveStatus.value = 'error'
+      improveError.value = error
+    },
+  )
 }
 
 const handleGenerate = async () => {
@@ -80,7 +165,8 @@ const handleGenerate = async () => {
 }
 
 onBeforeUnmount(() => {
-  editor?.destroy()
+  editor.value?.destroy()
+  contextEditor.value?.destroy()
 })
 </script>
 
@@ -94,6 +180,18 @@ onBeforeUnmount(() => {
           control over the editing experience while still offering rich text primitives out of the
           box. This playground demonstrates how to plug an LLM response directly into a Tiptap
           editor using a Markdown pipeline.
+        </p>
+        <p class="text-slate-600 max-w-3xl">
+          Tiptap also ships an
+          <a
+            class="text-slate-700 underline underline-offset-4"
+            href="https://tiptap.dev/docs/content-ai/capabilities/generation/overview"
+            rel="noreferrer"
+            target="_blank"
+          >
+            out-of-the-box AI integration extension
+          </a>
+          that can power generation workflows alongside custom pipelines like this one.
         </p>
       </div>
       <UAlert
@@ -117,7 +215,7 @@ onBeforeUnmount(() => {
       </template>
 
       <div class="space-y-4">
-        <UTextarea v-model="prompt" :rows="4" />
+        <UTextarea v-model="prompt" :rows="4" class="w-full" />
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex items-center gap-2">
             <UBadge color="gray" variant="soft">
@@ -219,19 +317,69 @@ onBeforeUnmount(() => {
             </div>
           </template>
         </UEditor>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="text-sm text-slate-500">
+            Select text in the editor and improve it using the context notes below.
+          </div>
+          <UButton
+            size="sm"
+            variant="soft"
+            color="primary"
+            :loading="improveStatus === 'loading' || improveStatus === 'streaming'"
+            @click="handleImproveSelection"
+          >
+            Improve selection
+          </UButton>
+        </div>
+        <UAlert
+          v-if="improveError"
+          color="red"
+          variant="soft"
+          icon="i-lucide-alert-triangle"
+          :description="improveError"
+        />
       </div>
     </UCard>
 
     <UCard>
       <template #header>
         <div class="space-y-1">
-          <h2 class="text-xl font-semibold text-slate-900">Latest Markdown payload</h2>
+          <h2 class="text-xl font-semibold text-slate-900">Context editor</h2>
           <p class="text-slate-600">
-            Use this to verify the LLM output format remains stable across iterations.
+            This read-only editor holds the background notes that guide the improvement prompt,
+            inspired by the
+            <a
+              class="text-slate-700 underline underline-offset-4"
+              href="https://tiptap.dev/docs/ui-components/components/ai-menu#getcontextandinsertateditor"
+              rel="noreferrer"
+              target="_blank"
+            >
+              getContextAndInsertAt
+            </a>
+            flow in the Tiptap AI menu examples.
           </p>
         </div>
       </template>
-      <UTextarea v-model="rawMarkdown" :rows="8" readonly />
+
+      <UEditor :editor="contextEditor" />
     </UCard>
+
+    <UCard>
+      <template #header>
+        <div class="space-y-1">
+          <h2 class="text-xl font-semibold text-slate-900">Minimal binding snippet</h2>
+          <p class="text-slate-600">
+            A tiny reference for how the Markdown pipeline feeds the editor component.
+          </p>
+        </div>
+      </template>
+
+      <UCodeGroup>
+        <UCodeBlock label="binding.ts" :code="bindingSnippet" language="ts" />
+        <UCodeBlock label="improve-selection.ts" :code="improveSnippet" language="ts" />
+        <UCodeBlock label="UEditor.vue" :code="editorSnippet" language="vue" />
+      </UCodeGroup>
+    </UCard>
+
   </div>
 </template>
