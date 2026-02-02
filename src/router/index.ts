@@ -42,6 +42,11 @@ const router = createRouter({
       component: lazy(() => import('../pages/AIChatPage.vue')),
     },
     {
+      path: '/tiptap-llm',
+      name: 'Tiptap + LLMs',
+      component: lazy(() => import('../pages/TiptapPlaygroundPage.vue')),
+    },
+    {
       path: '/media',
       name: 'Media',
       component: lazy(() => import('../pages/MediaPage.vue')),

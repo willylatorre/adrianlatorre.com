@@ -54,6 +54,12 @@ const searchGroups = [
         to: '/ai-chat',
         icon: 'i-lucide-message-circle',
       },
+      {
+        label: 'Tiptap + LLMs',
+        suffix: 'Editor workflows',
+        to: '/tiptap-llm',
+        icon: 'i-lucide-text-cursor-input',
+      },
     ],
   },
   {
@@ -94,6 +100,11 @@ const links = [
         label: 'AI Chat',
         icon: 'i-lucide-message-circle',
         to: '/ai-chat',
+      },
+      {
+        label: 'Tiptap + LLMs',
+        icon: 'i-lucide-text-cursor-input',
+        to: '/tiptap-llm',
       },
       {
         label: 'Stocks',
