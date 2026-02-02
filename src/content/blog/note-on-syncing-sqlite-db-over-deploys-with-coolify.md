@@ -22,7 +22,7 @@ ENV DB_PATH=/app/data/adrian.db
 
 In Coolify the matching piece is the storage volume that targets `/app/data`. That makes the database file survive image rebuilds and deploys, and it also makes the container ephemeral in the right way, because only the data is the durable part.
 
-![Coolify storage volume configuration](/blog/coolify-storage.png)
+![Coolify storage volume configuration](/img/coolify-storage.png)
 
 The coffee counter on the site is using this setup, so I can redeploy without losing the counter state.
 
