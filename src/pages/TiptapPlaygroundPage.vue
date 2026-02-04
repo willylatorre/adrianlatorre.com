@@ -48,6 +48,50 @@ Context:
 Selected text:
 \${selectedText}\``
 
+const aiIntegrationSnippet = `const handleGenerate = async () => {
+  if (!prompt.value.trim()) return
+  status.value = 'loading'
+  rawHtml.value = ''
+  let buffer = ''
+
+  await sendChatMessage(
+    [],
+    prompt.value,
+    (chunk) => {
+      status.value = 'streaming'
+      buffer += chunk
+      rawHtml.value = buffer
+    },
+    () => {
+      status.value = 'done'
+      rawHtml.value = buffer.trim()
+      if (rawHtml.value) {
+        editor.value?.commands.setContent(rawHtml.value, false)
+      }
+    },
+    (error) => {
+      status.value = 'error'
+      errorMessage.value = error
+    },
+  )
+}`
+
+const interactiveViewsSnippet = `const interactiveEditor = useEditor({
+  extensions: [StarterKit, CoffeeCounterCalloutNode],
+  content: '<coffee-counter-callout></coffee-counter-callout>',
+})
+
+const CoffeeCounterCalloutNode = Node.create({
+  name: 'coffeeCounterCallout',
+  group: 'block',
+  atom: true,
+  parseHTML: () => [{ tag: 'coffee-counter-callout' }],
+  renderHTML: () => ['coffee-counter-callout'],
+  addNodeView() {
+    return VueNodeViewRenderer(CoffeeCounterCallout)
+  },
+})`
+
 const editor = useEditor({
   extensions: [StarterKit, Underline],
   content: '<p>Run the prompt to generate a Markdown summary.</p>',
@@ -333,6 +377,7 @@ onBeforeUnmount(() => {
         </p>
       </div>
       <UCodeGroup>
+        <UCodeBlock label="ai-integration.ts" :code="aiIntegrationSnippet" language="ts" />
         <UCodeBlock label="binding.ts" :code="bindingSnippet" language="ts" />
         <UCodeBlock label="improve-selection.ts" :code="improveSnippet" language="ts" />
         <UCodeBlock label="UEditor.vue" :code="editorSnippet" language="vue" />
@@ -397,7 +442,26 @@ onBeforeUnmount(() => {
           a Vue node view to render the coffee counter callout, and the same pattern translates to
           React with its node view renderer.
         </p>
+        <p class="text-slate-600 max-w-3xl">
+          See the full walkthrough in the
+          <a
+            class="text-slate-700 underline underline-offset-4"
+            href="https://tiptap.dev/docs/examples/advanced/interactive-react-and-vue-views"
+            rel="noreferrer"
+            target="_blank"
+          >
+            interactive React + Vue views example
+          </a>
+          from the Tiptap docs.
+        </p>
       </div>
+      <UCodeGroup>
+        <UCodeBlock
+          label="interactive-views.ts"
+          :code="interactiveViewsSnippet"
+          language="ts"
+        />
+      </UCodeGroup>
       <UEditor :editor="interactiveEditor" />
     </section>
 
