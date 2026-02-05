@@ -35,14 +35,23 @@ const resolvedContent = computed({
 })
 
 const resolvedExtensions = computed(() => {
-  return props.extensions.map((name) => {
+  const resolved: Extension[] = []
+  const missing: string[] = []
+
+  for (const name of props.extensions) {
     const extension = EXTENSION_MAP[name]
     if (!extension) {
-      console.warn(`Extension "${name}" not found in extension map`)
-      return null
+      missing.push(name)
+      continue
     }
-    return extension
-  }).filter(Boolean) as Extension[]
+    resolved.push(extension)
+  }
+
+  if (missing.length) {
+    console.warn(`Extensions not found in extension map: ${missing.join(', ')}`)
+  }
+
+  return resolved
 })
 
 const editor = useTipTap({

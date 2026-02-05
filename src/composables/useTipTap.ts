@@ -7,9 +7,10 @@ const DEFAULT_EDITOR_CLASS =
   'min-h-[16rem] focus:outline-none prose prose-slate max-w-none text-slate-800'
 
 type EditorProps = EditorOptions['editorProps']
+type MaybeRef<T> = T | Ref<T>
 
 export type UseTipTapOptions = Omit<EditorOptions, 'content' | 'onUpdate' | 'editorProps'> & {
-  content: Ref<string> | string
+  content: MaybeRef<string>
   editorProps?: EditorProps
   onUpdate?: (content: string, editor: Editor) => void
 }
@@ -36,14 +37,16 @@ const mergeEditorClass = (editorProps?: EditorProps): EditorProps | undefined =>
   }
 }
 
+const normalizeContent = (value: string | null | undefined) => value ?? ''
+
 export const useTipTap = ({ content, onUpdate, editorProps, ...options }: UseTipTapOptions) => {
   const editor = useEditor({
     ...options,
-    content: unref(content),
+    content: normalizeContent(unref(content)),
     editorProps: mergeEditorClass(editorProps),
     onUpdate: ({ editor: tiptap }) => {
       const html = tiptap.getHTML()
-      if (isRef(content) && content.value !== html) {
+      if (isRef(content) && normalizeContent(content.value) !== html) {
         content.value = html
       }
       onUpdate?.(html, tiptap)
@@ -51,7 +54,7 @@ export const useTipTap = ({ content, onUpdate, editorProps, ...options }: UseTip
   })
 
   watch(
-    () => unref(content),
+    () => normalizeContent(unref(content)),
     (value) => {
       const instance = editor.value
       if (!instance) return

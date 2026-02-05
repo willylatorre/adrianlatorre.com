@@ -17,27 +17,47 @@ const improveError = ref('')
 const scriptClose = '</scr' + 'ipt>'
 
 const bindingSnippet = `const editorContent = ref('<p>Start writing...</p>')
+const lastSavedHtml = ref('')
 
 const editor = useTipTap({
   extensions: [StarterKit, Underline],
   content: editorContent,
+  editorProps: {
+    attributes: {
+      class: 'min-h-[14rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
+    },
+  },
+  onUpdate: (html) => {
+    lastSavedHtml.value = html
+  },
 })
 
-const setEditorFromHtml = (value: string) => {
+const applyStreamedHtml = (value: string) => {
   editorContent.value = value
 }`
 
 const editorSnippet = `<script setup lang="ts">
 import TipTapEditor from '@/components/TipTapEditor.vue'
+import TipTapToolbar from '@/components/TipTapToolbar.vue'
 
 const editorContent = ref('<p>Hello from Tiptap.</p>')
+const editorProps = {
+  attributes: {
+    class: 'min-h-[16rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
+  },
+}
 ${scriptClose}
 
 <template>
   <TipTapEditor
     v-model:content="editorContent"
-    :extensions="['StarterKit', 'Underline']"
-  />
+    :extensions="['StarterKit', 'Underline', 'CoffeeCounterCalloutNode']"
+    :editor-props="editorProps"
+  >
+    <template #toolbar="{ editor }">
+      <TipTapToolbar :editor="editor" />
+    </template>
+  </TipTapEditor>
 </template>`
 
 const improveSnippet = `const { from, to } = editor.state.selection
@@ -67,7 +87,7 @@ const aiIntegrationSnippet = `const handleGenerate = async () => {
       status.value = 'done'
       const html = buffer.trim()
       if (html) {
-        editorContent.value = html
+        applyStreamedHtml(html)
       }
     },
     (error) => {
@@ -84,9 +104,14 @@ const interactiveViewsSnippet = `const interactiveContent = ref(
 const interactiveEditor = useTipTap({
   extensions: [StarterKit, CoffeeCounterCalloutNode],
   content: interactiveContent,
+  editorProps: {
+    attributes: {
+      class: 'min-h-[12rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
+    },
+  },
 })`
 
-const editorContent = ref('<p>Run the prompt to generate a Markdown summary.</p>')
+const editorContent = ref('<p>Run the prompt to generate an HTML summary.</p>')
 const contextAwareContent = ref(
   '<h3>Context-aware rewrite playground</h3><p>This is the editor where you can highlight a line and ask the model to rework it using the notes below. It already knows that TipTap likes structure, so it keeps the bullets neat and the headings tidy.</p><ul><li>The UX should feel snappy, not robotic.</li><li>Consistency beats cleverness when output hits the editor.</li></ul>',
 )
@@ -129,7 +154,7 @@ const statusLabel = computed(() => {
   }
 })
 
-const setEditorFromHtml = (value: string) => {
+const applyStreamedHtml = (value: string) => {
   editorContent.value = value
 }
 
@@ -190,7 +215,7 @@ const handleGenerate = async () => {
       status.value = 'done'
       const html = buffer.trim()
       if (html) {
-        setEditorFromHtml(html)
+        applyStreamedHtml(html)
       }
     },
     (error) => {
@@ -269,8 +294,15 @@ const handleGenerate = async () => {
       <div class="space-y-2">
         <h2 class="text-2xl font-semibold text-slate-900">How the demo works</h2>
         <p class="text-slate-600 max-w-3xl">
-          The playground at the top wires together three things: the LLM prompt, a helper that
-          writes HTML into Tiptap, and the editor shell that renders the content.
+          The playground at the top wires together three things: the LLM prompt, the
+          <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm">useTipTap</code> composable that
+          syncs HTML into the editor, and the <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm">TipTapEditor</code>
+          wrapper that standardizes extensions + toolbar UI.
+        </p>
+        <p class="text-slate-600 max-w-3xl">
+          The composable hides the ProseMirror plumbing (content syncing, default editor classes,
+          update hooks). The wrapper then maps named extensions, exposes a toolbar slot, and keeps
+          the editor shell consistent across contexts.
         </p>
       </div>
       <UCodeGroup>
