@@ -2,6 +2,10 @@
 import { EditorContent } from '@tiptap/vue-3'
 import type { Editor } from '@tiptap/vue-3'
 
+defineOptions({
+  name: 'TipTapEditor',
+})
+
 defineProps<{
   editor: Editor | null
 }>()
