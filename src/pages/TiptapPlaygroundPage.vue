@@ -6,7 +6,7 @@ import Underline from '@tiptap/extension-underline'
 import type { EditorToolbarItem } from '@nuxt/ui'
 import { useApi } from '@/composables/useApi'
 import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
-import UEditor from '@/components/UEditor.vue'
+import TipTapEditor from '@/components/TipTapEditor.vue'
 
 const { sendChatMessage } = useApi()
 
@@ -296,7 +296,7 @@ onBeforeUnmount(() => {
             The editor below reflects the HTML returned by the model.
           </p>
         </div>
-        <UEditor :editor="editor">
+        <TipTapEditor :editor="editor">
           <template #toolbar="{ editor: tiptap }">
             <div class="flex flex-wrap gap-2">
               <UButton
@@ -364,7 +364,7 @@ onBeforeUnmount(() => {
               </UButton>
             </div>
           </template>
-        </UEditor>
+        </TipTapEditor>
       </div>
     </UCard>
 
@@ -380,7 +380,7 @@ onBeforeUnmount(() => {
         <UCodeBlock label="ai-integration.ts" :code="aiIntegrationSnippet" language="ts" />
         <UCodeBlock label="binding.ts" :code="bindingSnippet" language="ts" />
         <UCodeBlock label="improve-selection.ts" :code="improveSnippet" language="ts" />
-        <UCodeBlock label="UEditor.vue" :code="editorSnippet" language="vue" />
+        <UCodeBlock label="TipTapEditor.vue" :code="editorSnippet" language="vue" />
       </UCodeGroup>
     </section>
 
@@ -403,11 +403,11 @@ onBeforeUnmount(() => {
         </p>
       </div>
       <div class="space-y-4">
-        <UEditor :editor="contextAwareEditor">
+        <TipTapEditor :editor="contextAwareEditor">
           <template #toolbar="{ editor: tiptap }">
             <UEditorToolbar :editor="tiptap" :items="toolbarItems" layout="bubble" />
           </template>
-        </UEditor>
+        </TipTapEditor>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="text-sm text-slate-500">
             Select text in the editor and improve it using the context notes.
@@ -462,7 +462,7 @@ onBeforeUnmount(() => {
           language="ts"
         />
       </UCodeGroup>
-      <UEditor :editor="interactiveEditor" />
+      <TipTapEditor :editor="interactiveEditor" />
     </section>
 
     <section class="space-y-4">
