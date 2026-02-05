@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
-import { useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import type { EditorToolbarItem } from '@nuxt/ui'
 import { useApi } from '@/composables/useApi'
+import { useTipTap } from '@/composables/useTipTap'
 import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
 import TipTapEditor from '@/components/TipTapEditor.vue'
 
@@ -92,42 +92,24 @@ const CoffeeCounterCalloutNode = Node.create({
   },
 })`
 
-const editor = useEditor({
+const { editor } = useTipTap({
   extensions: [StarterKit, Underline],
   content: '<p>Run the prompt to generate a Markdown summary.</p>',
-  editorProps: {
-    attributes: {
-      class:
-        'min-h-[16rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
-    },
-  },
 })
 
-const contextAwareEditor = useEditor({
+const { editor: contextAwareEditor } = useTipTap({
   extensions: [StarterKit],
   content:
     '<h3>Context-aware rewrite playground</h3><p>This is the editor where you can highlight a line and ask the model to rework it using the notes below. It already knows that TipTap likes structure, so it keeps the bullets neat and the headings tidy.</p><ul><li>The UX should feel snappy, not robotic.</li><li>Consistency beats cleverness when output hits the editor.</li></ul>',
-  editorProps: {
-    attributes: {
-      class:
-        'min-h-[14rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
-    },
-  },
 })
 
 const contextNotes =
   'Voice: confident, friendly, a touch witty. Audience: builders integrating LLM output into Tiptap. Constraint: keep output structured for HTML parsing.'
 
-const interactiveEditor = useEditor({
+const { editor: interactiveEditor } = useTipTap({
   extensions: [StarterKit, CoffeeCounterCalloutNode],
   content:
     '<h3>Interactive views with Vue + React</h3><p>Drop a custom component inside the editor to blend structured text with live UI. The callout below is a Vue component running inside a Tiptap node view.</p><coffee-counter-callout></coffee-counter-callout><p>In React, the same idea uses a ReactNodeViewRenderer. The key is that the editor still owns the document, while your framework owns the interactivity.</p>',
-  editorProps: {
-    attributes: {
-      class:
-        'min-h-[14rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
-    },
-  },
 })
 
 const isBusy = computed(() => status.value === 'loading' || status.value === 'streaming')
