@@ -6,6 +6,7 @@ import Underline from '@tiptap/extension-underline'
 import { useApi } from '@/composables/useApi'
 import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
 import UEditor from '@/components/UEditor.vue'
+import UEditorToolbar from '@/components/UEditorToolbar.vue'
 
 const { sendChatMessage } = useApi()
 
@@ -303,7 +304,11 @@ onBeforeUnmount(() => {
             The editor below reflects the HTML returned by the model.
           </p>
         </div>
-        <UEditor :editor="editor" />
+        <UEditor :editor="editor">
+          <template #toolbar="{ editor: tiptap }">
+            <UEditorToolbar :editor="tiptap" />
+          </template>
+        </UEditor>
       </div>
     </UCard>
 
@@ -342,7 +347,11 @@ onBeforeUnmount(() => {
         </p>
       </div>
       <div class="space-y-4">
-        <UEditor :editor="contextAwareEditor" />
+        <UEditor :editor="contextAwareEditor">
+          <template #toolbar="{ editor: tiptap }">
+            <UEditorToolbar :editor="tiptap" />
+          </template>
+        </UEditor>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="text-sm text-slate-500">
             Select text in the editor and improve it using the context notes.
@@ -397,7 +406,11 @@ onBeforeUnmount(() => {
           language="ts"
         />
       </UCodeGroup>
-      <UEditor :editor="interactiveEditor" />
+      <UEditor :editor="interactiveEditor">
+        <template #toolbar="{ editor: tiptap }">
+          <UEditorToolbar :editor="tiptap" />
+        </template>
+      </UEditor>
     </section>
 
     <section class="space-y-4">
