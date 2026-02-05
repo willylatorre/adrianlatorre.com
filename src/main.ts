@@ -7,6 +7,7 @@ import ProsePre from '@nuxt/ui/components/prose/Pre.vue'
 import CoffeeCounter from './components/CoffeeCounter.vue'
 import CoffeeCounterCallout from './components/CoffeeCounterCallout.vue'
 import './assets/imports.css'
+import './assets/tiptap.css'
 import './assets/main.scss'
 import 'highlight.js/styles/github.css'
 

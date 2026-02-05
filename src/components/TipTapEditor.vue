@@ -9,7 +9,7 @@ import { useTipTap } from '@/composables/useTipTap'
 import TipTapToolbar from '@/components/TipTapToolbar.vue'
 
 const DEFAULT_EDITOR_CLASS =
-  'min-h-[12rem] focus:outline-none prose prose-slate max-w-none text-slate-800'
+  'tiptap min-h-[12rem] focus:outline-none prose prose-slate max-w-none text-slate-800'
 
 const EXTENSION_MAP: Record<string, Extension> = {
   StarterKit,
