@@ -22,11 +22,6 @@ const lastSavedHtml = ref('')
 const editor = useTipTap({
   extensions: [StarterKit, Underline],
   content: editorContent,
-  editorProps: {
-    attributes: {
-      class: 'min-h-[14rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
-    },
-  },
   onUpdate: (html) => {
     lastSavedHtml.value = html
   },
@@ -41,18 +36,12 @@ import TipTapEditor from '@/components/TipTapEditor.vue'
 import TipTapToolbar from '@/components/TipTapToolbar.vue'
 
 const editorContent = ref('<p>Hello from Tiptap.</p>')
-const editorProps = {
-  attributes: {
-    class: 'min-h-[16rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
-  },
-}
 ${scriptClose}
 
 <template>
   <TipTapEditor
     v-model:content="editorContent"
     :extensions="['StarterKit', 'Underline', 'CoffeeCounterCalloutNode']"
-    :editor-props="editorProps"
   >
     <template #toolbar="{ editor }">
       <TipTapToolbar :editor="editor" />
@@ -104,11 +93,6 @@ const interactiveViewsSnippet = `const interactiveContent = ref(
 const interactiveEditor = useTipTap({
   extensions: [StarterKit, CoffeeCounterCalloutNode],
   content: interactiveContent,
-  editorProps: {
-    attributes: {
-      class: 'min-h-[12rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
-    },
-  },
 })`
 
 const editorContent = ref('<p>Run the prompt to generate an HTML summary.</p>')
@@ -118,19 +102,6 @@ const contextAwareContent = ref(
 const interactiveContent = ref(
   '<h3>Interactive views with Vue + React</h3><p>Drop a custom component inside the editor to blend structured text with live UI. The callout below is a Vue component running inside a Tiptap node view.</p><coffee-counter-callout></coffee-counter-callout><p>In React, the same idea uses a ReactNodeViewRenderer. The key is that the editor still owns the document, while your framework owns the interactivity.</p>',
 )
-
-const baseEditorProps = {
-  attributes: {
-    class: 'min-h-[14rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
-  },
-}
-
-const outputEditorProps = {
-  attributes: {
-    ...baseEditorProps.attributes,
-    class: 'min-h-[16rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
-  },
-}
 
 type TipTapEditorInstance = InstanceType<typeof TipTapEditor>
 const contextAwareEditor = ref<TipTapEditorInstance | null>(null)
@@ -282,7 +253,7 @@ const handleGenerate = async () => {
             The editor below reflects the HTML returned by the model.
           </p>
         </div>
-        <TipTapEditor v-model:content="editorContent" :extensions="['StarterKit']" :editor-props="outputEditorProps">
+        <TipTapEditor v-model:content="editorContent" :extensions="['StarterKit']">
           <template #toolbar="{ editor: tiptap }">
             <TipTapToolbar :editor="tiptap" />
           </template>
@@ -300,9 +271,9 @@ const handleGenerate = async () => {
           wrapper that standardizes extensions + toolbar UI.
         </p>
         <p class="text-slate-600 max-w-3xl">
-          The composable hides the ProseMirror plumbing (content syncing, default editor classes,
-          update hooks). The wrapper then maps named extensions, exposes a toolbar slot, and keeps
-          the editor shell consistent across contexts.
+          The composable hides the ProseMirror plumbing (content syncing, update hooks). The wrapper
+          then maps named extensions, provides opinionated default editor styling, exposes a toolbar
+          slot, and keeps the editor shell consistent across contexts.
         </p>
       </div>
       <UCodeGroup>
@@ -329,8 +300,7 @@ const handleGenerate = async () => {
         </p>
       </div>
       <div class="space-y-4">
-        <TipTapEditor ref="contextAwareEditor" v-model:content="contextAwareContent" :extensions="['StarterKit']"
-          :editor-props="baseEditorProps">
+        <TipTapEditor ref="contextAwareEditor" v-model:content="contextAwareContent" :extensions="['StarterKit']">
           <template #toolbar="{ editor: tiptap }">
             <TipTapToolbar :editor="tiptap" />
           </template>
@@ -372,8 +342,7 @@ const handleGenerate = async () => {
       <UCodeGroup>
         <UCodeBlock label="interactive-views.ts" :code="interactiveViewsSnippet" language="ts" />
       </UCodeGroup>
-      <TipTapEditor v-model:content="interactiveContent" :extensions="['StarterKit', 'CoffeeCounterCalloutNode']"
-        :editor-props="baseEditorProps">
+      <TipTapEditor v-model:content="interactiveContent" :extensions="['StarterKit', 'CoffeeCounterCalloutNode']">
         <template #toolbar="{ editor: tiptap }">
           <TipTapToolbar :editor="tiptap" />
         </template>

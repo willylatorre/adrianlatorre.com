@@ -8,6 +8,9 @@ import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
 import { useTipTap } from '@/composables/useTipTap'
 import TipTapToolbar from '@/components/TipTapToolbar.vue'
 
+const DEFAULT_EDITOR_CLASS =
+  'min-h-[12rem] focus:outline-none prose prose-slate max-w-none text-slate-800'
+
 const EXTENSION_MAP: Record<string, Extension> = {
   StarterKit,
   Underline,
@@ -54,9 +57,31 @@ const resolvedExtensions = computed(() => {
   return resolved
 })
 
+const mergeEditorProps = (editorProps?: EditorOptions['editorProps']) => {
+  if (!editorProps) {
+    return {
+      attributes: {
+        class: DEFAULT_EDITOR_CLASS,
+      },
+    }
+  }
+
+  const mergedClass = [DEFAULT_EDITOR_CLASS, editorProps.attributes?.class]
+    .filter(Boolean)
+    .join(' ')
+
+  return {
+    ...editorProps,
+    attributes: {
+      ...editorProps.attributes,
+      class: mergedClass,
+    },
+  }
+}
+
 const editor = useTipTap({
   extensions: resolvedExtensions.value,
-  editorProps: props.editorProps,
+  editorProps: mergeEditorProps(props.editorProps),
   content: resolvedContent,
 })
 
