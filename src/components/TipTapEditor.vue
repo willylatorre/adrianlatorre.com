@@ -1,14 +1,40 @@
 <script setup lang="ts">
+import { computed, onBeforeUnmount } from 'vue'
 import { EditorContent } from '@tiptap/vue-3'
-import type { Editor } from '@tiptap/vue-3'
+import type { EditorOptions, Extension } from '@tiptap/core'
+import { useTipTap } from '@/composables/useTipTap'
 
-defineOptions({
-  name: 'TipTapEditor',
+const props = defineProps<{
+  modelValue?: string
+  content?: string
+  extensions: Extension[]
+  editorProps?: EditorOptions['editorProps']
+}>()
+
+const emit = defineEmits<{
+  (event: 'update:modelValue', value: string): void
+  (event: 'update:content', value: string): void
+}>()
+
+const resolvedContent = computed({
+  get: () => props.modelValue ?? props.content ?? '',
+  set: (value) => {
+    emit('update:modelValue', value)
+    emit('update:content', value)
+  },
 })
 
-defineProps<{
-  editor: Editor | null
-}>()
+const editor = useTipTap({
+  extensions: props.extensions,
+  editorProps: props.editorProps,
+  content: resolvedContent,
+})
+
+defineExpose({ editor })
+
+onBeforeUnmount(() => {
+  editor.value?.destroy()
+})
 </script>
 
 <template>

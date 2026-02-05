@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, ref } from 'vue'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import { useApi } from '@/composables/useApi'
-import { useTipTap } from '@/composables/useTipTap'
 import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
 import TipTapEditor from '@/components/TipTapEditor.vue'
 import TipTapToolbar from '@/components/TipTapToolbar.vue'
@@ -15,32 +14,33 @@ const prompt = ref(
 )
 const status = ref<'idle' | 'loading' | 'streaming' | 'done' | 'error'>('idle')
 const errorMessage = ref('')
-const rawHtml = ref('')
 const improveStatus = ref<'idle' | 'loading' | 'streaming' | 'done' | 'error'>('idle')
 const improveError = ref('')
 
 const scriptClose = '</scr' + 'ipt>'
 
-const bindingSnippet = `const outputHtml = ref('<p>Start writing...</p>')
+const bindingSnippet = `const editorContent = ref('<p>Start writing...</p>')
 
-const outputEditor = useTipTap({
-  content: outputHtml,
+const editor = useTipTap({
   extensions: [StarterKit, Underline],
+  content: editorContent,
 })
 
 const setEditorFromHtml = (value: string) => {
-  outputHtml.value = value
+  editorContent.value = value
 }`
 
 const editorSnippet = `<script setup lang="ts">
-import { EditorContent } from '@tiptap/vue-3'
-import type { Editor } from '@tiptap/vue-3'
+import TipTapEditor from '@/components/TipTapEditor.vue'
 
-defineProps<{ editor: Editor | null }>()
+const editorContent = ref('<p>Hello from Tiptap.</p>')
 ${scriptClose}
 
 <template>
-  <EditorContent v-if="editor" :editor="editor" />
+  <TipTapEditor
+    v-model:content="editorContent"
+    :extensions="[StarterKit, Underline]"
+  />
 </template>`
 
 const improveSnippet = `const { from, to } = editor.state.selection
@@ -57,7 +57,6 @@ Selected text:
 const aiIntegrationSnippet = `const handleGenerate = async () => {
   if (!prompt.value.trim()) return
   status.value = 'loading'
-  rawHtml.value = ''
   let buffer = ''
 
   await sendChatMessage(
@@ -66,13 +65,12 @@ const aiIntegrationSnippet = `const handleGenerate = async () => {
     (chunk) => {
       status.value = 'streaming'
       buffer += chunk
-      rawHtml.value = buffer
     },
     () => {
       status.value = 'done'
-      rawHtml.value = buffer.trim()
-      if (rawHtml.value) {
-        outputHtml.value = rawHtml.value
+      const html = buffer.trim()
+      if (html) {
+        editorContent.value = html
       }
     },
     (error) => {
@@ -91,22 +89,11 @@ const interactiveEditor = useTipTap({
   content: interactiveContent,
 })`
 
-const CoffeeCounterCalloutNode = Node.create({
-  name: 'coffeeCounterCallout',
-  group: 'block',
-  atom: true,
-  parseHTML: () => [{ tag: 'coffee-counter-callout' }],
-  renderHTML: () => ['coffee-counter-callout'],
-  addNodeView() {
-    return VueNodeViewRenderer(CoffeeCounterCallout)
-  },
-})`
-
-const outputHtml = ref('<p>Run the prompt to generate a Markdown summary.</p>')
-const contextAwareHtml = ref(
+const editorContent = ref('<p>Run the prompt to generate a Markdown summary.</p>')
+const contextAwareContent = ref(
   '<h3>Context-aware rewrite playground</h3><p>This is the editor where you can highlight a line and ask the model to rework it using the notes below. It already knows that TipTap likes structure, so it keeps the bullets neat and the headings tidy.</p><ul><li>The UX should feel snappy, not robotic.</li><li>Consistency beats cleverness when output hits the editor.</li></ul>',
 )
-const interactiveHtml = ref(
+const interactiveContent = ref(
   '<h3>Interactive views with Vue + React</h3><p>Drop a custom component inside the editor to blend structured text with live UI. The callout below is a Vue component running inside a Tiptap node view.</p><coffee-counter-callout></coffee-counter-callout><p>In React, the same idea uses a ReactNodeViewRenderer. The key is that the editor still owns the document, while your framework owns the interactivity.</p>',
 )
 
@@ -116,31 +103,18 @@ const baseEditorProps = {
   },
 }
 
-const editor = useTipTap({
-  extensions: [StarterKit, Underline],
-  content: outputHtml,
-  editorProps: {
-    attributes: {
-      ...baseEditorProps.attributes,
-      class: 'min-h-[16rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
-    },
+const outputEditorProps = {
+  attributes: {
+    ...baseEditorProps.attributes,
+    class: 'min-h-[16rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
   },
-})
+}
 
-const contextAwareEditor = useTipTap({
-  extensions: [StarterKit],
-  content: contextAwareHtml,
-  editorProps: baseEditorProps,
-})
+type TipTapEditorInstance = InstanceType<typeof TipTapEditor>
+const contextAwareEditor = ref<TipTapEditorInstance | null>(null)
 
 const contextNotes =
   'Voice: confident, friendly, a touch witty. Audience: builders integrating LLM output into Tiptap. Constraint: keep output structured for HTML parsing.'
-
-const interactiveEditor = useTipTap({
-  extensions: [StarterKit, CoffeeCounterCalloutNode],
-  content: interactiveHtml,
-  editorProps: baseEditorProps,
-})
 
 const isBusy = computed(() => status.value === 'loading' || status.value === 'streaming')
 const statusLabel = computed(() => {
@@ -159,13 +133,14 @@ const statusLabel = computed(() => {
 })
 
 const setEditorFromHtml = (value: string) => {
-  outputHtml.value = value
+  editorContent.value = value
 }
 
 const handleImproveSelection = async () => {
   improveError.value = ''
-  if (!contextAwareEditor.value) return
-  const { from, to } = contextAwareEditor.value.state.selection
+  const editor = contextAwareEditor.value?.editor?.value
+  if (!editor) return
+  const { from, to } = editor.state.selection
 
   if (from === to) {
     improveStatus.value = 'error'
@@ -173,7 +148,7 @@ const handleImproveSelection = async () => {
     return
   }
 
-  const selectedText = contextAwareEditor.value.state.doc.textBetween(from, to, '\n')
+  const selectedText = editor.state.doc.textBetween(from, to, '\n')
   const contextText = contextNotes
   const improvePrompt = `Improve the highlighted text below using the provided context. Preserve the meaning and keep it concise.\n\nContext:\n${contextText}\n\nSelected text:\n${selectedText}`
   let buffer = ''
@@ -191,7 +166,7 @@ const handleImproveSelection = async () => {
       improveStatus.value = 'done'
       const improved = buffer.trim()
       if (improved) {
-        contextAwareEditor.value?.commands.insertContentAt({ from, to }, improved)
+        editor.commands.insertContentAt({ from, to }, improved)
       }
     },
     (error) => {
@@ -205,7 +180,6 @@ const handleGenerate = async () => {
   errorMessage.value = ''
   if (!prompt.value.trim()) return
   status.value = 'loading'
-  rawHtml.value = ''
   let buffer = ''
 
   await sendChatMessage(
@@ -214,13 +188,12 @@ const handleGenerate = async () => {
     (chunk) => {
       status.value = 'streaming'
       buffer += chunk
-      rawHtml.value = buffer
     },
     () => {
       status.value = 'done'
-      rawHtml.value = buffer.trim()
-      if (rawHtml.value) {
-        setEditorFromHtml(rawHtml.value)
+      const html = buffer.trim()
+      if (html) {
+        setEditorFromHtml(html)
       }
     },
     (error) => {
@@ -229,12 +202,6 @@ const handleGenerate = async () => {
     },
   )
 }
-
-onBeforeUnmount(() => {
-  editor.value?.destroy()
-  contextAwareEditor.value?.destroy()
-  interactiveEditor.value?.destroy()
-})
 </script>
 
 <template>
@@ -307,7 +274,11 @@ onBeforeUnmount(() => {
             The editor below reflects the HTML returned by the model.
           </p>
         </div>
-        <TipTapEditor :editor="editor.value">
+        <TipTapEditor
+          v-model:content="editorContent"
+          :extensions="[StarterKit, Underline]"
+          :editor-props="outputEditorProps"
+        >
           <template #toolbar="{ editor: tiptap }">
             <TipTapToolbar :editor="tiptap" />
           </template>
@@ -350,7 +321,12 @@ onBeforeUnmount(() => {
         </p>
       </div>
       <div class="space-y-4">
-        <TipTapEditor :editor="contextAwareEditor.value">
+        <TipTapEditor
+          ref="contextAwareEditor"
+          v-model:content="contextAwareContent"
+          :extensions="[StarterKit]"
+          :editor-props="baseEditorProps"
+        >
           <template #toolbar="{ editor: tiptap }">
             <TipTapToolbar :editor="tiptap" />
           </template>
@@ -409,7 +385,11 @@ onBeforeUnmount(() => {
           language="ts"
         />
       </UCodeGroup>
-      <TipTapEditor :editor="interactiveEditor.value">
+      <TipTapEditor
+        v-model:content="interactiveContent"
+        :extensions="[StarterKit, CoffeeCounterCalloutNode]"
+        :editor-props="baseEditorProps"
+      >
         <template #toolbar="{ editor: tiptap }">
           <TipTapToolbar :editor="tiptap" />
         </template>

@@ -1,15 +1,17 @@
-import { type Ref, watch } from 'vue'
-import { type Editor, type EditorOptions, useEditor } from '@tiptap/vue-3'
+import { isRef, unref, watch } from 'vue'
+import { useEditor } from '@tiptap/vue-3'
+import type { Editor, EditorOptions } from '@tiptap/core'
+import type { Ref } from 'vue'
 
 const DEFAULT_EDITOR_CLASS =
   'min-h-[16rem] focus:outline-none prose prose-slate max-w-none text-slate-800'
 
 type EditorProps = EditorOptions['editorProps']
 
-type UseTipTapOptions = Omit<EditorOptions, 'content' | 'onUpdate' | 'editorProps'> & {
-  content: Ref<string>
+export type UseTipTapOptions = Omit<EditorOptions, 'content' | 'onUpdate' | 'editorProps'> & {
+  content: Ref<string> | string
   editorProps?: EditorProps
-  onUpdate?: (editor: Editor) => void
+  onUpdate?: (content: string, editor: Editor) => void
 }
 
 const mergeEditorClass = (editorProps?: EditorProps): EditorProps | undefined => {
@@ -37,20 +39,24 @@ const mergeEditorClass = (editorProps?: EditorProps): EditorProps | undefined =>
 export const useTipTap = ({ content, onUpdate, editorProps, ...options }: UseTipTapOptions) => {
   const editor = useEditor({
     ...options,
-    content: content.value,
+    content: unref(content),
     editorProps: mergeEditorClass(editorProps),
     onUpdate: ({ editor: tiptap }) => {
-      content.value = tiptap.getHTML()
-      onUpdate?.(tiptap)
+      const html = tiptap.getHTML()
+      if (isRef(content) && content.value !== html) {
+        content.value = html
+      }
+      onUpdate?.(html, tiptap)
     },
   })
 
   watch(
-    content,
+    () => unref(content),
     (value) => {
-      if (!editor.value) return
-      if (value === editor.value.getHTML()) return
-      editor.value.commands.setContent(value, false)
+      const instance = editor.value
+      if (!instance) return
+      if (instance.getHTML() === value) return
+      instance.commands.setContent(value, false)
     },
     { flush: 'post' },
   )
