@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
 import { useApi } from '@/composables/useApi'
-import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
 import TipTapEditor from '@/components/TipTapEditor.vue'
 import TipTapToolbar from '@/components/TipTapToolbar.vue'
 
@@ -39,7 +36,7 @@ ${scriptClose}
 <template>
   <TipTapEditor
     v-model:content="editorContent"
-    :extensions="[StarterKit, Underline]"
+    :extensions="['StarterKit', 'Underline']"
   />
 </template>`
 
@@ -260,8 +257,7 @@ const handleGenerate = async () => {
             The editor below reflects the HTML returned by the model.
           </p>
         </div>
-        <TipTapEditor v-model:content="editorContent" :extensions="[StarterKit, Underline]"
-          :editor-props="outputEditorProps">
+        <TipTapEditor v-model:content="editorContent" :extensions="['StarterKit']" :editor-props="outputEditorProps">
           <template #toolbar="{ editor: tiptap }">
             <TipTapToolbar :editor="tiptap" />
           </template>
@@ -301,7 +297,7 @@ const handleGenerate = async () => {
         </p>
       </div>
       <div class="space-y-4">
-        <TipTapEditor ref="contextAwareEditor" v-model:content="contextAwareContent" :extensions="[StarterKit]"
+        <TipTapEditor ref="contextAwareEditor" v-model:content="contextAwareContent" :extensions="['StarterKit']"
           :editor-props="baseEditorProps">
           <template #toolbar="{ editor: tiptap }">
             <TipTapToolbar :editor="tiptap" />
@@ -344,7 +340,7 @@ const handleGenerate = async () => {
       <UCodeGroup>
         <UCodeBlock label="interactive-views.ts" :code="interactiveViewsSnippet" language="ts" />
       </UCodeGroup>
-      <TipTapEditor v-model:content="interactiveContent" :extensions="[StarterKit, CoffeeCounterCalloutNode]"
+      <TipTapEditor v-model:content="interactiveContent" :extensions="['StarterKit', 'CoffeeCounterCalloutNode']"
         :editor-props="baseEditorProps">
         <template #toolbar="{ editor: tiptap }">
           <TipTapToolbar :editor="tiptap" />

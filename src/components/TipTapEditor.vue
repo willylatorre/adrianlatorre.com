@@ -2,13 +2,22 @@
 import { computed, onBeforeUnmount } from 'vue'
 import { EditorContent } from '@tiptap/vue-3'
 import type { EditorOptions, Extension } from '@tiptap/core'
+import StarterKit from '@tiptap/starter-kit'
+import Underline from '@tiptap/extension-underline'
+import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
 import { useTipTap } from '@/composables/useTipTap'
-import UEditorToolbar from '@/components/TipTapToolbar.vue'
+import TipTapToolbar from '@/components/TipTapToolbar.vue'
+
+const EXTENSION_MAP: Record<string, Extension> = {
+  StarterKit,
+  Underline,
+  CoffeeCounterCalloutNode,
+}
 
 const props = defineProps<{
   modelValue?: string
   content?: string
-  extensions: Extension[]
+  extensions: string[]
   editorProps?: EditorOptions['editorProps']
 }>()
 
@@ -25,8 +34,19 @@ const resolvedContent = computed({
   },
 })
 
+const resolvedExtensions = computed(() => {
+  return props.extensions.map((name) => {
+    const extension = EXTENSION_MAP[name]
+    if (!extension) {
+      console.warn(`Extension "${name}" not found in extension map`)
+      return null
+    }
+    return extension
+  }).filter(Boolean) as Extension[]
+})
+
 const editor = useTipTap({
-  extensions: props.extensions,
+  extensions: resolvedExtensions.value,
   editorProps: props.editorProps,
   content: resolvedContent,
 })
