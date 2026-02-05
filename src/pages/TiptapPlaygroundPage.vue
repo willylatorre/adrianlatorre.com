@@ -3,10 +3,10 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { useEditor } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
-import type { EditorToolbarItem } from '@nuxt/ui'
 import { useApi } from '@/composables/useApi'
 import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
 import UEditor from '@/components/UEditor.vue'
+import UEditorToolbar from '@/components/UEditorToolbar.vue'
 
 const { sendChatMessage } = useApi()
 
@@ -29,12 +29,20 @@ const bindingSnippet = `const setEditorFromHtml = (value: string) => {
 const editorSnippet = `<script setup lang="ts">
 import { EditorContent } from '@tiptap/vue-3'
 import type { Editor } from '@tiptap/vue-3'
+import UEditorToolbar from '@/components/UEditorToolbar.vue'
 
 defineProps<{ editor: Editor | null }>()
 ${scriptClose}
 
 <template>
-  <EditorContent v-if="editor" :editor="editor" />
+  <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+    <slot name="toolbar" :editor="editor">
+      <UEditorToolbar :editor="editor" />
+    </slot>
+    <div class="px-4 py-3">
+      <EditorContent v-if="editor" :editor="editor" />
+    </div>
+  </div>
 </template>`
 
 const improveSnippet = `const { from, to } = editor.state.selection
@@ -298,71 +306,7 @@ onBeforeUnmount(() => {
         </div>
         <UEditor :editor="editor">
           <template #toolbar="{ editor: tiptap }">
-            <div class="flex flex-wrap gap-2">
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('bold') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleBold().run()"
-              >
-                Bold
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('italic') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleItalic().run()"
-              >
-                Italic
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('strike') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleStrike().run()"
-              >
-                Strike
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('bulletList') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleBulletList().run()"
-              >
-                Bullet list
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('orderedList') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleOrderedList().run()"
-              >
-                Ordered list
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('blockquote') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleBlockquote().run()"
-              >
-                Quote
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('codeBlock') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleCodeBlock().run()"
-              >
-                Code block
-              </UButton>
-            </div>
+            <UEditorToolbar :editor="tiptap" />
           </template>
         </UEditor>
       </div>
@@ -405,7 +349,7 @@ onBeforeUnmount(() => {
       <div class="space-y-4">
         <UEditor :editor="contextAwareEditor">
           <template #toolbar="{ editor: tiptap }">
-            <UEditorToolbar :editor="tiptap" :items="toolbarItems" layout="bubble" />
+            <UEditorToolbar :editor="tiptap" />
           </template>
         </UEditor>
         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -462,7 +406,11 @@ onBeforeUnmount(() => {
           language="ts"
         />
       </UCodeGroup>
-      <UEditor :editor="interactiveEditor" />
+      <UEditor :editor="interactiveEditor">
+        <template #toolbar="{ editor: tiptap }">
+          <UEditorToolbar :editor="tiptap" />
+        </template>
+      </UEditor>
     </section>
 
     <section class="space-y-4">
