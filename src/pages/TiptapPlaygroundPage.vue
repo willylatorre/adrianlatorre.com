@@ -105,9 +105,7 @@ const interactiveContent = ref(
 )
 
 type TipTapEditorInstance = InstanceType<typeof TipTapEditor>
-const outputEditor = ref<TipTapEditorInstance | null>(null)
 const contextAwareEditor = ref<TipTapEditorInstance | null>(null)
-const interactiveEditor = ref<TipTapEditorInstance | null>(null)
 
 const isBusy = computed(() => status.value === 'loading' || status.value === 'streaming')
 const statusLabel = computed(() => {
@@ -270,7 +268,6 @@ const handleGenerate = async () => {
           </p>
         </div>
         <TipTapEditor
-          ref="outputEditor"
           v-model:content="editorContent"
           :extensions="[StarterKit, Underline]"
           :editor-props="{
@@ -456,7 +453,6 @@ const handleGenerate = async () => {
         />
       </UCodeGroup>
       <TipTapEditor
-        ref="interactiveEditor"
         v-model:content="interactiveContent"
         :extensions="[StarterKit, CoffeeCounterCalloutNode]"
         :editor-props="{
