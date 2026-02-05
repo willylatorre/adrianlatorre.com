@@ -17,18 +17,23 @@ const improveError = ref('')
 const scriptClose = '</scr' + 'ipt>'
 
 const bindingSnippet = `const editorContent = ref('<p>Start writing...</p>')
+const lastSavedHtml = ref('')
 
 const editor = useTipTap({
   extensions: [StarterKit, Underline],
   content: editorContent,
+  onUpdate: (html) => {
+    lastSavedHtml.value = html
+  },
 })
 
-const setEditorFromHtml = (value: string) => {
+const applyStreamedHtml = (value: string) => {
   editorContent.value = value
 }`
 
 const editorSnippet = `<script setup lang="ts">
 import TipTapEditor from '@/components/TipTapEditor.vue'
+import TipTapToolbar from '@/components/TipTapToolbar.vue'
 
 const editorContent = ref('<p>Hello from Tiptap.</p>')
 ${scriptClose}
@@ -36,8 +41,12 @@ ${scriptClose}
 <template>
   <TipTapEditor
     v-model:content="editorContent"
-    :extensions="['StarterKit', 'Underline']"
-  />
+    :extensions="['StarterKit', 'Underline', 'CoffeeCounterCalloutNode']"
+  >
+    <template #toolbar="{ editor }">
+      <TipTapToolbar :editor="editor" />
+    </template>
+  </TipTapEditor>
 </template>`
 
 const improveSnippet = `const { from, to } = editor.state.selection
@@ -67,7 +76,7 @@ const aiIntegrationSnippet = `const handleGenerate = async () => {
       status.value = 'done'
       const html = buffer.trim()
       if (html) {
-        editorContent.value = html
+        applyStreamedHtml(html)
       }
     },
     (error) => {
@@ -86,26 +95,13 @@ const interactiveEditor = useTipTap({
   content: interactiveContent,
 })`
 
-const editorContent = ref('<p>Run the prompt to generate a Markdown summary.</p>')
+const editorContent = ref('<p>Run the prompt to generate an HTML summary.</p>')
 const contextAwareContent = ref(
   '<h3>Context-aware rewrite playground</h3><p>This is the editor where you can highlight a line and ask the model to rework it using the notes below. It already knows that TipTap likes structure, so it keeps the bullets neat and the headings tidy.</p><ul><li>The UX should feel snappy, not robotic.</li><li>Consistency beats cleverness when output hits the editor.</li></ul>',
 )
 const interactiveContent = ref(
   '<h3>Interactive views with Vue + React</h3><p>Drop a custom component inside the editor to blend structured text with live UI. The callout below is a Vue component running inside a Tiptap node view.</p><coffee-counter-callout></coffee-counter-callout><p>In React, the same idea uses a ReactNodeViewRenderer. The key is that the editor still owns the document, while your framework owns the interactivity.</p>',
 )
-
-const baseEditorProps = {
-  attributes: {
-    class: 'min-h-[14rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
-  },
-}
-
-const outputEditorProps = {
-  attributes: {
-    ...baseEditorProps.attributes,
-    class: 'min-h-[16rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
-  },
-}
 
 type TipTapEditorInstance = InstanceType<typeof TipTapEditor>
 const contextAwareEditor = ref<TipTapEditorInstance | null>(null)
@@ -129,7 +125,7 @@ const statusLabel = computed(() => {
   }
 })
 
-const setEditorFromHtml = (value: string) => {
+const applyStreamedHtml = (value: string) => {
   editorContent.value = value
 }
 
@@ -190,7 +186,7 @@ const handleGenerate = async () => {
       status.value = 'done'
       const html = buffer.trim()
       if (html) {
-        setEditorFromHtml(html)
+        applyStreamedHtml(html)
       }
     },
     (error) => {
@@ -257,7 +253,7 @@ const handleGenerate = async () => {
             The editor below reflects the HTML returned by the model.
           </p>
         </div>
-        <TipTapEditor v-model:content="editorContent" :extensions="['StarterKit']" :editor-props="outputEditorProps">
+        <TipTapEditor v-model:content="editorContent" :extensions="['StarterKit']">
           <template #toolbar="{ editor: tiptap }">
             <TipTapToolbar :editor="tiptap" />
           </template>
@@ -269,8 +265,15 @@ const handleGenerate = async () => {
       <div class="space-y-2">
         <h2 class="text-2xl font-semibold text-slate-900">How the demo works</h2>
         <p class="text-slate-600 max-w-3xl">
-          The playground at the top wires together three things: the LLM prompt, a helper that
-          writes HTML into Tiptap, and the editor shell that renders the content.
+          The playground at the top wires together three things: the LLM prompt, the
+          <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm">useTipTap</code> composable that
+          syncs HTML into the editor, and the <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm">TipTapEditor</code>
+          wrapper that standardizes extensions + toolbar UI.
+        </p>
+        <p class="text-slate-600 max-w-3xl">
+          The composable hides the ProseMirror plumbing (content syncing, update hooks). The wrapper
+          then maps named extensions, provides opinionated default editor styling, exposes a toolbar
+          slot, and keeps the editor shell consistent across contexts.
         </p>
       </div>
       <UCodeGroup>
@@ -297,8 +300,7 @@ const handleGenerate = async () => {
         </p>
       </div>
       <div class="space-y-4">
-        <TipTapEditor ref="contextAwareEditor" v-model:content="contextAwareContent" :extensions="['StarterKit']"
-          :editor-props="baseEditorProps">
+        <TipTapEditor ref="contextAwareEditor" v-model:content="contextAwareContent" :extensions="['StarterKit']">
           <template #toolbar="{ editor: tiptap }">
             <TipTapToolbar :editor="tiptap" />
           </template>
@@ -340,8 +342,7 @@ const handleGenerate = async () => {
       <UCodeGroup>
         <UCodeBlock label="interactive-views.ts" :code="interactiveViewsSnippet" language="ts" />
       </UCodeGroup>
-      <TipTapEditor v-model:content="interactiveContent" :extensions="['StarterKit', 'CoffeeCounterCalloutNode']"
-        :editor-props="baseEditorProps">
+      <TipTapEditor v-model:content="interactiveContent" :extensions="['StarterKit', 'CoffeeCounterCalloutNode']">
         <template #toolbar="{ editor: tiptap }">
           <TipTapToolbar :editor="tiptap" />
         </template>

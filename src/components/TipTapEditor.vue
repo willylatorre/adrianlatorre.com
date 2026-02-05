@@ -8,6 +8,9 @@ import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
 import { useTipTap } from '@/composables/useTipTap'
 import TipTapToolbar from '@/components/TipTapToolbar.vue'
 
+const DEFAULT_EDITOR_CLASS =
+  'min-h-[12rem] focus:outline-none prose prose-slate max-w-none text-slate-800'
+
 const EXTENSION_MAP: Record<string, Extension> = {
   StarterKit,
   Underline,
@@ -35,19 +38,50 @@ const resolvedContent = computed({
 })
 
 const resolvedExtensions = computed(() => {
-  return props.extensions.map((name) => {
+  const resolved: Extension[] = []
+  const missing: string[] = []
+
+  for (const name of props.extensions) {
     const extension = EXTENSION_MAP[name]
     if (!extension) {
-      console.warn(`Extension "${name}" not found in extension map`)
-      return null
+      missing.push(name)
+      continue
     }
-    return extension
-  }).filter(Boolean) as Extension[]
+    resolved.push(extension)
+  }
+
+  if (missing.length) {
+    console.warn(`Extensions not found in extension map: ${missing.join(', ')}`)
+  }
+
+  return resolved
 })
+
+const mergeEditorProps = (editorProps?: EditorOptions['editorProps']) => {
+  if (!editorProps) {
+    return {
+      attributes: {
+        class: DEFAULT_EDITOR_CLASS,
+      },
+    }
+  }
+
+  const mergedClass = [DEFAULT_EDITOR_CLASS, editorProps.attributes?.class]
+    .filter(Boolean)
+    .join(' ')
+
+  return {
+    ...editorProps,
+    attributes: {
+      ...editorProps.attributes,
+      class: mergedClass,
+    },
+  }
+}
 
 const editor = useTipTap({
   extensions: resolvedExtensions.value,
-  editorProps: props.editorProps,
+  editorProps: mergeEditorProps(props.editorProps),
   content: resolvedContent,
 })
 
