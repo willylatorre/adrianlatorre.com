@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
-import type { EditorToolbarItem } from '@nuxt/ui'
 import { useApi } from '@/composables/useApi'
+import { useTipTap } from '@/composables/useTipTap'
 import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
 import TipTapEditor from '@/components/TipTapEditor.vue'
+import TipTapToolbar from '@/components/TipTapToolbar.vue'
 
 const { sendChatMessage } = useApi()
 
@@ -22,6 +24,15 @@ const scriptClose = '</scr' + 'ipt>'
 
 const bindingSnippet = `const setEditorFromHtml = (value: string) => {
   editorContent.value = value
+const bindingSnippet = `const outputHtml = ref('<p>Start writing...</p>')
+
+const outputEditor = useTipTap({
+  content: outputHtml,
+  extensions: [StarterKit, Underline],
+})
+
+const setEditorFromHtml = (value: string) => {
+  outputHtml.value = value
 }`
 
 const editorSnippet = `<script setup lang="ts">
@@ -67,6 +78,7 @@ const aiIntegrationSnippet = `const handleGenerate = async () => {
       rawHtml.value = buffer.trim()
       if (rawHtml.value) {
         editorContent.value = rawHtml.value
+        outputHtml.value = rawHtml.value
       }
     },
     (error) => {
@@ -76,10 +88,14 @@ const aiIntegrationSnippet = `const handleGenerate = async () => {
   )
 }`
 
-const interactiveViewsSnippet = `const interactiveEditor = useEditor({
+const interactiveViewsSnippet = `const interactiveContent = ref(
+  '<coffee-counter-callout></coffee-counter-callout>',
+)
+
+const interactiveEditor = useTipTap({
   extensions: [StarterKit, CoffeeCounterCalloutNode],
-  content: '<coffee-counter-callout></coffee-counter-callout>',
-})
+  content: interactiveContent,
+})`
 
 const CoffeeCounterCalloutNode = Node.create({
   name: 'coffeeCounterCallout',
@@ -96,6 +112,36 @@ const editorContent = ref('<p>Run the prompt to generate a Markdown summary.</p>
 const contextAwareContent = ref(
   '<h3>Context-aware rewrite playground</h3><p>This is the editor where you can highlight a line and ask the model to rework it using the notes below. It already knows that TipTap likes structure, so it keeps the bullets neat and the headings tidy.</p><ul><li>The UX should feel snappy, not robotic.</li><li>Consistency beats cleverness when output hits the editor.</li></ul>',
 )
+const outputHtml = ref('<p>Run the prompt to generate a Markdown summary.</p>')
+const contextAwareHtml = ref(
+  '<h3>Context-aware rewrite playground</h3><p>This is the editor where you can highlight a line and ask the model to rework it using the notes below. It already knows that TipTap likes structure, so it keeps the bullets neat and the headings tidy.</p><ul><li>The UX should feel snappy, not robotic.</li><li>Consistency beats cleverness when output hits the editor.</li></ul>',
+)
+const interactiveHtml = ref(
+  '<h3>Interactive views with Vue + React</h3><p>Drop a custom component inside the editor to blend structured text with live UI. The callout below is a Vue component running inside a Tiptap node view.</p><coffee-counter-callout></coffee-counter-callout><p>In React, the same idea uses a ReactNodeViewRenderer. The key is that the editor still owns the document, while your framework owns the interactivity.</p>',
+)
+
+const baseEditorProps = {
+  attributes: {
+    class: 'min-h-[14rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
+  },
+}
+
+const editor = useTipTap({
+  extensions: [StarterKit, Underline],
+  content: outputHtml,
+  editorProps: {
+    attributes: {
+      ...baseEditorProps.attributes,
+      class: 'min-h-[16rem] focus:outline-none prose prose-slate max-w-none text-slate-800',
+    },
+  },
+})
+
+const contextAwareEditor = useTipTap({
+  extensions: [StarterKit],
+  content: contextAwareHtml,
+  editorProps: baseEditorProps,
+})
 
 const contextNotes =
   'Voice: confident, friendly, a touch witty. Audience: builders integrating LLM output into Tiptap. Constraint: keep output structured for HTML parsing.'
@@ -106,6 +152,11 @@ const interactiveContent = ref(
 
 type TipTapEditorInstance = InstanceType<typeof TipTapEditor>
 const contextAwareEditor = ref<TipTapEditorInstance | null>(null)
+const interactiveEditor = useTipTap({
+  extensions: [StarterKit, CoffeeCounterCalloutNode],
+  content: interactiveHtml,
+  editorProps: baseEditorProps,
+})
 
 const isBusy = computed(() => status.value === 'loading' || status.value === 'streaming')
 const statusLabel = computed(() => {
@@ -125,6 +176,7 @@ const statusLabel = computed(() => {
 
 const setEditorFromHtml = (value: string) => {
   editorContent.value = value
+  outputHtml.value = value
 }
 
 const handleImproveSelection = async () => {
@@ -277,72 +329,9 @@ const handleGenerate = async () => {
             },
           }"
         >
+        <TipTapEditor :editor="editor.value">
           <template #toolbar="{ editor: tiptap }">
-            <div class="flex flex-wrap gap-2">
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('bold') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleBold().run()"
-              >
-                Bold
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('italic') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleItalic().run()"
-              >
-                Italic
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('strike') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleStrike().run()"
-              >
-                Strike
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('bulletList') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleBulletList().run()"
-              >
-                Bullet list
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('orderedList') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleOrderedList().run()"
-              >
-                Ordered list
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('blockquote') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleBlockquote().run()"
-              >
-                Quote
-              </UButton>
-              <UButton
-                size="xs"
-                variant="soft"
-                :disabled="!tiptap"
-                :color="tiptap?.isActive('codeBlock') ? 'primary' : 'gray'"
-                @click="tiptap?.chain().focus().toggleCodeBlock().run()"
-              >
-                Code block
-              </UButton>
-            </div>
+            <TipTapToolbar :editor="tiptap" />
           </template>
         </TipTapEditor>
       </div>
@@ -394,8 +383,9 @@ const handleGenerate = async () => {
             },
           }"
         >
+        <TipTapEditor :editor="contextAwareEditor.value">
           <template #toolbar="{ editor: tiptap }">
-            <UEditorToolbar :editor="tiptap" :items="toolbarItems" layout="bubble" />
+            <TipTapToolbar :editor="tiptap" />
           </template>
         </TipTapEditor>
         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -462,6 +452,11 @@ const handleGenerate = async () => {
           },
         }"
       />
+      <TipTapEditor :editor="interactiveEditor.value">
+        <template #toolbar="{ editor: tiptap }">
+          <TipTapToolbar :editor="tiptap" />
+        </template>
+      </TipTapEditor>
     </section>
 
     <section class="space-y-4">
