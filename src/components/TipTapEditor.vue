@@ -16,16 +16,18 @@ const emit = defineEmits<{
   (event: 'update:content', value: string): void
 }>()
 
-const resolvedContent = computed(() => props.modelValue ?? props.content ?? '')
+const resolvedContent = computed({
+  get: () => props.modelValue ?? props.content ?? '',
+  set: (value) => {
+    emit('update:modelValue', value)
+    emit('update:content', value)
+  },
+})
 
 const editor = useTipTap({
   extensions: props.extensions,
   editorProps: props.editorProps,
   content: resolvedContent,
-  onUpdate: (value) => {
-    emit('update:modelValue', value)
-    emit('update:content', value)
-  },
 })
 
 defineExpose({ editor })
