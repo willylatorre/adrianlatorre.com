@@ -26,7 +26,5 @@ export const useTipTap = ({ content, onUpdate, ...options }: UseTipTapOptions) =
     { flush: 'post' },
   )
 
-  return {
-    editor,
-  }
+  return editor
 }

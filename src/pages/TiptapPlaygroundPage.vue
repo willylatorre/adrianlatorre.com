@@ -164,8 +164,8 @@ const setEditorFromHtml = (value: string) => {
 
 const handleImproveSelection = async () => {
   improveError.value = ''
-  if (!contextAwareEditor.editor.value) return
-  const { from, to } = contextAwareEditor.editor.value.state.selection
+  if (!contextAwareEditor.value) return
+  const { from, to } = contextAwareEditor.value.state.selection
 
   if (from === to) {
     improveStatus.value = 'error'
@@ -173,7 +173,7 @@ const handleImproveSelection = async () => {
     return
   }
 
-  const selectedText = contextAwareEditor.editor.value.state.doc.textBetween(from, to, '\n')
+  const selectedText = contextAwareEditor.value.state.doc.textBetween(from, to, '\n')
   const contextText = contextNotes
   const improvePrompt = `Improve the highlighted text below using the provided context. Preserve the meaning and keep it concise.\n\nContext:\n${contextText}\n\nSelected text:\n${selectedText}`
   let buffer = ''
@@ -191,7 +191,7 @@ const handleImproveSelection = async () => {
       improveStatus.value = 'done'
       const improved = buffer.trim()
       if (improved) {
-        contextAwareEditor.editor.value?.commands.insertContentAt({ from, to }, improved)
+        contextAwareEditor.value?.commands.insertContentAt({ from, to }, improved)
       }
     },
     (error) => {
@@ -231,9 +231,9 @@ const handleGenerate = async () => {
 }
 
 onBeforeUnmount(() => {
-  editor.editor.value?.destroy()
-  contextAwareEditor.editor.value?.destroy()
-  interactiveEditor.editor.value?.destroy()
+  editor.value?.destroy()
+  contextAwareEditor.value?.destroy()
+  interactiveEditor.value?.destroy()
 })
 </script>
 
@@ -307,7 +307,7 @@ onBeforeUnmount(() => {
             The editor below reflects the HTML returned by the model.
           </p>
         </div>
-        <TipTapEditor :editor="editor.editor.value">
+        <TipTapEditor :editor="editor.value">
           <template #toolbar="{ editor: tiptap }">
             <TipTapToolbar :editor="tiptap" />
           </template>
@@ -350,7 +350,7 @@ onBeforeUnmount(() => {
         </p>
       </div>
       <div class="space-y-4">
-        <TipTapEditor :editor="contextAwareEditor.editor.value">
+        <TipTapEditor :editor="contextAwareEditor.value">
           <template #toolbar="{ editor: tiptap }">
             <TipTapToolbar :editor="tiptap" />
           </template>
@@ -409,7 +409,7 @@ onBeforeUnmount(() => {
           language="ts"
         />
       </UCodeGroup>
-      <TipTapEditor :editor="interactiveEditor.editor.value">
+      <TipTapEditor :editor="interactiveEditor.value">
         <template #toolbar="{ editor: tiptap }">
           <TipTapToolbar :editor="tiptap" />
         </template>
