@@ -5,6 +5,8 @@ description: Why chat feels magical at first, then expensive, and where structur
 ---
 
 <script setup>
+import claudeImg from '@/assets/img/claude.png'
+
 const requestSnippet = `<request>{
   "query": "show me the experiments created in the last three months order by date (ascending)",
   "source": "xxx",
@@ -45,6 +47,8 @@ Your task:
 - Your output must be the new value for the \`$ai\` filter.
 - If the user modifies an existing condition, produce the complete updated query.`
 </script>
+
+<img :src="claudeImg" alt="Claude welcome image" />
 
 I have been thinking a lot about how quickly we all reached for chat as the default interface for AI features.
 
