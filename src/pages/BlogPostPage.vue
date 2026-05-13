@@ -209,11 +209,22 @@ watchEffect((onInvalidate) => {
 .blog-prose :deep(ul),
 .blog-prose :deep(ol) {
   margin: 14px 0;
-  padding-left: 22px;
+  padding-left: 1.4rem;
+  line-height: 1.75;
+  max-width: 72ch;
+}
+
+.blog-prose :deep(ul) {
+  list-style: disc outside;
+}
+
+.blog-prose :deep(ol) {
+  list-style: decimal outside;
 }
 
 .blog-prose :deep(li) {
   margin: 6px 0;
+  padding-left: 0.2rem;
 }
 
 .blog-prose :deep(code) {
@@ -240,5 +251,24 @@ watchEffect((onInvalidate) => {
 
 .blog-prose :deep(pre code.hljs) {
   padding: 0;
+}
+
+.blog-prose :deep(.video-embed) {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  aspect-ratio: 16 / 9;
+  margin: 22px 0;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.blog-prose :deep(.video-embed iframe) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
 }
 </style>
