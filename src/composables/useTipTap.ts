@@ -6,7 +6,9 @@ import type { Ref } from 'vue'
 type EditorProps = EditorOptions['editorProps']
 type MaybeRef<T> = T | Ref<T>
 
-export type UseTipTapOptions = Omit<EditorOptions, 'content' | 'onUpdate' | 'editorProps'> & {
+export type UseTipTapOptions = Partial<
+  Omit<EditorOptions, 'content' | 'onUpdate' | 'editorProps'>
+> & {
   content: MaybeRef<string>
   editorProps?: EditorProps
   onUpdate?: (content: string, editor: Editor) => void
@@ -34,7 +36,7 @@ export const useTipTap = ({ content, onUpdate, editorProps, ...options }: UseTip
       const instance = editor.value
       if (!instance) return
       if (instance.getHTML() === value) return
-      instance.commands.setContent(value, false)
+      instance.commands.setContent(value, { emitUpdate: false })
     },
     { flush: 'post' },
   )

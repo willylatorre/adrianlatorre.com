@@ -2,7 +2,7 @@
 import type { Editor } from '@tiptap/vue-3'
 
 defineProps<{
-  editor: Editor | null
+  editor?: Editor | null
 }>()
 </script>
 

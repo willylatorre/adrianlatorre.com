@@ -1,5 +1,7 @@
 import { Node, mergeAttributes } from '@tiptap/core'
+import type { NodeViewProps } from '@tiptap/core'
 import { VueNodeViewRenderer } from '@tiptap/vue-3'
+import type { Component } from 'vue'
 import CoffeeCounterCalloutNodeView from '@/components/tiptap/CoffeeCounterCalloutNodeView.vue'
 
 const CoffeeCounterCalloutNode = Node.create({
@@ -17,7 +19,7 @@ const CoffeeCounterCalloutNode = Node.create({
   },
 
   addNodeView() {
-    return VueNodeViewRenderer(CoffeeCounterCalloutNodeView, {
+    return VueNodeViewRenderer(CoffeeCounterCalloutNodeView as Component<NodeViewProps>, {
       contentDOMElementTag: 'div',
     })
   },

@@ -1,2 +1,40 @@
 @import 'tailwindcss';
 @import '@nuxt/ui';
+
+:root {
+  color-scheme: light;
+  --site-bg: oklch(0.985 0.006 95);
+  --site-surface: oklch(0.965 0.007 95);
+  --site-surface-soft: oklch(0.94 0.008 95);
+  --site-border: oklch(0.86 0.01 95);
+  --site-ink: oklch(0.235 0.012 260);
+  --site-muted: oklch(0.49 0.018 260);
+  --site-faint: oklch(0.64 0.014 260);
+  --site-accent: oklch(0.43 0.045 170);
+  --ui-bg: var(--site-bg);
+  --ui-text: var(--site-ink);
+  --ui-text-muted: var(--site-muted);
+  --ui-border: var(--site-border);
+  --ui-primary: var(--site-accent);
+}
+
+html {
+  background: var(--site-bg);
+}
+
+body {
+  min-width: 320px;
+  background: var(--site-bg);
+  color: var(--site-ink);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: oklch(0.86 0.04 170);
+  color: var(--site-ink);
+}
+
+a {
+  color: inherit;
+}

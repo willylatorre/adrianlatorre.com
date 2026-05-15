@@ -5,7 +5,6 @@ import CoffeeCounter from './components/CoffeeCounter.vue'
 import ContactModal from './components/ContactModal.vue'
 import FunFacts from './components/FunFacts.vue'
 
-// Modal state
 const isModalOpen = ref(false)
 
 type BlogPost = {
@@ -197,57 +196,50 @@ const links = [
 </script>
 
 <template>
-  <UApp>
+  <UApp class="min-h-dvh bg-[var(--site-bg)] text-[var(--site-ink)]">
     <UDashboardGroup>
-      <!-- Sidebar -->
-      <UDashboardSidebar :default-size="20">
-        <!-- Header -->
+      <UDashboardSidebar :default-size="18" class="border-[var(--site-border)] bg-[var(--site-bg)]">
         <template #header>
-          <div class="flex items-center gap-3 mt-5">
-            <div class="w-6 h-6 bg-primary-500 rounded-lg flex items-center justify-center">
-              <UIcon name="i-heroicons-code-bracket" class="w-3 h-3 text-white" />
+          <div class="mt-4 flex items-center gap-3">
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--site-border)] bg-[var(--site-surface)] text-[var(--site-muted)]"
+            >
+              <UIcon name="i-heroicons-code-bracket" class="h-4 w-4" />
             </div>
             <div class="flex-1">
-              <h2 class="font-semibold text-slate-900">Playground</h2>
-              <p class="text-xs text-slate-500 truncate">v1.37</p>
+              <h2 class="text-sm font-medium tracking-tight text-[var(--site-ink)]">Playground</h2>
+              <p class="truncate text-xs text-[var(--site-faint)]">v1.37</p>
             </div>
           </div>
         </template>
 
-        <!-- Navigation -->
-        <UDashboardSearchButton class="mt-4" />
+        <UDashboardSearchButton class="mt-5" />
         <UDashboardSearch :groups="searchGroups" />
         <UNavigationMenu :items="links" orientation="vertical" />
 
-        <!-- Footer -->
         <template #footer>
           <ContactModal v-model="isModalOpen" />
         </template>
       </UDashboardSidebar>
 
-      <!-- Main Panel -->
       <UDashboardPanel>
-        <!-- Navbar -->
         <template #header>
-          <UDashboardNavbar title="Adrian's Playground">
+          <UDashboardNavbar
+            title="Adrian Latorre"
+            class="border-[var(--site-border)] bg-[var(--site-bg)]"
+          >
             <template #right>
-              <div class="flex items-center gap-4">
-                <!-- Adrian Status -->
+              <div class="flex items-center gap-2">
                 <AdrianStatus />
-
-                <!-- Coffee Counter -->
                 <CoffeeCounter />
-
-                <!-- Random Fun Fact Button -->
                 <FunFacts />
               </div>
             </template>
           </UDashboardNavbar>
         </template>
 
-        <!-- Main Content -->
         <template #body>
-          <UContainer>
+          <UContainer class="px-5 py-8 sm:px-8 lg:px-10 lg:py-14">
             <RouterView />
           </UContainer>
         </template>
@@ -255,7 +247,3 @@ const links = [
     </UDashboardGroup>
   </UApp>
 </template>
-
-<style scoped>
-/* Dashboard specific styles can go here if needed */
-</style>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount } from 'vue'
 import { EditorContent } from '@tiptap/vue-3'
-import type { EditorOptions, Extension } from '@tiptap/core'
+import type { AnyExtension, EditorOptions } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import CoffeeCounterCalloutNode from '@/tiptap/CoffeeCounterCalloutNode'
@@ -11,7 +11,7 @@ import TipTapToolbar from '@/components/TipTapToolbar.vue'
 const DEFAULT_EDITOR_CLASS =
   'tiptap min-h-[12rem] focus:outline-none prose prose-slate max-w-none text-slate-800'
 
-const EXTENSION_MAP: Record<string, Extension> = {
+const EXTENSION_MAP: Record<string, AnyExtension> = {
   StarterKit,
   Underline,
   CoffeeCounterCalloutNode,
@@ -38,7 +38,7 @@ const resolvedContent = computed({
 })
 
 const resolvedExtensions = computed(() => {
-  const resolved: Extension[] = []
+  const resolved: AnyExtension[] = []
   const missing: string[] = []
 
   for (const name of props.extensions) {
@@ -66,14 +66,14 @@ const mergeEditorProps = (editorProps?: EditorOptions['editorProps']) => {
     }
   }
 
-  const mergedClass = [DEFAULT_EDITOR_CLASS, editorProps.attributes?.class]
-    .filter(Boolean)
-    .join(' ')
+  const attributes =
+    typeof editorProps.attributes === 'function' ? undefined : editorProps.attributes
+  const mergedClass = [DEFAULT_EDITOR_CLASS, attributes?.class].filter(Boolean).join(' ')
 
   return {
     ...editorProps,
     attributes: {
-      ...editorProps.attributes,
+      ...attributes,
       class: mergedClass,
     },
   }

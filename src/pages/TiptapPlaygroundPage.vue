@@ -131,7 +131,7 @@ const applyStreamedHtml = (value: string) => {
 
 const handleImproveSelection = async () => {
   improveError.value = ''
-  const editor = contextAwareEditor.value?.editor?.value
+  const editor = contextAwareEditor.value?.editor
   if (!editor) return
   const { from, to } = editor.state.selection
 
@@ -210,15 +210,24 @@ const handleGenerate = async () => {
         </p>
         <p class="text-slate-600 max-w-3xl">
           Tiptap also ships an
-          <a class="text-slate-700 underline underline-offset-4"
-            href="https://tiptap.dev/docs/content-ai/capabilities/generation/overview" rel="noreferrer" target="_blank">
+          <a
+            class="text-slate-700 underline underline-offset-4"
+            href="https://tiptap.dev/docs/content-ai/capabilities/generation/overview"
+            rel="noreferrer"
+            target="_blank"
+          >
             out-of-the-box AI integration extension
           </a>
           that can power generation workflows alongside custom pipelines like this one.
         </p>
       </div>
-      <UAlert icon="i-lucide-sparkles" color="primary" variant="soft" title="Why this experiment?"
-        description="The tricky part is keeping the model output format consistent while syncing it into the editor without breaking the UX." />
+      <UAlert
+        icon="i-lucide-sparkles"
+        color="primary"
+        variant="soft"
+        title="Why this experiment?"
+        description="The tricky part is keeping the model output format consistent while syncing it into the editor without breaking the UX."
+      />
     </header>
 
     <UCard>
@@ -245,8 +254,13 @@ const handleGenerate = async () => {
             Generate summary
           </UButton>
         </div>
-        <UAlert v-if="errorMessage" color="red" variant="soft" icon="i-lucide-alert-triangle"
-          :description="errorMessage" />
+        <UAlert
+          v-if="errorMessage"
+          color="red"
+          variant="soft"
+          icon="i-lucide-alert-triangle"
+          :description="errorMessage"
+        />
         <div class="space-y-2">
           <h3 class="text-base font-semibold text-slate-900">Output editor</h3>
           <p class="text-sm text-slate-600">
@@ -267,7 +281,8 @@ const handleGenerate = async () => {
         <p class="text-slate-600 max-w-3xl">
           The playground at the top wires together three things: the LLM prompt, the
           <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm">useTipTap</code> composable that
-          syncs HTML into the editor, and the <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm">TipTapEditor</code>
+          syncs HTML into the editor, and the
+          <code class="rounded bg-slate-100 px-1.5 py-0.5 text-sm">TipTapEditor</code>
           wrapper that standardizes extensions + toolbar UI.
         </p>
         <p class="text-slate-600 max-w-3xl">
@@ -291,16 +306,23 @@ const handleGenerate = async () => {
           Getting the right context and inserting model output where the cursor lives is often the
           trickiest part. You have to preserve selections, handle collapsed cursors, and avoid
           clobbering nearby content. Thankfully, Tiptap provides helper utilities like
-          <a class="text-slate-700 underline underline-offset-4"
-            href="https://tiptap.dev/docs/ui-components/components/ai-menu#getcontextandinsertateditor" rel="noreferrer"
-            target="_blank">
+          <a
+            class="text-slate-700 underline underline-offset-4"
+            href="https://tiptap.dev/docs/ui-components/components/ai-menu#getcontextandinsertateditor"
+            rel="noreferrer"
+            target="_blank"
+          >
             getContextAndInsertAt
           </a>
           so you can keep the insertion logic safe and predictable.
         </p>
       </div>
       <div class="space-y-4">
-        <TipTapEditor ref="contextAwareEditor" v-model:content="contextAwareContent" :extensions="['StarterKit']">
+        <TipTapEditor
+          ref="contextAwareEditor"
+          v-model:content="contextAwareContent"
+          :extensions="['StarterKit']"
+        >
           <template #toolbar="{ editor: tiptap }">
             <TipTapToolbar :editor="tiptap" />
           </template>
@@ -309,31 +331,42 @@ const handleGenerate = async () => {
           <div class="text-sm text-slate-500">
             Select text in the editor and improve it using the context notes.
           </div>
-          <UButton size="sm" variant="soft" color="primary"
-            :loading="improveStatus === 'loading' || improveStatus === 'streaming'" @click="handleImproveSelection">
+          <UButton
+            size="sm"
+            variant="soft"
+            color="primary"
+            :loading="improveStatus === 'loading' || improveStatus === 'streaming'"
+            @click="handleImproveSelection"
+          >
             Improve selection
           </UButton>
         </div>
-        <UAlert v-if="improveError" color="red" variant="soft" icon="i-lucide-alert-triangle"
-          :description="improveError" />
+        <UAlert
+          v-if="improveError"
+          color="red"
+          variant="soft"
+          icon="i-lucide-alert-triangle"
+          :description="improveError"
+        />
       </div>
     </section>
 
     <section class="space-y-4">
       <div class="space-y-2">
-        <h2 class="text-2xl font-semibold text-slate-900">
-          Interactive Vue + React node views
-        </h2>
+        <h2 class="text-2xl font-semibold text-slate-900">Interactive Vue + React node views</h2>
         <p class="text-slate-600 max-w-3xl">
-          Tiptap lets you mount interactive UI inside the editor via node views. This section uses
-          a Vue node view to render the coffee counter callout, and the same pattern translates to
+          Tiptap lets you mount interactive UI inside the editor via node views. This section uses a
+          Vue node view to render the coffee counter callout, and the same pattern translates to
           React with its node view renderer.
         </p>
         <p class="text-slate-600 max-w-3xl">
           See the full walkthrough in the
-          <a class="text-slate-700 underline underline-offset-4"
-            href="https://tiptap.dev/docs/examples/advanced/interactive-react-and-vue-views" rel="noreferrer"
-            target="_blank">
+          <a
+            class="text-slate-700 underline underline-offset-4"
+            href="https://tiptap.dev/docs/examples/advanced/interactive-react-and-vue-views"
+            rel="noreferrer"
+            target="_blank"
+          >
             interactive React + Vue views example
           </a>
           from the Tiptap docs.
@@ -342,7 +375,10 @@ const handleGenerate = async () => {
       <UCodeGroup>
         <UCodeBlock label="interactive-views.ts" :code="interactiveViewsSnippet" language="ts" />
       </UCodeGroup>
-      <TipTapEditor v-model:content="interactiveContent" :extensions="['StarterKit', 'CoffeeCounterCalloutNode']">
+      <TipTapEditor
+        v-model:content="interactiveContent"
+        :extensions="['StarterKit', 'CoffeeCounterCalloutNode']"
+      >
         <template #toolbar="{ editor: tiptap }">
           <TipTapToolbar :editor="tiptap" />
         </template>
@@ -357,7 +393,9 @@ const handleGenerate = async () => {
           interactive components when the UI needs to do more than text.
         </p>
       </div>
-      <div class="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2">
+      <div
+        class="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2"
+      >
         <div>
           <h3 class="text-sm font-semibold text-slate-900">Takeaways</h3>
           <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">

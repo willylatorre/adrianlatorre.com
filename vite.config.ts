@@ -28,8 +28,8 @@ export default defineConfig({
       colorMode: false,
       ui: {
         colors: {
-          primary: 'teal',
-          neutral: 'zinc',
+          primary: 'zinc',
+          neutral: 'stone',
         },
       },
     }),
