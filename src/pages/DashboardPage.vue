@@ -77,8 +77,33 @@
       <div class="timeline">
         <article class="role">
           <div class="role-meta">
+            <h3>Revvity</h3>
+            <p>Boston, MA, April 2026 - Present</p>
+          </div>
+          <div class="role-body">
+            <p>
+              Senior Software Engineer, AI. Building AI-powered features for Revvity's Cloud ELN
+              platform. Designing and developing the Frontend architecture that brings intelligent
+              capabilities (natural language search, conversational data exploration) directly into
+              scientists' workflows.
+            </p>
+            <ul class="compact-list">
+              <li>
+                Focused on creating scalable, reusable component libraries and seamless AI service
+                integrations behind feature-flagged rollouts
+              </li>
+              <li>
+                Currently architecting the foundation that will enable AI experiences across the
+                entire app
+              </li>
+            </ul>
+          </div>
+        </article>
+
+        <article class="role">
+          <div class="role-meta">
             <h3>Adyen</h3>
-            <p>Amsterdam, August 2020 - Present</p>
+            <p>Amsterdam, August 2020 - March 2026</p>
           </div>
           <div class="role-body">
             <p>
