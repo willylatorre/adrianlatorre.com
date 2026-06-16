@@ -6,7 +6,7 @@ register: brand
 
 Adrian Latorre's personal website is a portfolio, writing home, and technical playground. It should help visitors understand Adrian as a pragmatic full-stack engineer who builds polished product interfaces, AI-assisted workflows, and reliable production systems.
 
-The site is intentionally not a traditional resume page. It is a working artifact: the navigation, experiments, blog, Go backend, AI chat, TipTap playground, coffee counter, and project notes all demonstrate how Adrian thinks and builds.
+The site is intentionally not a traditional resume page. It is a working artifact: the navigation, experiments, blog, FastAPI backend, AI chat, TipTap playground, coffee counter, and project notes all demonstrate how Adrian thinks and builds.
 
 ## Primary Users
 
@@ -19,7 +19,7 @@ The site is intentionally not a traditional resume page. It is a working artifac
 ## User Goals
 
 - Quickly understand what Adrian does and why his work is credible.
-- See evidence of real production experience, especially Vue/Nuxt, TypeScript, Go, AI workflows, and high-traffic product surfaces.
+- See evidence of real production experience, especially Vue/Nuxt, TypeScript, Python/FastAPI, AI workflows, and high-traffic product surfaces.
 - Explore experiments without feeling like the site is only a gimmick.
 - Read practical writing about engineering lessons, AI interfaces, and product tradeoffs.
 - Find contact links without friction.
@@ -54,7 +54,7 @@ Use concrete language: "built," "shipped," "integrated," "measured," "reliable,"
 - Full-stack product engineering: frontend, APIs, data, deployment, and reliability.
 - AI engineering: LLM workflows, RAG, agents, tool calls, evaluation loops, latency, cost, and safety.
 - Frontend craft: Vue, Nuxt, TypeScript, performance, composition, and UX details.
-- Experiments: AI chat, TipTap + LLM workflows, Vue + Go demos, side projects, and media.
+- Experiments: AI chat, TipTap + LLM workflows, Vue + FastAPI demos, side projects, and media.
 - Career evidence: Adyen, Housfy, Glovoapp, Oliva App, and shipped production outcomes.
 
 ## Anti-References
@@ -78,6 +78,6 @@ Use concrete language: "built," "shipped," "integrated," "measured," "reliable,"
 
 - The frontend is Vue 3 with Vite and `@nuxt/ui` components, not a Nuxt app.
 - Nuxt UI should remain the component foundation.
-- The backend is Go/Gin with SQLite and SSE endpoints for AI chat.
+- The backend is FastAPI with SQLite and SSE endpoints for AI chat.
 - The site should stay responsive and usable on desktop and mobile.
 - Design changes should be small enough to maintain while preserving room for experimental pages.

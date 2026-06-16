@@ -1,19 +1,27 @@
-# Playground (Vue + Go)
+# Playground (Vue + FastAPI)
 
-Full-stack app with Vue 3 (Vite) frontend and Go (Gin) backend with SQLite. The server serves the built frontend from `server/dist` and exposes REST + SSE endpoints.
+Full-stack app with Vue 3 (Vite) frontend and a Python FastAPI backend with SQLite. The server serves the built frontend from `dist/` and exposes REST + SSE endpoints.
 
 ## Overview
 
-- **Frontend build**: Vite outputs to `dist/` at project root during CI.
-- **Server static files**: `server/main.go` serves from `./dist` relative to the server working dir.
-- **Context loader**: `server/services/context_loader.go` reads `../src/pages` to enrich AI prompts.
-- **Database**: SQLite file path from `DB_PATH` (default `./adrian.db`, relative to server working dir).
+- **Frontend build**: Vite outputs to `dist/` at project root.
+- **Server static files**: `server/main.py` serves `dist/assets`, known public files, and falls back to `index.html` for client-side routes.
+- **Context loader**: `server/context_loader.py` reads `src/pages` to enrich AI prompts.
+- **Database**: SQLite file path comes from `DB_PATH` and defaults to `./adrian.db`.
+- **OpenAI**: `OPENAI_API_KEY` enables chat streaming and image generation.
 
 ## Local Development
 
-- **Install deps**
+- **Install frontend deps**
 ```bash
 npm install
+```
+
+- **Install backend deps**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r server/requirements-dev.txt
 ```
 
 - **Run dev (frontend + server)**
@@ -26,28 +34,26 @@ npm run dev
 npm run build
 ```
 
-The build will produce `dist/` and a `server-binary` for local runs. The Docker build uses a separate multi-stage process (below).
+- **Run production server locally**
+```bash
+npm run start
+```
 
 ## Docker
 
-A root-level multi-stage `Dockerfile` builds the frontend and the Go server (with CGO for SQLite) and arranges runtime paths:
-
-- `dist/` is copied to `/app/server/dist` so `server/main.go` can serve it.
-- `src/pages/` is copied to `/app/src/pages` so the context loader can read `../src/pages` from the server working directory (`/app/server`).
-- Default envs are set but can be overridden at runtime.
+The root-level multi-stage `Dockerfile` builds the frontend with Node and runs the FastAPI server in a Python runtime image.
 
 ### Build and run
 
 ```bash
 docker build -t playground:latest .
 
-# Persist DB under ./data on the host; the container will use /data/adrian.db
 docker run --rm -p 8080:8080 \
   -e ENV=production \
   -e PORT=8080 \
-  -e DB_PATH=/data/adrian.db \
+  -e DB_PATH=/app/data/adrian.db \
   -e OPENAI_API_KEY=your_key_optional \
-  -v $(pwd)/data:/data \
+  -v $(pwd)/data:/app/data \
   playground:latest
 ```
 
@@ -55,49 +61,38 @@ Open http://localhost:8080 and test `GET /api/coffee`.
 
 ## Deploying on Coolify v4
 
-Coolify’s default Nixpacks won’t install Go for this mixed project. Use the provided Dockerfile.
+Use the provided Dockerfile.
 
-### Steps
-
-- **Create Application** in Coolify
-- **Repository**: Connect this repo
-- **Build**:
-  - Build Type: Docker
-  - Dockerfile Path: `Dockerfile`
-  - Build Context: `.`
+- **Build Type**: Docker
+- **Dockerfile Path**: `Dockerfile`
+- **Build Context**: `.`
 - **Environment variables**:
   - `ENV=production`
   - `PORT=8080`
-  - `DB_PATH=/data/adrian.db` (recommended for persistence)
+  - `DB_PATH=/app/data/adrian.db`
   - `OPENAI_API_KEY=<your-key>` (optional; enables AI chat/image)
-  - Optional tuning: `DB_MAX_OPEN_CONNS`, `DB_MAX_IDLE_CONNS`
-- **Ports**:
-  - Exposed: `8080`
-- **Volumes**:
-  - Mount a persistent volume to `/data` (e.g. `playground-data:/data`)
+  - `OPENAI_MODEL=gpt-5-mini` (optional)
+- **Ports**: expose `8080`
+- **Volumes**: mount a persistent volume to `/app/data`
 
-Deploy. Coolify will build the multi-stage image and run the server.
+## Endpoints
 
-### Notes
-
-- `.env` file is optional in containers. `server/config/config.go` prefers process env and does not fail if `.env` is absent.
-- Static assets are served from `server/dist` by these routes in `server/main.go`:
-  - `r.StaticFS("/assets", http.Dir(filepath.Join(".", "dist", "assets")))`
-  - `r.StaticFile("/favicon.png", filepath.Join(".", "dist", "favicon.png"))`
-  - `r.StaticFile("/profile-2.jpg", filepath.Join(".", "dist", "profile-2.jpg"))`
-  - `r.StaticFile("/interview-prompt.png", filepath.Join(".", "dist", "interview-prompt.png"))`
-  - `r.StaticFile("/manifest.json", filepath.Join(".", "dist", "manifest.json"))`
-- Client-side routing is handled by the catch-all `NoRoute` to serve `index.html` for non-`/api` paths.
-- SSE streaming for `/api/chat/message` works behind Coolify’s proxy as standard HTTP; no special config is required.
-
-## Endpoints (excerpt)
-
+- `GET /api/ping`
 - `GET /api/coffee`
 - `POST /api/coffee/increment`
 - `POST /api/chat/message` (SSE streaming)
 - `POST /api/chat/generate-image` (requires `OPENAI_API_KEY`)
 
+## Checks
+
+```bash
+npm run type-check
+npm run test
+npm run test:server
+```
+
 ## Troubleshooting
 
-- If you see DB errors on restarts, ensure `DB_PATH` points to `/data/adrian.db` and `/data` is a persistent volume.
-- If the UI 404s on refresh, confirm the built `dist/` is present under `/app/server/dist` in the container (the Dockerfile handles this).
+- If the coffee counter resets on deploy, confirm `DB_PATH` points inside the mounted persistent volume.
+- If the UI 404s on refresh, confirm `dist/index.html` exists in the container.
+- If chat or image routes return `openai client not configured`, set `OPENAI_API_KEY`.

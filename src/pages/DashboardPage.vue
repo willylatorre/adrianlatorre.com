@@ -22,7 +22,7 @@
           Over the last few years, a big part of my work and side projects has centered on
           <span class="font-medium">AI engineering</span>: turning LLM ideas into real workflows
           with strong UX, solid data grounding, and pragmatic production constraints. That means
-          building RAG pipelines, tool/agent integrations, evaluation loops, and the “boring”
+          building RAG pipelines, tool/agent integrations, evaluation loops, and the "boring"
           reliability pieces (observability, latency, cost, and safety).
         </p>
         <p>
@@ -42,7 +42,7 @@
           the
           <RouterLink class="underline underline-offset-2" to="/ai-chat">AI Chat</RouterLink>
           playground, the
-          <RouterLink class="underline underline-offset-2" to="/vue-go">Vue + Go</RouterLink>
+          <RouterLink class="underline underline-offset-2" to="/vue-go">Vue + FastAPI</RouterLink>
           stack demo, and other
           <RouterLink class="underline underline-offset-2" to="/media">projects</RouterLink>.
         </p>

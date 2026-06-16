@@ -10,39 +10,22 @@ RUN npm ci
 COPY . .
 RUN npx vite build
 
-# ---- Stage 2: Build the Go Backend ----
-FROM golang:1.25-alpine AS server
-WORKDIR /app/server
-
-# Required toolchain for CGO (for github.com/mattn/go-sqlite3)
-RUN apk add --no-cache build-base
-
-# Cache Go modules
-COPY server/go.mod server/go.sum ./
-RUN go mod download
-
-# Copy server sources
-COPY server/ .
-
-# Build a statically-linked binary with CGO enabled
-ENV CGO_ENABLED=1
-ENV GOOS=linux
-ENV GIN_MODE=release
-RUN go build -o /server-binary .
-
-# ---- Stage 3: Create the Final Production Image ----
-FROM alpine:3.20
+# ---- Stage 2: Create the Python Runtime ----
+FROM python:3.14-alpine AS server
 WORKDIR /app
 
 # Add CA certificates for TLS and timezone data for correct log timestamps
 RUN apk add --no-cache ca-certificates tzdata
 
-# --- Security & User ---
-# Create a non-root user and group for security best practices
+# Install Python dependencies first for better layer caching
+COPY server/requirements.txt ./server/requirements.txt
+RUN pip install --no-cache-dir -r server/requirements.txt
+
+# Create a non-root user and group for runtime
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 # Copy built artifacts first
-COPY --from=server /server-binary /app/server-binary
+COPY server /app/server
 COPY --from=client /app/dist /app/dist
 COPY --from=client /app/src/pages /app/src/pages
 
@@ -51,8 +34,7 @@ COPY --from=client /app/src/pages /app/src/pages
 RUN mkdir -p /app/data && chown -R appuser:appgroup /app && chmod -R 755 /app
 
 # Switch to the non-root user
-# Temporarily commented out for debugging
-# USER appuser
+USER appuser
 
 # Expose the app port (configurable via PORT env)
 EXPOSE 8080
@@ -65,7 +47,7 @@ ENV PORT=8080
 # Persistent database path (bind this directory in Coolify for survival across deploys)
 ENV DB_PATH=/app/data/adrian.db
 
-ENV GIN_MODE=release
+ENV ENV=production
 
 # Run the server
-CMD ["/app/server-binary"]
+CMD ["python", "-m", "server.main"]

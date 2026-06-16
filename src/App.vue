@@ -181,7 +181,7 @@ const links = [
         disabled: true,
       },
       {
-        label: 'Vue + Go',
+        label: 'Vue + FastAPI',
         icon: 'i-lucide-code',
         to: '/vue-go',
       },

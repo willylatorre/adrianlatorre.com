@@ -102,7 +102,7 @@ const handleSubmit = async (event?: Event) => {
       <div>
         <h2 class="text-2xl font-semibold text-slate-900">Takeaways</h2>
         <p class="text-slate-600">
-          Notes from building this chat experience with Go, Nuxt, and the OpenAI SDK.
+          Notes from building this chat experience with FastAPI, Vue, and the OpenAI SDK.
         </p>
       </div>
 
@@ -115,9 +115,8 @@ const handleSubmit = async (event?: Event) => {
             </div>
           </template>
           <p class="text-slate-600">
-            Integration with the Go SDK is straightforward but less flexible compared to the
-            TypeScript AI SDK. The TS version still feels like the most adaptable option for rapid
-            prototyping and feature parity.
+            The Python SDK and Responses API make streaming text deltas straightforward while
+            leaving room for image generation, tools, and future retrieval experiments.
           </p>
         </UCard>
 

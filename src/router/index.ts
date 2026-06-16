@@ -58,7 +58,7 @@ const router = createRouter({
     },
     {
       path: '/vue-go',
-      name: 'Vue + Go',
+      name: 'Vue + FastAPI',
       component: lazy(() => import('../pages/VueGoPage.vue')),
     },
     {
