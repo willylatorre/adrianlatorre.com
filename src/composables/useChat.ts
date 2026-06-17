@@ -106,7 +106,6 @@ export function useChat() {
       async () => {
         // Streaming complete
         console.log('🎉 Streaming complete!')
-        status.value = 'ready'
         const finalContent = currentAssistantMessage.value
         console.log('📝 Final content:', finalContent)
         currentAssistantMessage.value = ''
@@ -154,6 +153,7 @@ export function useChat() {
         } else {
           console.log('⚠️ No content to generate image from')
         }
+        status.value = 'ready'
       },
       (error: string) => {
         // Error occurred
