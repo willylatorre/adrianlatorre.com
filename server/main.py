@@ -18,6 +18,7 @@ from .models import (
     ImageGenerationResponse,
 )
 from .openai_service import OpenAIService
+from .replicate_service import ReplicateService
 
 
 logger = logging.getLogger(__name__)
@@ -38,12 +39,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     repository = CoffeeRepository(settings.database_path)
     pages_dir = _resolve_pages_dir()
     openai_service = OpenAIService(settings.openai_api_key, pages_dir, settings.openai_model)
+    replicate_service = ReplicateService(settings.replicate_api_key)
 
     def get_repository() -> CoffeeRepository:
         return repository
 
     def get_openai_service() -> OpenAIService:
         return openai_service
+
+    def get_replicate_service() -> ReplicateService:
+        return replicate_service
 
     @app.get("/api/ping", response_class=PlainTextResponse)
     async def ping() -> str:
@@ -91,10 +96,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/api/chat/generate-image", response_model=ImageGenerationResponse)
     async def generate_image(
         image_request: ImageGenerationRequest,
-        service: OpenAIService = Depends(get_openai_service),
+        service: ReplicateService = Depends(get_replicate_service),
     ) -> ImageGenerationResponse:
-        if service.client is None:
-            raise HTTPException(status_code=500, detail="openai client not configured")
+        if not service.api_key:
+            raise HTTPException(status_code=500, detail="replicate client not configured")
 
         try:
             image_url = await service.generate_image(image_request.prompt)
