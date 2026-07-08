@@ -42,7 +42,7 @@ type OrchestratorPayload = {
 
 const { sendOrchestratorMessage } = useApi()
 
-const prompt = ref('Who plays in Barcelona FC?')
+const prompt = ref('What was FC Barcelona team in 2024')
 const status = ref<'ready' | 'running' | 'error'>('ready')
 const answer = ref('')
 const decision = ref<RouteDecision | null>(null)
@@ -610,7 +610,7 @@ const runPrompt = async (nextPrompt?: string) => {
               to: 'https://api-sports.io/documentation/football/v3',
               target: '_blank',
               icon: 'i-lucide-external-link',
-              class: 'bg-[var(--site-accent)] text-[var(--site-bg)] hover:bg-[oklch(0.37_0.045_170)]',
+              class: 'bg-[var(--site-accent)] !text-[var(--site-bg)] hover:bg-[oklch(0.37_0.045_170)]',
             },
           ]"
         />

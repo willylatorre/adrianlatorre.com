@@ -220,4 +220,4 @@ def test_tool_call_cap_is_three() -> None:
 
 
 def test_orchestrator_router_uses_nano_model() -> None:
-    assert ROUTER_MODEL == "gpt-5.4.nano"
+    assert ROUTER_MODEL == "gpt-5.4-nano"

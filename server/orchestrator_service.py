@@ -15,7 +15,7 @@ from .api_football_service import ApiFootballService
 from .portfolio_service import PortfolioSearchService
 
 
-ROUTER_MODEL = "gpt-5.4.nano"
+ROUTER_MODEL = "gpt-5.4-nano"
 AGENT_MODEL = "gpt-5-mini"
 MAX_TOOL_CALLS = 3
 
