@@ -41,3 +41,7 @@ class ImageGenerationResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     image_url: str
+
+
+class OrchestratorRequest(BaseModel):
+    prompt: str = Field(min_length=1)

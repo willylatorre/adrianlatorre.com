@@ -94,6 +94,12 @@ const baseSearchGroups = [
     label: 'Playground',
     items: [
       {
+        label: 'Agent Orchestrator',
+        suffix: 'Agent routing trace',
+        to: '/orchestrator',
+        icon: 'i-lucide-route',
+      },
+      {
         label: 'AI Chat',
         suffix: 'Interactive conversation',
         to: '/ai-chat',
@@ -158,6 +164,11 @@ const links = [
     icon: 'i-lucide-command',
     defaultOpen: true,
     children: [
+      {
+        label: 'Agent Orchestrator',
+        icon: 'i-lucide-route',
+        to: '/orchestrator',
+      },
       {
         label: 'AI Chat',
         icon: 'i-lucide-message-circle',

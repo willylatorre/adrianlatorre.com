@@ -50,3 +50,9 @@ export interface ImageGenerationRequest {
 export interface ImageGenerationResponse {
   image_url: string
 }
+/**
+ * OrchestratorRequest represents a single-turn agent orchestration prompt
+ */
+export interface OrchestratorRequest {
+  prompt: string
+}

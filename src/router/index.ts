@@ -42,6 +42,11 @@ const router = createRouter({
       component: lazy(() => import('../pages/AIChatPage.vue')),
     },
     {
+      path: '/orchestrator',
+      name: 'Agent Orchestrator',
+      component: lazy(() => import('../pages/AgentOrchestratorPage.vue')),
+    },
+    {
       path: '/tiptap-llm',
       name: 'Tiptap + LLMs',
       component: lazy(() => import('../pages/TiptapPlaygroundPage.vue')),

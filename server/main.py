@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterator
 from pathlib import Path
+import json
 import logging
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -8,6 +9,7 @@ from fastapi.responses import FileResponse, PlainTextResponse, Response, Streami
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
+from .api_football_service import ApiFootballService
 from .config import Settings, get_settings
 from .database import CoffeeRepository
 from .models import (
@@ -16,8 +18,11 @@ from .models import (
     CoffeeIncrementEnvelope,
     ImageGenerationRequest,
     ImageGenerationResponse,
+    OrchestratorRequest,
 )
 from .openai_service import OpenAIService
+from .orchestrator_service import OrchestratorService
+from .portfolio_service import PortfolioSearchService
 from .replicate_service import ReplicateService
 
 
@@ -40,6 +45,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     pages_dir = _resolve_pages_dir()
     openai_service = OpenAIService(settings.openai_api_key, pages_dir, settings.openai_model)
     replicate_service = ReplicateService(settings.replicate_api_key)
+    api_football_service = ApiFootballService(settings.api_football_key)
+    portfolio_service = PortfolioSearchService(pages_dir)
+    orchestrator_service = OrchestratorService(
+        settings.openai_api_key,
+        api_football_service,
+        portfolio_service,
+    )
 
     def get_repository() -> CoffeeRepository:
         return repository
@@ -49,6 +61,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     def get_replicate_service() -> ReplicateService:
         return replicate_service
+
+    def get_orchestrator_service() -> OrchestratorService:
+        return orchestrator_service
 
     @app.get("/api/ping", response_class=PlainTextResponse)
     async def ping() -> str:
@@ -108,6 +123,25 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             raise HTTPException(status_code=500, detail="Failed to generate image") from exc
 
         return ImageGenerationResponse(image_url=image_url)
+
+    @app.post("/api/orchestrator/message")
+    async def orchestrate_message(
+        orchestrator_request: OrchestratorRequest,
+        service: OrchestratorService = Depends(get_orchestrator_service),
+    ) -> StreamingResponse:
+        async def event_stream() -> AsyncIterator[str]:
+            async for event in service.stream(orchestrator_request.prompt):
+                event_type = event.get("type", "message")
+                yield f"event: {event_type}\ndata: {json.dumps(event)}\n\n"
+
+        return StreamingResponse(
+            event_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+            },
+        )
 
     _mount_static_files(app)
     return app

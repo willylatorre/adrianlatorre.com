@@ -12,6 +12,7 @@ class Settings(BaseModel):
     openai_api_key: str = ""
     openai_model: str = "gpt-5-mini"
     replicate_api_key: str = ""
+    api_football_key: str = ""
 
 
 @lru_cache
@@ -25,4 +26,5 @@ def get_settings() -> Settings:
         openai_api_key=os.getenv("OPENAI_API_KEY", ""),
         openai_model=os.getenv("OPENAI_MODEL", "gpt-5-mini"),
         replicate_api_key=os.getenv("REPLICATE_API_KEY", ""),
+        api_football_key=os.getenv("API_FOOTBALL_KEY", ""),
     )
