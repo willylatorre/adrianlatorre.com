@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import CodeSnippet from '@/components/CodeSnippet.vue'
 import { useApi } from '@/composables/useApi'
 
 type AgentId = 'joke_agent' | 'soccer_agent' | 'portfolio_agent' | 'none'
@@ -42,7 +43,7 @@ type OrchestratorPayload = {
 
 const { sendOrchestratorMessage } = useApi()
 
-const prompt = ref('What was FC Barcelona team in 2024')
+const prompt = ref('Show 2024 Premier League standings')
 const status = ref<'ready' | 'running' | 'error'>('ready')
 const answer = ref('')
 const decision = ref<RouteDecision | null>(null)
@@ -424,8 +425,8 @@ const runPrompt = async (nextPrompt?: string) => {
       </aside>
     </section>
 
-    <section class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
-      <div class="space-y-8">
+    <section class="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div class="min-w-0 space-y-8">
         <div>
           <h2 class="text-2xl font-semibold text-[var(--site-ink)]">How the Orchestrator Works</h2>
           <div class="prose prose-slate mt-3 max-w-none">
@@ -446,35 +447,39 @@ const runPrompt = async (nextPrompt?: string) => {
         <div>
           <h3 class="text-xl font-semibold text-[var(--site-ink)]">Execution Diagram</h3>
           <div
-            class="mt-4 rounded-lg border border-[var(--site-border)] bg-[var(--site-surface)] p-4 sm:p-6"
+            class="mt-4 min-w-0 rounded-lg border border-[var(--site-border)] bg-[var(--site-surface)] p-3 sm:p-6"
           >
             <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-              <div class="rounded-md border border-[var(--site-border)] bg-[var(--site-bg)] p-4">
-                <div class="flex items-center gap-3">
+              <div
+                class="min-w-0 rounded-md border border-[var(--site-border)] bg-[var(--site-bg)] p-3 sm:p-4"
+              >
+                <div class="flex min-w-0 items-start gap-3 sm:items-center">
                   <span
                     class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--site-border)] bg-[var(--site-surface-soft)] text-[var(--site-accent)]"
                   >
                     <UIcon name="i-lucide-message-square" class="h-4 w-4" />
                   </span>
-                  <div>
+                  <div class="min-w-0">
                     <p class="font-medium text-[var(--site-ink)]">Prompt</p>
-                    <p class="text-sm leading-6 text-[var(--site-muted)]">
+                    <p class="text-wrap text-sm leading-6 text-[var(--site-muted)]">
                       The browser posts one user question to FastAPI.
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div class="rounded-md border border-[var(--site-border)] bg-[var(--site-bg)] p-4">
-                <div class="flex items-center gap-3">
+              <div
+                class="min-w-0 rounded-md border border-[var(--site-border)] bg-[var(--site-bg)] p-3 sm:p-4"
+              >
+                <div class="flex min-w-0 items-start gap-3 sm:items-center">
                   <span
                     class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--site-border)] bg-[var(--site-surface-soft)] text-[var(--site-accent)]"
                   >
                     <UIcon name="i-lucide-route" class="h-4 w-4" />
                   </span>
-                  <div>
+                  <div class="min-w-0">
                     <p class="font-medium text-[var(--site-ink)]">Router model</p>
-                    <p class="text-sm leading-6 text-[var(--site-muted)]">
+                    <p class="text-wrap text-sm leading-6 text-[var(--site-muted)]">
                       A cheap model returns one selected agent, confidence, and public rationale.
                     </p>
                   </div>
@@ -486,36 +491,42 @@ const runPrompt = async (nextPrompt?: string) => {
               <UIcon name="i-lucide-arrow-down" class="h-5 w-5" />
             </div>
 
-            <div class="grid gap-3 lg:grid-cols-3">
-              <div class="rounded-md border border-[var(--site-border)] bg-white p-4">
-                <div class="flex items-center gap-2">
+            <div class="grid min-w-0 gap-3 lg:grid-cols-3">
+              <div
+                class="min-w-0 rounded-md border border-[var(--site-border)] bg-white p-3 sm:p-4"
+              >
+                <div class="flex min-w-0 items-center gap-2">
                   <UIcon name="i-lucide-laugh" class="h-4 w-4 text-[var(--site-accent)]" />
                   <p class="font-medium text-[var(--site-ink)]">Joke Agent</p>
                 </div>
-                <p class="mt-2 text-sm leading-6 text-[var(--site-muted)]">
+                <p class="mt-2 text-wrap text-sm leading-6 text-[var(--site-muted)]">
                   No tools. The specialist streams a short generated answer.
                 </p>
               </div>
 
-              <div class="rounded-md border border-[var(--site-border)] bg-white p-4">
-                <div class="flex items-center gap-2">
+              <div
+                class="min-w-0 rounded-md border border-[var(--site-border)] bg-white p-3 sm:p-4"
+              >
+                <div class="flex min-w-0 items-center gap-2">
                   <UIcon name="i-lucide-trophy" class="h-4 w-4 text-[var(--site-accent)]" />
                   <p class="font-medium text-[var(--site-ink)]">Soccer Agent</p>
                 </div>
-                <p class="mt-2 text-sm leading-6 text-[var(--site-muted)]">
+                <p class="mt-2 text-wrap text-sm leading-6 text-[var(--site-muted)]">
                   Plans up to three tool calls, queries API-Football, then summarizes returned data.
                 </p>
               </div>
 
-              <div class="rounded-md border border-[var(--site-border)] bg-white p-4">
-                <div class="flex items-center gap-2">
+              <div
+                class="min-w-0 rounded-md border border-[var(--site-border)] bg-white p-3 sm:p-4"
+              >
+                <div class="flex min-w-0 items-center gap-2">
                   <UIcon
                     name="i-lucide-user-round-search"
                     class="h-4 w-4 text-[var(--site-accent)]"
                   />
                   <p class="font-medium text-[var(--site-ink)]">Portfolio Agent</p>
                 </div>
-                <p class="mt-2 text-sm leading-6 text-[var(--site-muted)]">
+                <p class="mt-2 text-wrap text-sm leading-6 text-[var(--site-muted)]">
                   Calls local portfolio search, then answers from Adrian's site context.
                 </p>
               </div>
@@ -526,13 +537,13 @@ const runPrompt = async (nextPrompt?: string) => {
             </div>
 
             <div
-              class="rounded-md border border-[var(--site-border)] bg-[var(--site-bg)] p-4 text-sm leading-6 text-[var(--site-muted)]"
+              class="min-w-0 rounded-md border border-[var(--site-border)] bg-[var(--site-bg)] p-3 text-sm leading-6 text-[var(--site-muted)] sm:p-4"
             >
-              <div class="flex items-center gap-2 font-medium text-[var(--site-ink)]">
+              <div class="flex min-w-0 items-center gap-2 font-medium text-[var(--site-ink)]">
                 <UIcon name="i-lucide-radio" class="h-4 w-4 text-[var(--site-accent)]" />
                 Server-Sent Events
               </div>
-              <p class="mt-2">
+              <p class="mt-2 text-wrap">
                 The endpoint streams route events, agent selection, tool activity, answer tokens,
                 errors, and completion as named events for the workbench timeline.
               </p>
@@ -542,21 +553,17 @@ const runPrompt = async (nextPrompt?: string) => {
 
         <div>
           <h3 class="text-xl font-semibold text-[var(--site-ink)]">Streaming Contract</h3>
-          <pre
-            class="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-4 text-sm text-slate-100"
-          ><code>{{ codeSnippets.eventContract }}</code></pre>
+          <CodeSnippet class="mt-3" :code="codeSnippets.eventContract" language="sse" />
         </div>
 
         <div>
           <h3 class="text-xl font-semibold text-[var(--site-ink)]">FastAPI Stream Endpoint</h3>
           <p class="mt-2 max-w-3xl text-[var(--site-muted)]">
             The route wraps the orchestrator generator in FastAPI's
-            <code>StreamingResponse</code>. Each yielded event is framed as Server-Sent Events so the
-            browser can distinguish routing, tools, tokens, errors, and completion.
+            <code>StreamingResponse</code>. Each yielded event is framed as Server-Sent Events so
+            the browser can distinguish routing, tools, tokens, errors, and completion.
           </p>
-          <pre
-            class="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-4 text-sm text-slate-100"
-          ><code>{{ codeSnippets.endpoint }}</code></pre>
+          <CodeSnippet class="mt-3" :code="codeSnippets.endpoint" language="python" />
         </div>
 
         <div>
@@ -565,9 +572,7 @@ const runPrompt = async (nextPrompt?: string) => {
             The orchestrator does not answer directly. It emits the routing decision, activates one
             specialist, forwards that agent's stream, then emits a final completion event.
           </p>
-          <pre
-            class="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-4 text-sm text-slate-100"
-          ><code>{{ codeSnippets.orchestrator }}</code></pre>
+          <CodeSnippet class="mt-3" :code="codeSnippets.orchestrator" language="python" />
         </div>
 
         <div>
@@ -577,16 +582,12 @@ const runPrompt = async (nextPrompt?: string) => {
             streams each API-Football call, stores tool results, then asks the model to summarize
             only what the tools returned.
           </p>
-          <pre
-            class="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-4 text-sm text-slate-100"
-          ><code>{{ codeSnippets.soccerAgent }}</code></pre>
+          <CodeSnippet class="mt-3" :code="codeSnippets.soccerAgent" language="python" />
         </div>
 
         <div>
           <h3 class="text-xl font-semibold text-[var(--site-ink)]">Soccer Tool Boundary</h3>
-          <pre
-            class="mt-3 overflow-x-auto rounded-lg bg-slate-950 p-4 text-sm text-slate-100"
-          ><code>{{ codeSnippets.toolSubset }}</code></pre>
+          <CodeSnippet class="mt-3" :code="codeSnippets.toolSubset" language="text" />
         </div>
       </div>
 
@@ -610,7 +611,8 @@ const runPrompt = async (nextPrompt?: string) => {
               to: 'https://api-sports.io/documentation/football/v3',
               target: '_blank',
               icon: 'i-lucide-external-link',
-              class: 'bg-[var(--site-accent)] !text-[var(--site-bg)] hover:bg-[oklch(0.37_0.045_170)]',
+              class:
+                'bg-[var(--site-accent)] !text-[var(--site-bg)] hover:bg-[oklch(0.37_0.045_170)]',
             },
           ]"
         />

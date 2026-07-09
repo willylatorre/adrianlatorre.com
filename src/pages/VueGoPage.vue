@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import CodeSnippet from '@/components/CodeSnippet.vue'
+
 const dockerfileCode = `# ---- Stage 1: Build the Vue.js Frontend ----
 FROM node:22-alpine AS client
 WORKDIR /app
@@ -171,9 +173,7 @@ const packageCommands = [
           The backend keeps the old public API stable while moving the implementation to Pydantic,
           SQLite, and the OpenAI Python SDK:
         </p>
-        <div class="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto">
-          <pre class="text-sm"><code>{{ fastApiServerCode }}</code></pre>
-        </div>
+        <CodeSnippet :code="fastApiServerCode" language="python" />
       </div>
 
       <div>
@@ -204,9 +204,7 @@ const packageCommands = [
           Python runtime image, and keeps SQLite under <code>/app/data</code> for a persistent
           Coolify volume:
         </p>
-        <div class="bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto">
-          <pre class="text-sm"><code>{{ dockerfileCode }}</code></pre>
-        </div>
+        <CodeSnippet :code="dockerfileCode" language="dockerfile" />
         <p class="text-slate-700 mt-4">In Coolify, configure these environment variables:</p>
         <ul class="text-slate-700 ml-4 space-y-1">
           <li>• <code>PORT=8080</code></li>
