@@ -8,14 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
+from wave_counter import WaveCounter
+from wave_counter.fastapi import create_router
 
 from .api_football_service import ApiFootballService
 from .config import Settings, get_settings
-from .database import CoffeeRepository
 from .models import (
     ChatRequest,
-    CoffeeEnvelope,
-    CoffeeIncrementEnvelope,
     ImageGenerationRequest,
     ImageGenerationResponse,
     OrchestratorRequest,
@@ -27,6 +26,18 @@ from .replicate_service import ReplicateService
 
 
 logger = logging.getLogger(__name__)
+
+
+def _legacy_coffee_total(database_path: str) -> int:
+    """Read the pre-Wave Counter total for the one-time baseline migration."""
+    import sqlite3
+
+    try:
+        with sqlite3.connect(database_path) as connection:
+            row = connection.execute("SELECT counter FROM coffee LIMIT 1").fetchone()
+    except sqlite3.Error:
+        return 67
+    return max(0, int(row[0])) if row else 67
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -41,7 +52,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
-    repository = CoffeeRepository(settings.database_path)
+    counter = WaveCounter(
+        database_path=settings.database_path,
+        initial_counts={"coffee": _legacy_coffee_total(settings.database_path)},
+    )
+    app.include_router(create_router(counter), prefix="/api/waves")
     pages_dir = _resolve_pages_dir()
     openai_service = OpenAIService(settings.openai_api_key, pages_dir, settings.openai_model)
     replicate_service = ReplicateService(settings.replicate_api_key)
@@ -52,9 +67,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         api_football_service,
         portfolio_service,
     )
-
-    def get_repository() -> CoffeeRepository:
-        return repository
 
     def get_openai_service() -> OpenAIService:
         return openai_service
@@ -68,24 +80,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/ping", response_class=PlainTextResponse)
     async def ping() -> str:
         return "pong"
-
-    @app.get("/api/coffee", response_model=CoffeeEnvelope)
-    async def get_coffee(repo: CoffeeRepository = Depends(get_repository)) -> dict[str, object]:
-        try:
-            return {"data": repo.get()}
-        except Exception as exc:
-            logger.exception("Failed to get coffee counter")
-            raise HTTPException(status_code=500, detail="Failed to get coffee counter") from exc
-
-    @app.post("/api/coffee/increment", response_model=CoffeeIncrementEnvelope)
-    async def increment_coffee(
-        repo: CoffeeRepository = Depends(get_repository),
-    ) -> dict[str, object]:
-        try:
-            return {"data": repo.increment(), "message": "Coffee counter incremented"}
-        except Exception as exc:
-            logger.exception("Failed to increment coffee counter")
-            raise HTTPException(status_code=500, detail="Failed to increment coffee counter") from exc
 
     @app.post("/api/chat/message")
     async def send_message(

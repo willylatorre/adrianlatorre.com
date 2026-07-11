@@ -49,5 +49,4 @@ Vagrantfile
 *.test
 *.out
 coverage.out
-vendor/
 server-binary

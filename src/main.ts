@@ -10,6 +10,7 @@ import './assets/imports.css'
 import './assets/tiptap.css'
 import './assets/main.scss'
 import 'highlight.js/styles/github.css'
+import '@wave-counter/vue/styles.css'
 
 const app = createApp(App)
 

@@ -22,8 +22,9 @@ python -m uvicorn server.main:app --reload --host 0.0.0.0 --port 8080
 ## API Endpoints
 
 - `GET /api/ping`
-- `GET /api/coffee`
-- `POST /api/coffee/increment`
+- `GET /api/waves/counters/coffee`
+- `POST /api/waves/counters/coffee/events`
+- `GET /api/waves/counters/coffee/analytics?window=7d`
 - `POST /api/chat/message`
 - `POST /api/chat/generate-image`
 

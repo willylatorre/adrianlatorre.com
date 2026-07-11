@@ -9,14 +9,6 @@
 // source: server/models.py
 
 /**
- * Coffee represents the coffee counter model
- */
-export interface Coffee {
-  id: number
-  counter: number
-  last_update: string
-}
-/**
  * ChatMessage represents a message in a chat conversation
  */
 export interface ChatMessage {

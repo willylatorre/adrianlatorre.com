@@ -4,9 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  esbuild: '>=0.28.1'
-
 importers:
 
   .:
@@ -18,7 +15,7 @@ importers:
         specifier: ^4.1.14
         version: 4.3.1(vite@7.3.5(@types/node@22.19.21)(jiti@2.7.0)(lightningcss@1.32.0)(sass-embedded@1.100.0)(sass@1.100.0))
       '@tiptap/core':
-        specifier: ^3.26.1
+        specifier: ^3.22.4
         version: 3.26.1(@tiptap/pm@3.26.1)
       '@tiptap/extension-underline':
         specifier: ^3.4.0
@@ -29,6 +26,12 @@ importers:
       '@tiptap/vue-3':
         specifier: ^3.4.0
         version: 3.26.1(@floating-ui/dom@1.7.6)(@tiptap/core@3.26.1(@tiptap/pm@3.26.1))(@tiptap/pm@3.26.1)(vue@3.5.38(typescript@5.9.3))
+      '@wave-counter/client':
+        specifier: 0.1.0
+        version: 0.1.0
+      '@wave-counter/vue':
+        specifier: 0.1.0
+        version: 0.1.0(vue@3.5.38(typescript@5.9.3))
       markdown-it:
         specifier: ^14.1.0
         version: 14.2.0
@@ -1796,6 +1799,14 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
+  '@wave-counter/client@0.1.0':
+    resolution: {integrity: sha512-3QTcWN94u5vovMzPvzSZqfSFva2i3ob9fGHDun4TGapmWwWlWuFlEPzW0d5E91oP7AfOVoMU+nIq6Epen+GL2g==}
+
+  '@wave-counter/vue@0.1.0':
+    resolution: {integrity: sha512-gLy8UPCrhUNDs2AjRa0ZgjRZiX/R9O8NPl82sfsMPH7akvimbnKnDSxf/OHLTcK/e5Irctu6zNF8kknw57mGcw==}
+    peerDependencies:
+      vue: ^3.5.0
+
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
     peerDependencies:
@@ -3367,6 +3378,10 @@ packages:
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
+
+  uuid@11.1.1:
+    resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
+    hasBin: true
 
   varint@6.0.0:
     resolution: {integrity: sha512-cXEIW6cfr15lFv563k4GuVuW/fiwjknytD37jIOLSdSWuOI6WnO/oKwmP2FQTU2l01LP8/M5TSAJpzUaGe3uWg==}
@@ -5271,6 +5286,15 @@ snapshots:
     dependencies:
       vue: 3.5.38(typescript@5.9.3)
 
+  '@wave-counter/client@0.1.0':
+    dependencies:
+      uuid: 11.1.1
+
+  '@wave-counter/vue@0.1.0(vue@3.5.38(typescript@5.9.3))':
+    dependencies:
+      '@wave-counter/client': 0.1.0
+      vue: 3.5.38(typescript@5.9.3)
+
   acorn-jsx@5.3.2(acorn@8.17.0):
     dependencies:
       acorn: 8.17.0
@@ -6801,6 +6825,8 @@ snapshots:
       punycode: 2.3.1
 
   util-deprecate@1.0.2: {}
+
+  uuid@11.1.1: {}
 
   varint@6.0.0: {}
 

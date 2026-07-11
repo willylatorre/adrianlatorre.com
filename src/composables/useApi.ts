@@ -1,5 +1,5 @@
 import { ref, type Ref } from 'vue'
-import type { Coffee, ChatMessage, ImageGenerationResponse } from '@/types/api-generated'
+import type { ChatMessage, ImageGenerationResponse } from '@/types/api-generated'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
@@ -64,38 +64,6 @@ const readSseStream = async (
 export function useApi() {
   const loading: Ref<boolean> = ref(false)
   const error: Ref<string | null> = ref(null)
-
-  const getCoffee = async (): Promise<Coffee | null> => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await fetch(`${API_BASE_URL}/coffee`)
-      const result = await response.json()
-      return result.data
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to fetch coffee counter'
-      return null
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const incrementCoffee = async (): Promise<Coffee | null> => {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await fetch(`${API_BASE_URL}/coffee/increment`, {
-        method: 'POST',
-      })
-      const result = await response.json()
-      return result.data
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to increment coffee counter'
-      return null
-    } finally {
-      loading.value = false
-    }
-  }
 
   const sendChatMessage = async (
     messages: ChatMessage[],
@@ -201,8 +169,6 @@ export function useApi() {
   return {
     loading,
     error,
-    getCoffee,
-    incrementCoffee,
     sendChatMessage,
     generateImage,
     sendOrchestratorMessage,
