@@ -27,11 +27,11 @@ importers:
         specifier: ^3.4.0
         version: 3.26.1(@floating-ui/dom@1.7.6)(@tiptap/core@3.26.1(@tiptap/pm@3.26.1))(@tiptap/pm@3.26.1)(vue@3.5.38(typescript@5.9.3))
       '@waves-counter/client':
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: 0.1.2
+        version: 0.1.2
       '@waves-counter/vue':
-        specifier: 0.1.0
-        version: 0.1.0(vue@3.5.38(typescript@5.9.3))
+        specifier: 0.1.2
+        version: 0.1.2(vue@3.5.38(typescript@5.9.3))
       markdown-it:
         specifier: ^14.1.0
         version: 14.2.0
@@ -1799,11 +1799,11 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
-  '@waves-counter/client@0.1.0':
-    resolution: {integrity: sha512-LZx7g+PS4uoDfcSET7lMQBsiNLQg6dq65m6mIp465SOcOZkDYrNhGwwpT9SytTcvz6qsSZ9iem84JWWouJBtGA==}
+  '@waves-counter/client@0.1.2':
+    resolution: {integrity: sha512-bVHh9335AVBoFviT9qspI7sK/GEYckwdmzJexRrxAmjVNem82oWdeWhYNkIxTWDW9yvub9Pua84CZ1nhr0Rjvw==}
 
-  '@waves-counter/vue@0.1.0':
-    resolution: {integrity: sha512-UFsVs2zmj8FkgCTAGMKXEm5r7v1bkFaFAiKbt6xXj5/xNg89WOXx4OJeXuZX6eQAbh8qpzzhD+rSMe5bB0CTEg==}
+  '@waves-counter/vue@0.1.2':
+    resolution: {integrity: sha512-xRe7HPI24KekntMG5PDoYZ99Dee4liKfc8VimvXqwG2bIQ9n5msSz4twLQvCwO0SJoo2KgzcMd6zvoQgSw/PnA==}
     peerDependencies:
       vue: ^3.5.0
 
@@ -5286,13 +5286,13 @@ snapshots:
     dependencies:
       vue: 3.5.38(typescript@5.9.3)
 
-  '@waves-counter/client@0.1.0':
+  '@waves-counter/client@0.1.2':
     dependencies:
       uuid: 11.1.1
 
-  '@waves-counter/vue@0.1.0(vue@3.5.38(typescript@5.9.3))':
+  '@waves-counter/vue@0.1.2(vue@3.5.38(typescript@5.9.3))':
     dependencies:
-      '@waves-counter/client': 0.1.0
+      '@waves-counter/client': 0.1.2
       vue: 3.5.38(typescript@5.9.3)
 
   acorn-jsx@5.3.2(acorn@8.17.0):

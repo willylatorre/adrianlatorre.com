@@ -17,6 +17,7 @@ function showError(): void {
     class="coffee-counter"
     counter-key="coffee"
     endpoint="/api/waves"
+    theme="light"
     @error="showError"
   />
 </template>
