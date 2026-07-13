@@ -206,6 +206,16 @@ watchEffect((onInvalidate) => {
   color: rgba(15, 23, 42, 0.85);
 }
 
+.blog-prose :deep(img) {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+  margin: 22px 0;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 18px;
+}
+
 .blog-prose :deep(ul),
 .blog-prose :deep(ol) {
   margin: 14px 0;
