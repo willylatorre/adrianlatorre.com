@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { WaveCounter } from '@wave-counter/vue'
+import { WaveCounter } from '@waves-counter/vue'
 const toast = useToast()
 
 function showError(): void {
