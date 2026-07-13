@@ -3,20 +3,6 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class Coffee(BaseModel):
-    id: int
-    counter: int
-    last_update: datetime
-
-
-class CoffeeEnvelope(BaseModel):
-    data: Coffee
-
-
-class CoffeeIncrementEnvelope(CoffeeEnvelope):
-    message: str
-
-
 class ChatMessage(BaseModel):
     id: str
     role: str

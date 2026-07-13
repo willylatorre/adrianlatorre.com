@@ -1,5 +1,6 @@
 from datetime import UTC, datetime
 from pathlib import Path
+import sqlite3
 
 from fastapi.testclient import TestClient
 
@@ -19,27 +20,38 @@ def build_client(tmp_path: Path) -> TestClient:
     return TestClient(app)
 
 
-def test_get_coffee_returns_seed_counter(tmp_path: Path) -> None:
+def test_wave_counter_preserves_seed_total_and_records_events(tmp_path: Path) -> None:
     client = build_client(tmp_path)
 
-    response = client.get("/api/coffee")
+    response = client.get("/api/waves/counters/coffee")
 
     assert response.status_code == 200
     body = response.json()
-    assert body["data"]["counter"] == 67
-    assert body["data"]["id"] == 1
-    assert "last_update" in body["data"]
+    assert body["total"] == 67
+
+    response = client.post(
+        "/api/waves/counters/coffee/events",
+        json={"eventId": "0198f2f7-6d42-7d94-b1a6-e4305543f132"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["total"] == 68
+    assert client.get("/api/coffee").status_code == 404
 
 
-def test_increment_coffee_updates_counter(tmp_path: Path) -> None:
+def test_wave_counter_imports_the_legacy_total_without_fabricating_events(tmp_path: Path) -> None:
+    database = tmp_path / "test.db"
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "CREATE TABLE coffee (id INTEGER PRIMARY KEY, counter INTEGER NOT NULL)"
+        )
+        connection.execute("INSERT INTO coffee (id, counter) VALUES (1, 91)")
+
     client = build_client(tmp_path)
 
-    response = client.post("/api/coffee/increment")
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["data"]["counter"] == 68
-    assert body["message"] == "Coffee counter incremented"
+    assert client.get("/api/waves/counters/coffee").json()["total"] == 91
+    analytics = client.get("/api/waves/counters/coffee/analytics?window=7d").json()
+    assert analytics["total"] == 0
 
 
 def test_invalid_chat_request_returns_422(tmp_path: Path) -> None:

@@ -11,18 +11,20 @@ COPY . .
 RUN npx vite build
 
 # ---- Stage 2: Create the Python Runtime ----
-FROM python:3.14-alpine AS server
+FROM python:3.14-slim AS server
 WORKDIR /app
 
 # Add CA certificates for TLS and timezone data for correct log timestamps
-RUN apk add --no-cache ca-certificates tzdata
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates tzdata \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first for better layer caching
 COPY server/requirements.txt ./server/requirements.txt
 RUN pip install --no-cache-dir -r server/requirements.txt
 
 # Create a non-root user and group for runtime
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
 
 # Copy built artifacts first
 COPY server /app/server
