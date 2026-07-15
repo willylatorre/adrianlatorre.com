@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import type { NavigationMenuItem } from '@nuxt/ui'
 import AdrianStatus from './components/AdrianStatus.vue'
 import CoffeeCounter from './components/CoffeeCounter.vue'
 import ContactModal from './components/ContactModal.vue'
 import FunFacts from './components/FunFacts.vue'
+import { buildBlogSidebarChildren } from './utils/blogSidebar'
 
 const isModalOpen = ref(false)
 
@@ -144,7 +146,7 @@ const blogSearchGroup = computed(() => {
 
 const searchGroups = computed(() => [...baseSearchGroups, blogSearchGroup.value])
 
-const links = [
+const links = computed<NavigationMenuItem[]>(() => [
   {
     label: 'Links',
     type: 'label' as const,
@@ -157,7 +159,8 @@ const links = [
   {
     label: 'Blog',
     icon: 'i-lucide-newspaper',
-    to: '/blog',
+    defaultOpen: true,
+    children: buildBlogSidebarChildren(blogPosts.value),
   },
   {
     label: 'Playground',
@@ -203,7 +206,7 @@ const links = [
     icon: 'i-lucide-play-circle',
     to: '/media',
   },
-]
+])
 </script>
 
 <template>
@@ -226,7 +229,20 @@ const links = [
 
         <UDashboardSearchButton class="mt-5" />
         <UDashboardSearch :groups="searchGroups" />
-        <UNavigationMenu :items="links" orientation="vertical" />
+        <UNavigationMenu :items="links" orientation="vertical">
+          <template #item-label="{ item }">
+            <span v-if="item['isArticle']" class="relative flex min-w-0 flex-1 items-center">
+              <span class="truncate">{{ item.label }}</span>
+              <span
+                v-if="item['date']"
+                class="pointer-events-none absolute inset-y-0 right-0 hidden items-center bg-gradient-to-l from-[var(--site-bg)] via-[var(--site-bg)] to-transparent pl-5 text-xs text-[var(--site-faint)] group-hover:flex"
+              >
+                {{ item['date'] }}
+              </span>
+            </span>
+            <template v-else>{{ item.label }}</template>
+          </template>
+        </UNavigationMenu>
 
         <template #footer>
           <ContactModal v-model="isModalOpen" />
