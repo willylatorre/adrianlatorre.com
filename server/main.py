@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
-from wave_counter import WaveCounter, WaveCounterError
+from wave_counter import WaveCounter
 from wave_counter.fastapi import create_router
 
 from .api_football_service import ApiFootballService
@@ -28,18 +28,6 @@ from .replicate_service import ReplicateService
 logger = logging.getLogger(__name__)
 
 
-def _legacy_coffee_total(database_path: str) -> int:
-    """Read the pre-Wave Counter total for the one-time baseline migration."""
-    import sqlite3
-
-    try:
-        with sqlite3.connect(database_path) as connection:
-            row = connection.execute("SELECT counter FROM coffee LIMIT 1").fetchone()
-    except sqlite3.Error:
-        return 67
-    return max(0, int(row[0])) if row else 67
-
-
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
     app = FastAPI(title="Adrian Latorre API")
@@ -52,21 +40,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
-    try:
-        counter = WaveCounter(
-            database_path=settings.database_path,
-            initial_counts={"coffee": _legacy_coffee_total(settings.database_path)},
-        )
-    except WaveCounterError:
-        db_path = Path(settings.database_path)
-        bak_path = db_path.with_suffix(".db.bak")
-        if db_path.exists():
-            db_path.rename(bak_path)
-            logger.warning("Renamed incompatible database to %s, creating fresh DB", bak_path)
-        counter = WaveCounter(
-            database_path=settings.database_path,
-            initial_counts={"coffee": _legacy_coffee_total(str(bak_path))},
-        )
+    counter = WaveCounter(
+        database_path=settings.database_path,
+        initial_counts={"coffee": 134},
+    )
     app.include_router(create_router(counter), prefix="/api/waves")
     pages_dir = _resolve_pages_dir()
     openai_service = OpenAIService(settings.openai_api_key, pages_dir, settings.openai_model)

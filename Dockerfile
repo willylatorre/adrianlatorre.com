@@ -47,7 +47,7 @@ ENV PORT=8080
 
 # Database configuration
 # Persistent database path (bind this directory in Coolify for survival across deploys)
-ENV DB_PATH=/app/data/adrian.db
+ENV DB_PATH=/app/data/adrian-v2.db
 
 ENV ENV=production
 
