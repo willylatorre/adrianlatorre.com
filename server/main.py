@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
-from wave_counter import WaveCounter
+from wave_counter import WaveCounter, WaveCounterError
 from wave_counter.fastapi import create_router
 
 from .api_football_service import ApiFootballService
@@ -52,10 +52,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
-    counter = WaveCounter(
-        database_path=settings.database_path,
-        initial_counts={"coffee": _legacy_coffee_total(settings.database_path)},
-    )
+    try:
+        counter = WaveCounter(
+            database_path=settings.database_path,
+            initial_counts={"coffee": _legacy_coffee_total(settings.database_path)},
+        )
+    except WaveCounterError:
+        db_path = Path(settings.database_path)
+        bak_path = db_path.with_suffix(".db.bak")
+        if db_path.exists():
+            db_path.rename(bak_path)
+            logger.warning("Renamed incompatible database to %s, creating fresh DB", bak_path)
+        counter = WaveCounter(
+            database_path=settings.database_path,
+            initial_counts={"coffee": _legacy_coffee_total(str(bak_path))},
+        )
     app.include_router(create_router(counter), prefix="/api/waves")
     pages_dir = _resolve_pages_dir()
     openai_service = OpenAIService(settings.openai_api_key, pages_dir, settings.openai_model)
