@@ -35,9 +35,6 @@ COPY --from=client /app/src/pages /app/src/pages
 # This is the recommended target for your persistent volume mount.
 RUN mkdir -p /app/data && chown -R appuser:appgroup /app && chmod -R 755 /app
 
-# Switch to the non-root user
-USER appuser
-
 # Expose the app port (configurable via PORT env)
 EXPOSE 8080
 
@@ -51,5 +48,7 @@ ENV DB_PATH=/app/data/adrian-v2.db
 
 ENV ENV=production
 
-# Run the server
-CMD ["python", "-m", "server.main"]
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]
