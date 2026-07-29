@@ -25,6 +25,11 @@ type UserInputRequired = {
   type: "user-input-required"
   inputId: string
   question: string
+}
+
+type UserInputResume = {
+  type: "user-input-resume"
+  inputId: string
   answer: "yes" | "no"
 }`
 
@@ -32,9 +37,15 @@ const resumeSnippet = `pending = find_pending_gate(conversation, resume.id)
 
 if resume.decision == "yes":
     tool = resolve_bound_tool(pending.tool_call.name)
-    result = await tool.ainvoke(pending.tool_call.args)
+    output = await tool.ainvoke(pending.tool_call.args)
 else:
-    result = ToolMessage("User declined this action.")
+    output = "User declined this action."
+
+result = ToolMessage(
+    content=serialize(output),
+    name=pending.tool_call.name,
+    tool_call_id=pending.tool_call.id,
+)
 
 # Save the result before asking the model to continue.
 await conversation_store.append(result)
@@ -49,13 +60,13 @@ if result:
 return execute_approved_tool(resume.id)`
 </script>
 
-An agent that only produces text can be wrong in a fairly contained way. It can invent an answer or misunderstand a request, but the result is still text. You can read it, ignore it, and continue with your day.
+An agent that only produces text can be wrong. It can invent an answer or misunderstand a request, but the result is still text. You can read it and ignore it.
 
 Then you give the agent tools.
 
-Now “I think the user wants this” can create a record, update a workflow, send an email, or delete something that had a perfectly reasonable plan for the afternoon.
+Now “I think the user wants this” can create a record, update a workflow, send an email, or delete something that had a plan for the afternoon.
 
-This is the moment an agent stops being only a conversational interface and becomes an actor inside the product. The same flexibility that makes it useful also gives a probabilistic system access to very deterministic side effects.
+This is the moment an agent stops being only a conversational interface and becomes an actor inside the product. The flexibility that makes it useful gives a probabilistic system access to deterministic side effects.
 
 I ran into this while adding mutation tools to an agent. The tools worked. That was the problem.
 
@@ -63,7 +74,7 @@ The moment the model emitted a tool call, the runtime executed it. There was no 
 
 So I added a confirmation gate: a human-in-the-loop checkpoint that pauses the turn before a sensitive tool runs, shows the proposed action to the user, and resumes only after a decision.
 
-The card is the visible part. The harder part is deciding where the pause belongs, what “yes” authorizes, and how to resume without running the same mutation twice.
+The card is visible. The harder part is deciding where the pause belongs, what “yes” authorizes, and how to resume without running the same mutation twice.
 
 ## The prompt is not the lock
 
