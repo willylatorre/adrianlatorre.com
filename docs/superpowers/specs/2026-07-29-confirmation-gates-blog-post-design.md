@@ -10,11 +10,11 @@ The implementation described in `signals-ai-services/docs/confirmation-gate-over
 
 In particular:
 
-- Paused state lives in the persisted conversation transcript, not in a separate Valkey record.
 - Action approval and user input are distinct protocols that share a transport.
 - Action approval authorizes one concrete tool call.
 - A Boolean answer to a model-generated question is conversational input and authorizes no tool call.
 - An approved tool result is persisted before the model continues, preventing retries from executing a non-idempotent mutation twice.
+- In this implementation, paused state lives in the persisted conversation transcript rather than a separate side store. This is supporting implementation detail, not a central theme of the article.
 
 The article will generalize internal names and use illustrative pseudocode rather than reproduce private production code.
 
@@ -46,16 +46,32 @@ Open with the difference between an agent that only generates text and one that 
 
 Explain why “ask before destructive actions” in a system prompt is insufficient. The model may misunderstand scope, skip the instruction, or decide that the user already implied consent. Enforcement belongs in the runtime because the runtime owns the capability.
 
-### 3. Two pauses with different meanings
+### 3. What the frameworks already provide
+
+Briefly acknowledge that this does not always require custom infrastructure:
+
+- LangChain provides `HumanInTheLoopMiddleware`, backed by LangGraph interrupts and a checkpointer, with approve, edit, and reject decisions.
+- Vercel's AI SDK supports `needsApproval` on tools, including argument-dependent approval policies, and exposes approval state through its UI hooks.
+
+Use official documentation links:
+
+- <https://docs.langchain.com/oss/python/langchain/human-in-the-loop>
+- <https://ai-sdk.dev/docs/ai-sdk-core/tools-and-tool-calling#tool-execution-approval>
+
+Keep this to a compact comparison. The point is that frameworks can supply the interrupt primitive, message shapes, and some UI state, but product code still owns the policy: which capabilities pause, what the user sees, how long approval remains valid, and what happens after approval, rejection, retry, or abandonment.
+
+The custom implementation remains worth discussing because the existing agent deliberately owns persistence and streaming outside LangGraph's native checkpointer lifecycle.
+
+### 4. Two ways to bring a human into the loop
 
 Introduce the two protocols and make the distinction explicit:
 
 - **Action approval** gates a concrete tool invocation selected by scope tags such as `write` or `admin`. Approval authorizes that exact call.
-- **User input** carries a model-generated YES/NO question for an open-ended judgment call. The answer becomes conversation context and authorizes nothing by itself.
+- **User input** lets the model pause for HITL interview questions. In the current Boolean protocol, examples include confirming an interpretation of an ambiguous request, choosing whether to use a suggested approach, checking a preference, setting a broad risk posture, or deciding whether the agent should continue. Answers become conversation context and authorize no tool call by themselves. Free-text and multi-choice interviews are natural extensions, not features of the current implementation.
 
-They may use the same request/streaming transport and similar UI, but they must remain different contract types.
+The article should emphasize the broader usefulness of model-driven HITL questions, then briefly note the contract boundary: interview answers and action approvals may share request/streaming transport and similar UI, but they should remain different types with different meaning.
 
-### 4. The pause/resume lifecycle
+### 5. The pause/resume lifecycle
 
 Walk through the implementation at a conceptual level:
 
@@ -69,7 +85,7 @@ Walk through the implementation at a conceptual level:
 
 On decline, the runtime appends a synthetic declined result and lets the model continue gracefully.
 
-### 5. The unglamorous details that make it safe
+### 6. The unglamorous details that make it safe
 
 Cover the engineering details that turn a confirmation card into a reliable safety boundary:
 
@@ -82,7 +98,7 @@ Cover the engineering details that turn a confirmation card into a reliable safe
 - Remove an orphaned pending gate when a fresh user turn abandons it.
 - Consider multi-tool batches explicitly rather than accidentally approving more than the UI described.
 
-### 6. Friction in proportion to consequence
+### 7. Friction in proportion to consequence
 
 Conclude that confirmation should not be added to read/search operations or every harmless interaction. The goal is not to make the agent timid. The goal is to keep exploration fast while reserving a small, explicit checkpoint for actions with meaningful side effects.
 
@@ -107,7 +123,7 @@ async def wrap_tool_call(request, run_tool):
 
 ### Typed pause contracts
 
-Show distinct event shapes for authorization and conversational input:
+Show distinct event shapes for authorization and conversational HITL questions:
 
 ```ts
 type ActionApprovalRequired = {
@@ -169,6 +185,7 @@ if result := already_answered_gate(conversation, resume.id):
 - Do not describe a Boolean user-input answer as approval for an action.
 - Do not describe Valkey or a side store as the persistence mechanism.
 - Do not present LangGraph-specific middleware as the only valid implementation approach.
+- Cite current official documentation when describing LangChain or AI SDK features, and avoid implying that their built-in flows satisfy every product's persistence, policy, or UX requirements.
 
 ## Validation
 
@@ -179,4 +196,3 @@ Before delivery:
 - Run the project's normal build.
 - Read the rendered article for heading rhythm, code overflow, and voice consistency.
 - Check that unrelated working-tree changes remain untouched.
-
