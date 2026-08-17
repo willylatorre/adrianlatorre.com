@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 import CodeSnippet from '@/components/CodeSnippet.vue'
+import ExperimentFooter from '@/components/experiment/ExperimentFooter.vue'
+import ExperimentHeader from '@/components/experiment/ExperimentHeader.vue'
 
 const dockerfileCode = `# ---- Stage 1: Build the Vue.js Frontend ----
 FROM node:22-alpine AS client
@@ -110,32 +112,11 @@ const packageCommands = [
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto py-8">
+  <div class="mx-auto max-w-4xl">
     <div class="space-y-8">
-      <div>
-        <h1 class="text-3xl font-bold mb-4">Vue + FastAPI: AI-Ready Full Stack</h1>
-        <p class="text-slate-600 text-lg">
-          This project pairs a Vue 3 frontend with a FastAPI backend for a compact portfolio,
-          SQLite-backed counters, server-sent chat streaming, and OpenAI-powered image generation.
-          The goal is to keep deployment simple while making AI experiments easier to iterate on in
-          Python.
-        </p>
-      </div>
-
-      <UAlert
-        title="Check the Source Code"
-        description="This Vue + FastAPI application is open source. Explore the complete implementation at GitHub."
-        icon="i-lucide-github"
-        color="success"
-        variant="soft"
-        :actions="[
-          {
-            label: 'View on GitHub',
-            to: 'https://github.com/willylatorre/adrianlatorre.com',
-            target: '_blank',
-            icon: 'i-lucide-external-link',
-          },
-        ]"
+      <ExperimentHeader
+        title="Vue + FastAPI"
+        description="A compact full-stack architecture for typed APIs, SQLite-backed state, streamed AI responses, and one-container deployment."
       />
 
       <div>
@@ -232,18 +213,18 @@ const packageCommands = [
         </p>
       </div>
 
-      <UAlert
-        title="Ready to Build Your Own?"
-        description="Fork this repository and adapt it for your own Vue + FastAPI projects. The complete source code is available on GitHub."
-        icon="i-lucide-code"
-        color="success"
-        variant="soft"
-        :actions="[
+      <ExperimentFooter
+        conclusion="Typed API contracts and one deployable service keep a small AI-enabled product straightforward to change and operate. The stack stays boring where reliability benefits from it."
+        :links="[
           {
-            label: 'Fork on GitHub',
-            to: 'https://github.com/willylatorre/adrianlatorre.com',
-            target: '_blank',
-            icon: 'i-lucide-git-fork',
+            label: 'View the repository',
+            href: 'https://github.com/willylatorre/adrianlatorre.com',
+            external: true,
+          },
+          {
+            label: 'FastAPI documentation',
+            href: 'https://fastapi.tiangolo.com/',
+            external: true,
           },
         ]"
       />

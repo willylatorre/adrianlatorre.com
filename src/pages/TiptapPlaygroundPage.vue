@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useApi } from '@/composables/useApi'
+import ExperimentFooter from '@/components/experiment/ExperimentFooter.vue'
+import ExperimentHeader from '@/components/experiment/ExperimentHeader.vue'
 import TipTapEditor from '@/components/TipTapEditor.vue'
 import TipTapToolbar from '@/components/TipTapToolbar.vue'
 
@@ -199,36 +201,18 @@ const handleGenerate = async () => {
 
 <template>
   <div class="space-y-8">
-    <header class="space-y-4">
-      <div>
-        <h1 class="text-3xl font-bold text-slate-900">Tiptap + LLMs Playground</h1>
-        <p class="text-slate-600 max-w-3xl">
-          Tiptap is a headless, extension-first editor built on ProseMirror. It gives you full
-          control over the editing experience while still offering rich text primitives out of the
-          box. This playground demonstrates how to plug an LLM response directly into a Tiptap
-          editor using raw HTML.
-        </p>
-        <p class="text-slate-600 max-w-3xl">
-          Tiptap also ships an
-          <a
-            class="text-slate-700 underline underline-offset-4"
-            href="https://tiptap.dev/docs/content-ai/capabilities/generation/overview"
-            rel="noreferrer"
-            target="_blank"
-          >
-            out-of-the-box AI integration extension
-          </a>
-          that can power generation workflows alongside custom pipelines like this one.
-        </p>
-      </div>
-      <UAlert
-        icon="i-lucide-sparkles"
-        color="primary"
-        variant="soft"
-        title="Why this experiment?"
-        description="The tricky part is keeping the model output format consistent while syncing it into the editor without breaking the UX."
-      />
-    </header>
+    <ExperimentHeader
+      title="Tiptap + LLMs"
+      description="Explore model-assisted editing workflows that move structured output into a Tiptap document without breaking the editing experience."
+    />
+
+    <UAlert
+      icon="i-lucide-sparkles"
+      color="primary"
+      variant="soft"
+      title="Why this experiment?"
+      description="The tricky part is keeping the model output format consistent while syncing it into the editor without breaking the UX."
+    />
 
     <UCard>
       <template #header>
@@ -385,33 +369,20 @@ const handleGenerate = async () => {
       </TipTapEditor>
     </section>
 
-    <section class="space-y-4">
-      <div class="space-y-2">
-        <h2 class="text-2xl font-semibold text-slate-900">Summary</h2>
-        <p class="text-slate-600 max-w-3xl">
-          Keep the output format predictable, use context notes for precision, and mix in
-          interactive components when the UI needs to do more than text.
-        </p>
-      </div>
-      <div
-        class="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2"
-      >
-        <div>
-          <h3 class="text-sm font-semibold text-slate-900">Takeaways</h3>
-          <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-600">
-            <li>Stream LLM HTML straight into Tiptap for stable structure.</li>
-            <li>Use consistent context notes to guide on-demand rewrites.</li>
-            <li>Node views unlock interactive UI inside the document.</li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="text-sm font-semibold text-slate-900">Try it</h3>
-          <p class="mt-2 text-sm text-slate-600">
-            Generate a summary, then highlight a sentence and ask the model to improve it with the
-            context notes.
-          </p>
-        </div>
-      </div>
-    </section>
+    <ExperimentFooter
+      conclusion="Reliable editor workflows depend on constraining model output and synchronizing it deliberately with document state. Context, selection, and insertion rules matter as much as the prompt."
+      :links="[
+        {
+          label: 'View the repository',
+          href: 'https://github.com/willylatorre/adrianlatorre.com',
+          external: true,
+        },
+        {
+          label: 'Tiptap editor documentation',
+          href: 'https://tiptap.dev/docs/editor/getting-started/overview',
+          external: true,
+        },
+      ]"
+    />
   </div>
 </template>

@@ -46,3 +46,26 @@ describe('ExperimentFooter source contract', () => {
     expect(source).toMatch(/links:\s*ExperimentLink\[\]/)
   })
 })
+
+describe('Playground page adoption', () => {
+  const pagePaths = [
+    '../../pages/AgentOrchestratorPage.vue',
+    '../../pages/AIChatPage.vue',
+    '../../pages/TiptapPlaygroundPage.vue',
+    '../../pages/WatermarkPlaygroundPage.vue',
+    '../../pages/VueGoPage.vue',
+  ]
+
+  for (const pagePath of pagePaths) {
+    it(`${pagePath} uses one shared header and footer`, () => {
+      const source = readSource(pagePath)
+
+      expect(source).toContain("import ExperimentHeader from '@/components/experiment/ExperimentHeader.vue'")
+      expect(source).toContain("import ExperimentFooter from '@/components/experiment/ExperimentFooter.vue'")
+      expect(source.match(/<ExperimentHeader\b/g)).toHaveLength(1)
+      expect(source.match(/<ExperimentFooter\b/g)).toHaveLength(1)
+      expect(source).not.toMatch(/<h1\b/)
+      expect(source).not.toMatch(/Experiment\s+\d+/)
+    })
+  }
+})
