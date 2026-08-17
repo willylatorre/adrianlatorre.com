@@ -113,12 +113,12 @@ const packageCommands = [
 
 <template>
   <div class="mx-auto max-w-4xl">
-    <div class="space-y-8">
-      <ExperimentHeader
-        title="Vue + FastAPI"
-        description="A compact full-stack architecture for typed APIs, SQLite-backed state, streamed AI responses, and one-container deployment."
-      />
+    <ExperimentHeader
+      title="Vue + FastAPI"
+      description="A compact full-stack architecture for typed APIs, SQLite-backed state, streamed AI responses, and one-container deployment."
+    />
 
+    <div class="space-y-8">
       <div>
         <h2 class="text-xl font-semibold mb-4">Why Vue + FastAPI?</h2>
         <div class="prose prose-slate max-w-none">
@@ -213,21 +213,22 @@ const packageCommands = [
         </p>
       </div>
 
-      <ExperimentFooter
-        conclusion="Typed API contracts and one deployable service keep a small AI-enabled product straightforward to change and operate. The stack stays boring where reliability benefits from it."
-        :links="[
-          {
-            label: 'View the repository',
-            href: 'https://github.com/willylatorre/adrianlatorre.com',
-            external: true,
-          },
-          {
-            label: 'FastAPI documentation',
-            href: 'https://fastapi.tiangolo.com/',
-            external: true,
-          },
-        ]"
-      />
     </div>
+
+    <ExperimentFooter
+      conclusion="Typed API contracts and one deployable service keep a small AI-enabled product straightforward to change and operate. The stack stays boring where reliability benefits from it."
+      :links="[
+        {
+          label: 'View the repository',
+          href: 'https://github.com/willylatorre/adrianlatorre.com',
+          external: true,
+        },
+        {
+          label: 'FastAPI documentation',
+          href: 'https://fastapi.tiangolo.com/',
+          external: true,
+        },
+      ]"
+    />
   </div>
 </template>

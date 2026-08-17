@@ -21,7 +21,7 @@ describe('ProsePre surface ownership', () => {
 
   it('resets page-level surface styles on its inner pre', () => {
     expect(prosePreSource).toMatch(
-      /\.prose-pre\s*>\s*pre\s*\{[^}]*margin:\s*0[^}]*border:\s*0[^}]*background:\s*transparent/s,
+      /\.prose-pre\.prose-pre\s*>\s*pre\s*\{[^}]*margin:\s*0[^}]*border:\s*0[^}]*background:\s*transparent/s,
     )
   })
 

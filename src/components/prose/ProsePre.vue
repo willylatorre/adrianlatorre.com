@@ -31,7 +31,7 @@ defineProps<{
   text-transform: uppercase;
 }
 
-.prose-pre > pre {
+.prose-pre.prose-pre > pre {
   overflow: auto;
   margin: 0;
   border: 0;

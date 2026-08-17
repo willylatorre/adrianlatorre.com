@@ -66,6 +66,9 @@ describe('Playground page adoption', () => {
       expect(source.match(/<ExperimentFooter\b/g)).toHaveLength(1)
       expect(source).not.toMatch(/<h1\b/)
       expect(source).not.toMatch(/Experiment\s+\d+/)
+      expect(source).not.toMatch(
+        /<(?:div|main)[^>]*class="[^"]*space-y-[^"]*"[^>]*>\s*<ExperimentHeader/,
+      )
     })
   }
 })

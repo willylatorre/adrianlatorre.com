@@ -276,7 +276,7 @@ const runPrompt = async (nextPrompt?: string) => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-12">
+  <div class="mx-auto max-w-7xl">
     <ExperimentHeader
       title="Agent Orchestrator"
       description="Watch a small router select one specialist, expose its tool calls, and stream the result through one visible event contract."
@@ -317,7 +317,7 @@ const runPrompt = async (nextPrompt?: string) => {
       </div>
     </section>
 
-    <section class="grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_24rem]">
+    <section class="mt-12 grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_24rem]">
       <aside class="rounded-lg border border-[var(--site-border)] bg-[var(--site-surface)] p-4">
         <div class="mb-4 flex items-center justify-between">
           <h2 class="text-base font-semibold text-[var(--site-ink)]">Agents</h2>
@@ -419,7 +419,7 @@ const runPrompt = async (nextPrompt?: string) => {
       </aside>
     </section>
 
-    <section class="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <section class="mt-12 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div class="min-w-0 space-y-8">
         <div>
           <h2 class="text-2xl font-semibold text-[var(--site-ink)]">How the Orchestrator Works</h2>

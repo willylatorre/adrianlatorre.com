@@ -200,7 +200,7 @@ const handleGenerate = async () => {
 </script>
 
 <template>
-  <div class="space-y-8">
+  <div>
     <ExperimentHeader
       title="Tiptap + LLMs"
       description="Explore model-assisted editing workflows that move structured output into a Tiptap document without breaking the editing experience."
@@ -214,7 +214,7 @@ const handleGenerate = async () => {
       description="The tricky part is keeping the model output format consistent while syncing it into the editor without breaking the UX."
     />
 
-    <UCard>
+    <UCard class="mt-8">
       <template #header>
         <div class="space-y-1">
           <h2 class="text-xl font-semibold text-slate-900">Prompt the LLM</h2>
@@ -259,7 +259,7 @@ const handleGenerate = async () => {
       </div>
     </UCard>
 
-    <section class="space-y-4">
+    <section class="mt-8 space-y-4">
       <div class="space-y-2">
         <h2 class="text-2xl font-semibold text-slate-900">How the demo works</h2>
         <p class="text-slate-600 max-w-3xl">
@@ -283,7 +283,7 @@ const handleGenerate = async () => {
       </UCodeGroup>
     </section>
 
-    <section class="space-y-4">
+    <section class="mt-8 space-y-4">
       <div class="space-y-2">
         <h2 class="text-2xl font-semibold text-slate-900">Context + insertion points</h2>
         <p class="text-slate-600 max-w-3xl">
@@ -335,7 +335,7 @@ const handleGenerate = async () => {
       </div>
     </section>
 
-    <section class="space-y-4">
+    <section class="mt-8 space-y-4">
       <div class="space-y-2">
         <h2 class="text-2xl font-semibold text-slate-900">Interactive Vue + React node views</h2>
         <p class="text-slate-600 max-w-3xl">
