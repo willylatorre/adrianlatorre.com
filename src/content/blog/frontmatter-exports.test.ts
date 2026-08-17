@@ -9,4 +9,13 @@ describe('blog markdown frontmatter exports', () => {
     expect(mod.date).toMatch(/^2026-01-29/)
     expect(mod.description).toMatch(/^A practical tour of agent memory files,/)
   })
+
+  it('exports the text watermark article metadata', async () => {
+    const mod = await import('./notes-from-hiding-a-watermark-in-plain-text.md')
+
+    expect(mod.default).toBeTruthy()
+    expect(mod.title).toBe('Notes From Hiding A Watermark In Plain Text')
+    expect(mod.date).toMatch(/^2026-08-17/)
+    expect(mod.description).toMatch(/^What changes when an AI leaves a statistical signature/)
+  })
 })
