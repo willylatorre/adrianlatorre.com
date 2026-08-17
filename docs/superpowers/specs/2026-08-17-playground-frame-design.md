@@ -16,6 +16,8 @@ The shared frame applies to these five routes:
 
 It does not apply to the About, Blog, Media, Items, or Settings routes. Media remains a separate Pet projects surface.
 
+One adjacent presentation defect is included: custom `ProsePre` snippets inside blog posts currently receive both the component's figure styling and the blog page's generic `pre` styling. The resulting nested border and background should be corrected without otherwise redesigning blog pages or raw fenced code blocks.
+
 ## Design Direction
 
 Use a quiet engineering-notebook frame. The frame should orient visitors and explain why the work matters without competing with the experiment itself.
@@ -79,6 +81,14 @@ Final copy may be tightened during implementation, but it must preserve these me
 
 Neither component knows about routes, experiment ordering, API state, or the internal layout of a demo. This keeps the shared frame reusable without centralizing page content in router metadata.
 
+## Code Snippet Surface Correction
+
+`ProsePre` owns the complete visual surface for custom labelled code snippets: outer border, rounded corners, background, language divider, padding, and overflow. Its inner `pre` must explicitly reset inherited page-level margin, border, and background so it cannot render a second inset surface.
+
+`BlogPostPage` keeps its generic `pre` rules for ordinary fenced Markdown blocks. The correction is scoped to `ProsePre`, because changing or removing the page-level rule would alter raw code blocks that do not use the custom component.
+
+The result should retain one outer border, one background shared by the label and code area, a single divider below the language label, and the current readable code padding.
+
 ## Responsive And Accessibility Requirements
 
 - Each route has exactly one page-level `h1`.
@@ -108,8 +118,11 @@ Component tests should prove that:
 - The footer renders the provided conclusion and links.
 - Internal links use router navigation.
 - External links open safely in a new tab and expose an external-link cue.
+- `ProsePre` resets the inner `pre` margin, border, and background while retaining one component-owned outer surface.
 
 Page-level source checks should prove that all five scoped routes use both shared components. Existing unit tests, TypeScript checking, and the production build must remain green. The final verification should also inspect the five routes at desktop and mobile widths to catch spacing, overflow, or hierarchy regressions.
+
+Visual verification must also inspect one custom labelled blog snippet and one ordinary fenced Markdown block. The custom snippet should have no nested surface, while the ordinary block should retain its existing border, background, padding, and overflow behavior.
 
 ## Success Criteria
 
@@ -118,3 +131,4 @@ Page-level source checks should prove that all five scoped routes use both share
 - No experiment loses its distinctive interaction or body layout.
 - A future experiment has one documented, reusable pattern to follow.
 - The shared frame uses existing Nuxt UI and site tokens without adding dependencies.
+- Custom labelled blog snippets render as one coherent surface rather than nested bordered boxes.
