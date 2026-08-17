@@ -52,6 +52,11 @@ const router = createRouter({
       component: lazy(() => import('../pages/TiptapPlaygroundPage.vue')),
     },
     {
+      path: '/watermark',
+      name: 'Text Watermark',
+      component: lazy(() => import('../pages/WatermarkPlaygroundPage.vue')),
+    },
+    {
       path: '/media',
       name: 'Media',
       component: lazy(() => import('../pages/MediaPage.vue')),

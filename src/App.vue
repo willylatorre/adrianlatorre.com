@@ -113,6 +113,12 @@ const baseSearchGroups = [
         to: '/tiptap-llm',
         icon: 'i-lucide-text-cursor-input',
       },
+      {
+        label: 'Text Watermark',
+        suffix: 'Interactive watermark simulation',
+        to: '/watermark',
+        icon: 'i-lucide-fingerprint',
+      },
     ],
   },
   {
@@ -181,6 +187,11 @@ const links = computed<NavigationMenuItem[]>(() => [
         label: 'Tiptap + LLMs',
         icon: 'i-lucide-text-cursor-input',
         to: '/tiptap-llm',
+      },
+      {
+        label: 'Text Watermark',
+        icon: 'i-lucide-fingerprint',
+        to: '/watermark',
       },
       {
         label: 'Stocks',
