@@ -37,8 +37,14 @@ function resetPassage() {
       </div>
       <h1>A watermark you cannot see.</h1>
       <p class="watermark-hero__intro">
-        Language models can leave a statistical signature in ordinary word choices. Change the
-        marked words and watch that evidence move.
+        After reading
+        <a
+          href="https://www.anthropic.com/news/claude-text-watermark"
+          target="_blank"
+          rel="noreferrer"
+        >Anthropic’s announcement about Claude’s text watermark</a>, I wanted to see what that
+        hidden pattern would feel like in your hands. Change the marked words and watch this
+        simplified version of the signal move.
       </p>
     </header>
 
@@ -188,6 +194,22 @@ function resetPassage() {
   color: var(--site-muted);
   font-size: clamp(1.02rem, 0.95rem + 0.35vw, 1.25rem);
   line-height: 1.62;
+}
+
+.watermark-hero__intro a {
+  color: var(--site-ink);
+  text-decoration-color: var(--site-border-strong);
+  text-underline-offset: 0.18em;
+}
+
+.watermark-hero__intro a:hover {
+  color: var(--site-accent);
+}
+
+.watermark-hero__intro a:focus-visible {
+  border-radius: 0.2rem;
+  outline: 2px solid var(--site-accent);
+  outline-offset: 3px;
 }
 
 .reading-desk {

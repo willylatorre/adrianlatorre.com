@@ -53,7 +53,7 @@ const router = createRouter({
     },
     {
       path: '/watermark',
-      name: 'Text Watermark',
+      name: 'LLM Watermark',
       component: lazy(() => import('../pages/WatermarkPlaygroundPage.vue')),
     },
     {

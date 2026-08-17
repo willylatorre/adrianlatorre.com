@@ -16,6 +16,6 @@ describe('blog markdown frontmatter exports', () => {
     expect(mod.default).toBeTruthy()
     expect(mod.title).toBe('Notes From Hiding A Watermark In Plain Text')
     expect(mod.date).toMatch(/^2026-08-17/)
-    expect(mod.description).toMatch(/^What changes when an AI leaves a statistical signature/)
+    expect(mod.description).toMatch(/^I built a small playground to understand/)
   })
 })

@@ -99,7 +99,7 @@ const baseSearchGroups = [
         icon: 'i-lucide-text-cursor-input',
       },
       {
-        label: 'Text Watermark',
+        label: 'LLM Watermark',
         suffix: 'Interactive watermark simulation',
         to: '/watermark',
         icon: 'i-lucide-fingerprint',
@@ -174,7 +174,7 @@ const links = computed<NavigationMenuItem[]>(() => [
         to: '/tiptap-llm',
       },
       {
-        label: 'Text Watermark',
+        label: 'LLM Watermark',
         icon: 'i-lucide-fingerprint',
         to: '/watermark',
       },

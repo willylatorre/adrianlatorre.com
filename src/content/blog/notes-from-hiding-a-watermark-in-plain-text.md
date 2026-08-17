@@ -1,7 +1,7 @@
 ---
 title: Notes From Hiding A Watermark In Plain Text
 date: 2026-08-17
-description: What changes when an AI leaves a statistical signature in ordinary word choices, and what that signature can actually prove.
+description: I built a small playground to understand how an invisible text watermark can live inside ordinary word choices.
 ---
 
 <script setup>
@@ -13,27 +13,19 @@ const detectorSnippet = `evidence = score_choices(text, secret_key)
 confidence = compare_with_random_chance(evidence)`
 </script>
 
-The first surprise about Anthropic's new text watermark is how little there is to see.
+Anthropic recently published a post about [adding a text watermark to future Claude models](https://www.anthropic.com/news/claude-text-watermark). My first reaction was the obvious one: where is it? Image watermarks are easy to picture because they sit in a corner and make themselves known. Text has no corner. There is no badge attached to a paragraph, no extra file traveling beside it, and no zero-width character hiding between the words with a tiny Claude logo. You can copy the answer into a plain text editor and nothing new appears. The watermark is made from the words that were already going to be there.
 
-There is no badge attached to the answer. There are no zero-width characters hiding between the words. Copying the text into a plain text editor does not reveal a tiny Claude signature wearing sunglasses. The watermark lives in ordinary choices that the model was already going to make.
+That is a strange idea until you can touch it, which is usually my cue to build a small thing and make the confusion interactive. I wanted to see what would happen if a passage offered several perfectly normal words, a hidden rule favored some of them, and a reader started swapping them. Would the signal disappear after one edit? Would every seventh word become “submarine”? Would the detector develop the confidence of a weather app five minutes before rain? The real method is more careful than my demo, but the basic idea is simple enough to put on a page.
 
-That makes it a much more interesting engineering idea than the word “watermark” suggests. A visible watermark says, “this image came from here.” A statistical text watermark says something closer to, “these hundreds of small decisions fit a pattern that would be unlikely to happen by chance.”
+So I built an [interactive LLM watermark playground](/watermark). It uses an original story about a Jazz Age party near Saturn, a household AI announcing that it has a soul, and a toaster asking for peer review. The marked words can be changed without breaking the story. As you change them, the score moves. It is not Claude's detector and it cannot tell whether random text came from an LLM. It is a small model of the idea in Anthropic's post, built so the invisible part has something you can click.
 
-[Anthropic announced that future Claude models will use a version of SynthID-Text](https://www.anthropic.com/news/claude-text-watermark), the technique Google DeepMind published in 2024. Anthropic is making the change as part of its EU AI Act transparency commitments. The regulatory reason matters, but the mechanism is the fun part.
+## The words are the watermark
 
-So I built a small experiment to make that mechanism tangible.
+A language model writes one small piece at a time. At each step it has a list of possible next tokens, each with a different chance of being chosen. Sometimes the answer is boxed in. After “two plus two equals,” a model does not have much room to express itself unless it wants mathematics to file a complaint. In other places the choice is wide open. A party can be elegant, glittering, loud, or already regrettable. An announcement can be polite, formal, or grave. Several choices can be good, and choosing one instead of another does not change the point of the sentence.
 
-## A model has to pick something
+Those ordinary choices give a watermark somewhere to live. Without a watermark, the model samples from its list in the usual way. With one, the sampling also depends on a secret key and the recent text. The key quietly favors some good options over other good options. It does not change the subject, add a hidden message after generation, or force the model to mention a teapot every ninth sentence. That last approach would be easy to detect, mostly because readers would stop inviting the model to meetings.
 
-A language model writes from left to right. At each step it calculates a distribution over possible next tokens, then chooses one. Sometimes that choice is effectively fixed. After “two plus two equals,” the model does not have much artistic room if it wants to remain invited to mathematics.
-
-Other moments are loose. A party can be elegant, glittering, or extravagant. An announcement can be polite, formal, or grave. Several choices can fit the sentence while preserving its meaning and quality.
-
-Those low-stakes moments are where a watermark can live.
-
-Without watermarking, a random sampler helps select among the plausible candidates. With watermarking, the candidates still come from the model's normal distribution, but the random decision also depends on a secret key and the recent context.
-
-In deliberately simplified pseudocode, the generation side looks like this:
+In very simplified pseudocode, the generation side looks like this:
 
 <ProsePre
   language="python"
@@ -44,21 +36,15 @@ In deliberately simplified pseudocode, the generation side looks like this:
   </ProseCode>
 </ProsePre>
 
-The key changes the source of randomness, not the subject of the answer. It does not force the model to discuss submarines every seventh paragraph or develop a suspicious attachment to the word “quietly.” It nudges many acceptable choices into a pattern that someone holding the same key can test later.
+The important part is that the chosen word still comes from the model's normal set of answers. The secret key only changes how the final choice is made. One favored word means almost nothing because normal writing can land on it by luck. A long answer contains many choices, though, and those small nudges can add up to a pattern. Someone with the same key can check whether the pattern appears more often than chance would suggest. It is less like finding a signature under the text and more like noticing that a coin has landed on heads an oddly large number of times.
 
-One word proves almost nothing. Hundreds of choices begin to look less accidental.
+## Building a version I could poke
 
-## The reading desk
+For the playground, I wrote a short passage and marked nineteen places where three different words could fit. The first version chooses one word at each spot using a fixed demo key. The detector then scores those choices and compares the result with what it would expect from random picks. I made the starting passage a strong match on purpose; otherwise the first screen would introduce watermarking with the energy of a smoke alarm whose battery may or may not be low.
 
-I wanted the idea to feel less like a probability lecture and more like touching the mechanism. The result is an original story about a Jazz Age party aboard a mansion-sized spacecraft, a household intelligence announcing it has developed a soul, and a toaster requesting peer review. Software deserves colleagues who keep it humble.
+[Try changing a few words in the playground](/watermark). The number on the right updates immediately, along with the count of edited words and a plain label: strong match, possible match, or no clear signal. Reset puts the original choices back. The demo uses 80 percent for “Possible match” and 95 percent for “Strong match,” but those are teaching thresholds I picked for this page, not numbers taken from Anthropic's detector. The score means “this passage fits my little key,” not “there is a 92 percent chance an LLM wrote this.” That difference is not fine print. It is the difference between showing how a tool works and pretending the browser has become a courtroom expert.
 
-[Try the interactive watermark playground](/watermark).
-
-The passage contains marked words with equally plausible alternatives. Click one, choose a replacement, and the watermark confidence changes. Edit enough of them and a strong match becomes a possible match, then no clear signal. Reset the passage and the original keyed pattern returns.
-
-The demo uses its own fixed key and a much smaller scoring scheme than Anthropic's production system. Each candidate word receives a few deterministic observations derived from the key, its position, and the choices that came before it. The generated baseline picks strong candidates. The detector adds the observations and compares the total with what random chance would normally produce.
-
-Conceptually, the detection side is small:
+The detector itself is deliberately small:
 
 <ProsePre
   language="python"
@@ -69,72 +55,38 @@ Conceptually, the detection side is small:
   </ProseCode>
 </ProsePre>
 
-The number in the experiment is labeled “watermark confidence,” not “probability an LLM wrote this.” That distinction is doing real work. For the lesson, I chose 80 percent as the start of “Possible match” and 95 percent as the start of “Strong match.” Those are teaching thresholds, not cutoffs from Anthropic's production detector. The demo can only test whether the passage matches its own simulated key. Anthropic's detector will test for Anthropic's key. Another provider may use another key, another technique, or no watermark at all.
+The real [SynthID-Text paper](https://www.nature.com/articles/s41586-024-08025-4) describes a more advanced system called Tournament sampling. It draws several possible tokens, lets them compete through keyed scoring rounds, and uses the winner. Detection looks back at the text and checks whether the chosen tokens score unusually well with that key. My version borrows the shape of that idea, then removes enough machinery that it can live in one small TypeScript file and still be explained before the reader needs coffee.
 
-This is provenance evidence, not a universal AI-writing test.
+## Why one edit can travel
 
-## Context makes one edit travel
+There is one wrinkle that made the experiment more interesting than a list of “good” and “bad” words: the recent text is part of the input to the key. A word is not permanently watermarked on its own. It can strengthen the pattern in one sentence and do very little in another because the words before it are different. When you replace one marked word, you change its score and may also change how the next choice is checked. The edit travels a short distance even though the later words on the screen have not moved.
 
-There is a lovely wrinkle in using recent words as part of the seed. Changing one choice can alter how later choices are evaluated, even when those later words stay visible and untouched.
+I had to tune that behavior because my first attempt was far too dramatic. One harmless edit could take the passage from a strong match to no signal at all, which made the detector feel less like careful evidence and more like a cat reacting to a cucumber. The current version keeps a little context, but limits how far one change can spread. Every single-word replacement stays in the possible range, while several edits can pull the score down much further. That is closer to the lesson I wanted: a light edit weakens the pattern; it should not cause the entire instrument panel to leave the aircraft.
 
-Imagine the key is a private book of directions. At each intersection, the model checks the last few turns and uses them to find the next instruction. Change one turn and the page lookup changes. The route after that point may still look perfectly sensible, but it no longer follows the same private sequence.
+## More text gives the detector more chances
 
-This is why the playground sometimes moves more than you might expect after a single edit. It is also why the marked words are not permanently “good” or “bad.” A word that strengthens the signal in one sentence may do nothing in another because the preceding context is different.
+Short passages are hard to judge because they contain very few choices. If I flip a coin three times and get three heads, I have had a mildly notable morning. If I flip it three hundred times and get heads almost every time, the coin and I should have a conversation. A watermark detector has the same problem. It needs enough text to tell a real pattern from a lucky run, which is why Anthropic warns that short samples are harder to detect and why a one-line joke is not a useful test, no matter how strongly the joke sounds like something a robot would tell at lunch.
 
-The public [SynthID-Text paper](https://www.nature.com/articles/s41586-024-08025-4) describes a more sophisticated version built around Tournament sampling. It samples several candidates from the model distribution and lets them compete across scoring layers. The winner becomes the next token. Detection then measures whether the resulting sequence scores unusually well against the keyed functions.
+The kind of writing matters too. Creative prose gives a model plenty of reasonable options, so there are more places where the key can guide a choice. Facts, code, and proofreading jobs give it less room. Newton's book has a real title; a watermark should not rename it for the sake of a stronger score. Code must still compile, APIs still have names, and a proofreading request may leave most of the original writer's words untouched. The watermark can only appear where the model actually gets to choose. When the task offers fewer choices, the signal has less material to work with.
 
-The important property is that acceptable model choices carry the signal. The detector does not need the original prompt, a database containing every answer, or access to the full language model. It needs the text, the scoring method, and the key.
+This is one reason a watermark should not be treated like a stamp that every answer carries at the same strength. Its visibility depends on how long the text is, how much freedom the model had, and how much of the final version came from the model at all. A detector that says “I do not have enough evidence” is not failing. It is showing better manners than a detector that turns four sentences into a confident accusation.
 
-## Long text is not an implementation detail
+## Does the hidden rule make the writing worse?
 
-Short passages are where confidence should become humility.
+The obvious worry is that steering word choices toward a secret pattern could make the answer sound odd. A watermark that reliably identifies AI text by making every paragraph worse would solve its own adoption problem very quickly. SynthID-Text is designed to keep choices close to the model's usual output while changing the sampling process. In the published evaluation, DeepMind compared watermarked and unwatermarked answers with automated tests, human ratings, and nearly 20 million live Gemini responses. The researchers reported no meaningful quality drop in that large production test.
 
-A detector needs enough decisions to distinguish a real pattern from luck. If I flip a coin three times and get three heads, I have an interesting afternoon, not proof of a conspiracy. If I flip it three hundred times and get heads almost every time, the coin deserves an investigation.
+That does not mean every watermark setting is free. The paper discusses tradeoffs between detection strength, variety, speed, and how closely the watermarked output matches the original distribution. Push too hard and quality can move; push too softly and the detector has less to find. The useful result is that a real system can leave a detectable pattern without adding awkward phrases or hiding characters after the answer is finished. To a reader, the best watermark should be boring. All of its personality belongs in the detector.
 
-Text watermarking has the same accumulation problem. A one-line joke contains few choices. A long explanation contains many. Anthropic explicitly notes that small samples are difficult to detect and that confidence grows with passage length.
+## What a match can and cannot say
 
-The kind of text matters too. Creative prose has plenty of entropy, meaning the model has several reasonable next moves. Factual passages can be more constrained. Isaac Newton's famous work has a particular title. A detector cannot demand a different final word just to improve its score without turning provenance into misinformation, which would be a fairly ambitious product regression.
+Light editing can weaken a watermark while leaving enough of the original choices to detect. A heavy rewrite can replace the pattern completely. This is both a limit and a useful reminder of what the claim means. If a person rewrites every sentence, rearranges the argument, and adds their own examples, asking whether the final text is “AI written” has become a question about the writing process, not a fact that one score can settle. The detector sees the finished words. It does not see the afternoon that produced them.
 
-Code has similar limits. Variable names and comments offer some flexibility, but syntax, APIs, and expected outputs often do not. Proofreading can also leave a weak signal because most of the words still belong to the original author. A watermark only has room to appear where the model actually chooses something.
+A match means a generator using that key was probably involved. It does not prove who wrote the ideas, who owns the text, whether the model supplied one paragraph or ten, or whether a person carefully edited every line. It also does not identify output from other models. Anthropic's key can test for Anthropic's watermark; another provider may use a different key, a different method, or no watermark at all. Generic AI-writing classifiers try to guess from style and predictability, which is a different and much wider claim. A keyed detector asks a smaller question, and smaller questions are often where software behaves best.
 
-This is a useful product lesson: detectability is not one fixed model capability. It depends on length, entropy, task, sampling settings, and how much of the final text the model controlled.
+Anthropic says it plans to offer a watermark detection API. When that is available, it will be interesting to test real examples: short answers, translations, copied sections, mixed human and model writing, and the heroic amount of editing required to make a generated company update sound as if a person has met another person. Until then, this playground stays honest about its limits. It explains the moving parts, uses its own key, and does not pretend to inspect arbitrary text.
 
-## Does the watermark make writing worse?
+## A clue, not a judge
 
-The obvious fear is that steering choices toward a hidden pattern might make the output stranger. A watermark that reliably identifies AI text by making every paragraph worse would be technically detectable and commercially self-correcting.
+Text watermarking will not solve every question about AI-written content. Keys can leak, text can be rewritten, short answers remain difficult, and not every model will use the same system. What it can offer is a useful clue that travels with the words without storing a central copy of every conversation or adding something visible to the page. That feels like a good building block as long as the product around it keeps the claim modest.
 
-SynthID-Text is designed to preserve the model's output distribution while changing how candidates are sampled. In the published evaluation, DeepMind compared watermarked and unwatermarked responses across automated benchmarks, controlled human ratings, and nearly 20 million live Gemini responses. The researchers reported no statistically significant quality difference in the large production experiment.
-
-That does not mean every possible watermark configuration is free. The paper describes a tradeoff between detectability, diversity, computational behavior, and stronger notions of distribution preservation. It does show that a production system can carry a useful signal without inserting awkward phrases or hidden characters after generation.
-
-The best watermark is boring to the reader. Its entire job is to become interesting to a detector.
-
-## Editing is both an attack and a definition problem
-
-Can someone remove the watermark? Yes, eventually.
-
-Light edits may weaken the evidence without destroying it because most keyed choices remain. A heavy rewrite replaces those choices and can remove the pattern. That is a practical limitation, but it also raises a philosophical question hiding inside an engineering one: after every sentence has been rewritten by a person, what exactly would “AI-generated text” still mean?
-
-The useful middle is content that has been copied, lightly edited, combined with human writing, or processed by a model. A detector can provide evidence that a keyed generator was involved somewhere in that history. It cannot reconstruct the entire writing process from a final paragraph.
-
-A match means a keyed generator was probably involved; it does not settle authorship. It says nothing about ownership, intent, whether the model supplied one paragraph or ten, or whether a person carefully shaped every idea before asking for a rewrite.
-
-## This is not the usual AI detector
-
-Generic AI-writing classifiers look for patterns associated with model prose. They may study predictability, sentence structure, vocabulary, or stylistic habits. Those systems do not have the provider's private watermark key, so they are solving a different problem.
-
-That distinction matters because style classifiers can mistake polished, formulaic, translated, or non-native writing for AI output. They also need recalibration as models and writing habits change. A keyed watermark instead asks a narrower question: does this sequence match the statistical pattern produced by this generation process?
-
-Narrower is often healthier. The answer carries less drama, but its claim is easier to state precisely.
-
-Anthropic says it plans to offer a watermark detection API. When that arrives, it will make sense to connect experiments to the real detector and see how length, editing, translation, and mixed authorship behave in practice. Until then, the local playground stays deliberately honest about its boundary. It teaches the mechanism. It does not cosplay as forensic evidence.
-
-## A signal, not an oracle
-
-Text watermarking will not solve every provenance problem. Keys can leak. Text can be rewritten. Short and constrained outputs remain difficult. Different providers may implement different systems, and unwatermarked models will still exist.
-
-But the idea has a quality I like: it gives the generator a way to leave evidence without keeping a central archive of everyone's conversations and without making the output visibly worse. The pattern travels with the words, yet reveals no user, organization, or chat identity.
-
-That is a useful primitive when the claim stays small. A watermark can say that a particular keyed system was probably involved. The surrounding product, policy, and human judgment still have to decide what that involvement means.
-
-Or, in the language of the toaster: promising result, methodology acceptable, conclusions should be revised downward.
+That was the reason for the experiment. Anthropic's post describes an invisible pattern, and invisible patterns are hard to build an intuition for by reading one more paragraph about invisible patterns. Letting the reader change “grave” to “polite” and watch the score move makes the idea less mysterious. Or, as the toaster in the demo might put it: the result looks promising, the sample could be larger, and someone should probably check whether the champagne fountain has passed peer review.
