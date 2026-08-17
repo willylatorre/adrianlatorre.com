@@ -36,6 +36,7 @@ components.d.ts
 *.tsbuildinfo
 .vagrant
 .env
+.superpowers/
 adrian.db
 bin
 Vagrantfile
