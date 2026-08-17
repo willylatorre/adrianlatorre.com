@@ -39,6 +39,23 @@ describe('watermarkSimulation', () => {
     expect(changed.changedSlots).toBe(8)
   })
 
+  it('weakens gradually after a single edit', () => {
+    const firstSlot = watermarkPassage.slots[0]
+    const replacement = firstSlot?.alternatives.find(
+      (choice) => choice.id !== baseline[firstSlot.id],
+    )
+    const edited =
+      firstSlot && replacement
+        ? { ...baseline, [firstSlot.id]: replacement.id }
+        : { ...baseline }
+
+    const result = scoreWatermark(watermarkPassage, edited, baseline, DEMO_WATERMARK_KEY)
+
+    expect(result.changedSlots).toBe(1)
+    expect(result.confidence).toBeGreaterThanOrEqual(80)
+    expect(result.confidence).toBeLessThan(100)
+  })
+
   it('falls back safely for invalid selections', () => {
     const result = scoreWatermark(
       watermarkPassage,

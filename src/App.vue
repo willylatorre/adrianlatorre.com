@@ -5,6 +5,7 @@ import AdrianStatus from './components/AdrianStatus.vue'
 import CoffeeCounter from './components/CoffeeCounter.vue'
 import ContactModal from './components/ContactModal.vue'
 import FunFacts from './components/FunFacts.vue'
+import { formatBlogDate, parseBlogDateMs } from './utils/blogDate'
 import { buildBlogSidebarChildren } from './utils/blogSidebar'
 
 const isModalOpen = ref(false)
@@ -22,22 +23,6 @@ type BlogModule = {
   description?: unknown
 }
 
-function parseDateMs(date?: string) {
-  if (!date) return 0
-  const ms = Date.parse(date)
-  return Number.isFinite(ms) ? ms : 0
-}
-
-function formatDate(date: string) {
-  const ms = Date.parse(date)
-  if (!Number.isFinite(ms)) return date
-  return new Intl.DateTimeFormat('en', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-  }).format(ms)
-}
-
 const postModules = import.meta.glob('./content/blog/*.md', {
   eager: true,
 }) as Record<string, BlogModule>
@@ -52,7 +37,7 @@ const blogPosts = computed<BlogPost[]>(() => {
 
       return { slug, title, date, description }
     })
-    .sort((a, b) => parseDateMs(b.date) - parseDateMs(a.date))
+    .sort((a, b) => parseBlogDateMs(b.date) - parseBlogDateMs(a.date))
 })
 
 // Search groups for CommandPalette
@@ -138,7 +123,7 @@ const baseSearchGroups = [
 const blogSearchGroup = computed(() => {
   const items = blogPosts.value.map((post) => ({
     label: post.title,
-    suffix: post.description ?? (post.date ? formatDate(post.date) : undefined),
+    suffix: post.description ?? (post.date ? formatBlogDate(post.date, 'short') : undefined),
     to: `/blog/${post.slug}`,
     icon: 'i-lucide-file-text',
   }))

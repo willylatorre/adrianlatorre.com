@@ -88,7 +88,7 @@ This mirrors the public idea that a key and recent context influence sampling wh
 
 ### Confidence calculation
 
-The detector aggregates the binary observations for all selected choices and compares the observed aligned-bit count with a 50/50 null model. A one-sided binomial tail produces a local evidence value, displayed as `round((1 - pValue) * 100)`.
+The detector aggregates the binary observations for all selected choices and compares the observed aligned-bit count with a 50/50 null model. A one-sided binomial tail produces a local evidence value. The UI applies a monotonic power compression to the tail probability before displaying an integer confidence, preventing different strong signals from all rounding to 100%.
 
 Verdicts are:
 

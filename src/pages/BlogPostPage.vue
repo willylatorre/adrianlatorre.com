@@ -2,21 +2,12 @@
 import { ref, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Component } from 'vue'
+import { formatBlogDate } from '@/utils/blogDate'
 
 type BlogFrontmatter = {
   title: string
   date?: string
   description?: string
-}
-
-function formatDate(date: string) {
-  const ms = Date.parse(date)
-  if (!Number.isFinite(ms)) return date
-  return new Intl.DateTimeFormat('en', {
-    year: 'numeric',
-    month: 'long',
-    day: '2-digit',
-  }).format(ms)
 }
 
 const route = useRoute()
@@ -94,7 +85,9 @@ watchEffect((onInvalidate) => {
     <header class="blog-header">
       <p class="blog-kicker">Blog</p>
       <h1 class="blog-headline">{{ frontmatter?.title ?? '…' }}</h1>
-      <p v-if="frontmatter?.date" class="blog-date">{{ formatDate(frontmatter.date) }}</p>
+      <p v-if="frontmatter?.date" class="blog-date">
+        {{ formatBlogDate(frontmatter.date, 'long') }}
+      </p>
       <p v-if="frontmatter?.description" class="blog-dek">{{ frontmatter.description }}</p>
     </header>
 

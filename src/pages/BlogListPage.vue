@@ -1,28 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Component } from 'vue'
+import { formatBlogDate, parseBlogDateMs } from '@/utils/blogDate'
 
 type BlogPost = {
   slug: string
   title: string
   date?: string
   description?: string
-}
-
-function parseDateMs(date?: string) {
-  if (!date) return 0
-  const ms = Date.parse(date)
-  return Number.isFinite(ms) ? ms : 0
-}
-
-function formatDate(date: string) {
-  const ms = Date.parse(date)
-  if (!Number.isFinite(ms)) return date
-  return new Intl.DateTimeFormat('en', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-  }).format(ms)
 }
 
 type BlogModule = {
@@ -47,7 +32,7 @@ const posts = computed<BlogPost[]>(() => {
 
       return { slug, title, date, description }
     })
-    .sort((a, b) => parseDateMs(b.date) - parseDateMs(a.date))
+    .sort((a, b) => parseBlogDateMs(b.date) - parseBlogDateMs(a.date))
 })
 </script>
 
@@ -65,7 +50,7 @@ const posts = computed<BlogPost[]>(() => {
           <span class="blog-title">{{ post.title }}</span>
         </RouterLink>
         <div class="blog-meta">
-          <span v-if="post.date" class="blog-date">{{ formatDate(post.date) }}</span>
+          <span v-if="post.date" class="blog-date">{{ formatBlogDate(post.date, 'short') }}</span>
         </div>
         <p v-if="post.description" class="blog-desc">
           {{ post.description }}
