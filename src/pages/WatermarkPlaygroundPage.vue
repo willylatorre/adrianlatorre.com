@@ -46,7 +46,7 @@ function resetPassage() {
       <div class="reading-desk__passage">
         <div class="reading-desk__caption">
           <span>Saturn, shortly before midnight</span>
-          <span>19 choices</span>
+          <span>{{ watermarkPassage.slots.length }} choices</span>
         </div>
         <WatermarkPassage
           :passage="watermarkPassage"
@@ -110,7 +110,8 @@ function resetPassage() {
             <p>
               Real systems work over model tokens and need much more text than a sentence. They are
               also weaker when the next word is constrained by a fact, a line of code, or a very
-              literal proofreading request.
+              literal proofreading request. In this teaching demo, 80% begins “Possible match”
+              and 95% begins “Strong match”; those thresholds are not production detector cutoffs.
             </p>
           </div>
         </template>

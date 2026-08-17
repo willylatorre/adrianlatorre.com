@@ -209,7 +209,7 @@ Implementation rules:
 - For each candidate, derive four binary observations from `key`, slot ID, the preceding selected-choice IDs, candidate ID, and layer index.
 - Build the baseline from left to right by selecting the candidate with the highest aligned-observation count for the current context; use source order to break ties.
 - When scoring, resolve unknown candidate IDs to the slot's baseline candidate.
-- Compute a one-sided binomial tail against `p = 0.5`, then apply `Math.round((1 - tail ** 0.22) * 100)` clamped to `0–100`. The monotonic compression keeps strong evidence levels visually distinguishable after integer rounding.
+- Compute a one-sided binomial tail against `p = 0.5`, then apply `Math.round((1 - tail ** 0.23) * 100)` clamped to `0–100`. The monotonic compression keeps strong evidence levels visually distinguishable after integer rounding.
 - Return confidence `0` when there are no observations.
 - Count a slot as changed when its resolved candidate differs from the resolved baseline candidate.
 

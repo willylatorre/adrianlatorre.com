@@ -185,10 +185,14 @@ function isChanged(slot: WatermarkSlot) {
   cursor: pointer;
 }
 
-.choice-menu__option:hover,
+.choice-menu__option:hover {
+  background: var(--site-surface);
+}
+
 .choice-menu__option:focus-visible {
   background: var(--site-surface);
-  outline: none;
+  outline: 2px solid var(--site-accent);
+  outline-offset: -2px;
 }
 
 .choice-menu__option--selected {

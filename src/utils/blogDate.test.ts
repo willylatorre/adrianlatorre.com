@@ -17,5 +17,6 @@ describe('blogDate', () => {
 
   it('returns the original value when it is not a valid date', () => {
     expect(formatBlogDate('sometime soon', 'short')).toBe('sometime soon')
+    expect(formatBlogDate('2026-02-31', 'short')).toBe('2026-02-31')
   })
 })

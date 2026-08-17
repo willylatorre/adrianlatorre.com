@@ -69,7 +69,7 @@ Conceptually, the detection side is small:
   </ProseCode>
 </ProsePre>
 
-The number in the experiment is labeled “watermark confidence,” not “probability an LLM wrote this.” That distinction is doing real work. The demo can only test whether the passage matches its own simulated key. Anthropic's detector will test for Anthropic's key. Another provider may use another key, another technique, or no watermark at all.
+The number in the experiment is labeled “watermark confidence,” not “probability an LLM wrote this.” That distinction is doing real work. For the lesson, I chose 80 percent as the start of “Possible match” and 95 percent as the start of “Strong match.” Those are teaching thresholds, not cutoffs from Anthropic's production detector. The demo can only test whether the passage matches its own simulated key. Anthropic's detector will test for Anthropic's key. Another provider may use another key, another technique, or no watermark at all.
 
 This is provenance evidence, not a universal AI-writing test.
 

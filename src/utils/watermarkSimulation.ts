@@ -41,7 +41,9 @@ function observationsFor(
   key: string,
 ) {
   return Array.from({ length: OBSERVATIONS_PER_SLOT }, (_, layer) => {
-    const recentContext = context.slice(-4)
+    // Keep a small amount of context coupling so an edit can affect what
+    // follows without allowing one word to erase evidence across the passage.
+    const recentContext = context.slice(-1)
     const seed = `${key}|${recentContext.join(':')}|${slot.id}|${candidateId}|${layer}`
     return stableHash(seed) & 1
   })
@@ -146,7 +148,7 @@ export function scoreWatermark(
   const tail = binomialTail(alignedObservations, totalObservations)
   // Raw `1 - p` values saturate at 100 after integer rounding. Compress the
   // tail so visually different evidence levels remain distinguishable.
-  const confidence = Math.min(100, Math.max(0, Math.round((1 - tail ** 0.22) * 100)))
+  const confidence = Math.min(100, Math.max(0, Math.round((1 - tail ** 0.23) * 100)))
 
   return {
     confidence,

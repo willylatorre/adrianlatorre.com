@@ -6,7 +6,20 @@ export function parseBlogDateMs(date?: string) {
   const frontmatterDate = FRONTMATTER_DATE_PATTERN.exec(date)
   if (frontmatterDate) {
     const [, year, month, day] = frontmatterDate
-    return new Date(Number(year), Number(month) - 1, Number(day)).getTime()
+    const yearNumber = Number(year)
+    const monthIndex = Number(month) - 1
+    const dayNumber = Number(day)
+    const parsed = new Date(yearNumber, monthIndex, dayNumber)
+
+    if (
+      parsed.getFullYear() !== yearNumber
+      || parsed.getMonth() !== monthIndex
+      || parsed.getDate() !== dayNumber
+    ) {
+      return 0
+    }
+
+    return parsed.getTime()
   }
 
   const parsed = Date.parse(date)

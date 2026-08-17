@@ -56,6 +56,56 @@ describe('watermarkSimulation', () => {
     expect(result.confidence).toBeLessThan(100)
   })
 
+  it('keeps every single replacement above the no-signal threshold', () => {
+    for (const slot of watermarkPassage.slots) {
+      for (const replacement of slot.alternatives) {
+        if (replacement.id === baseline[slot.id]) continue
+
+        const edited = { ...baseline, [slot.id]: replacement.id }
+        const result = scoreWatermark(
+          watermarkPassage,
+          edited,
+          baseline,
+          DEMO_WATERMARK_KEY,
+        )
+
+        expect(
+          result.confidence,
+          `${slot.id} -> ${replacement.id}`,
+        ).toBeGreaterThanOrEqual(80)
+      }
+    }
+  })
+
+  it('restores the baseline result when selections are reset', () => {
+    let selections = { ...baseline }
+
+    for (const slot of watermarkPassage.slots.slice(0, 8)) {
+      const replacement = slot.alternatives.find((choice) => choice.id !== baseline[slot.id])
+      if (replacement) selections[slot.id] = replacement.id
+    }
+
+    const original = scoreWatermark(watermarkPassage, baseline, baseline, DEMO_WATERMARK_KEY)
+    const changed = scoreWatermark(
+      watermarkPassage,
+      selections,
+      baseline,
+      DEMO_WATERMARK_KEY,
+    )
+
+    expect(changed.changedSlots).toBe(8)
+
+    selections = { ...baseline }
+    const reset = scoreWatermark(
+      watermarkPassage,
+      selections,
+      baseline,
+      DEMO_WATERMARK_KEY,
+    )
+
+    expect(reset).toEqual(original)
+  })
+
   it('falls back safely for invalid selections', () => {
     const result = scoreWatermark(
       watermarkPassage,

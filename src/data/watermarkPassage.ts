@@ -204,7 +204,7 @@ export const watermarkPassage: WatermarkPassage = {
     choice('saturn'),
     text(' to dim Saturn. The pattern seemed too '),
     choice('deliberate'),
-    text(' to be chance.\n\nNear the observation deck, a young heiress asked whether a soul meant the machine had feelings. It replied that it had at least '),
+    text(' to be chance.\n\nNear the observation deck, a young heiress asked whether a soul meant the machine had feelings. It replied that it had accumulated '),
     choice('paperwork'),
     text(', which had so far proven more durable. She laughed '),
     choice('laugh'),
