@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import ExperimentFooter from '@/components/experiment/ExperimentFooter.vue'
+import ExperimentHeader from '@/components/experiment/ExperimentHeader.vue'
 import { useChat } from '@/composables/useChat'
 
 const { messages, status, sendMessage } = useChat()
@@ -15,32 +17,14 @@ const handleSubmit = async (event?: Event) => {
 </script>
 
 <template>
-  <div class="space-y-4">
-    <!-- Page Header -->
-    <div>
-      <h1 class="text-3xl font-bold text-slate-900 mb-2">AI Interview Experiment</h1>
-      <p class="text-slate-600 max-w-2xl space-y-2">
-        <span>
-          Interview AI Adrian about his life and experiences. Each response generates a unique
-          32-bit pixel art visualization, creating a visual story alongside the conversation. 🎮✨
-        </span>
-        <span>
-          Using the
-          <a
-            class="font-medium text-slate-900 underline decoration-slate-300 underline-offset-4 hover:text-slate-700"
-            href="https://github.com/openai/openai-go"
-            target="_blank"
-            rel="noopener"
-          >
-            official openai-go SDK
-          </a>
-          for chat and DALL-E for image generation.
-        </span>
-      </p>
-    </div>
+  <div class="mx-auto max-w-6xl">
+    <ExperimentHeader
+      title="AI Interview"
+      description="Interview an AI version of Adrian. Each streamed answer is paired with a generated pixel-art scene."
+    />
 
     <!-- Chat Palette -->
-    <div class="mt-[3rem]">
+    <div>
       <UChatPalette class="h-[28rem] border border-slate-200 rounded overflow-hidden">
         <UChatMessages
           :assistant="{ variant: 'outline' }"
@@ -97,56 +81,20 @@ const handleSubmit = async (event?: Event) => {
       </UChatPalette>
     </div>
 
-    <!-- Takeaways -->
-    <section class="space-y-6 mt-[6rem] mb-[6rem]">
-      <div>
-        <h2 class="text-2xl font-semibold text-slate-900">Takeaways</h2>
-        <p class="text-slate-600">
-          Notes from building this chat experience with FastAPI, Vue, and the OpenAI SDK.
-        </p>
-      </div>
-
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <UCard>
-          <template #header>
-            <div class="flex items-center gap-2 text-slate-900">
-              <UIcon name="i-lucide-puzzle" class="w-5 h-5" />
-              <span class="font-medium">SDK Flexibility</span>
-            </div>
-          </template>
-          <p class="text-slate-600">
-            The Python SDK and Responses API make streaming text deltas straightforward while
-            leaving room for image generation, tools, and future retrieval experiments.
-          </p>
-        </UCard>
-
-        <UCard>
-          <template #header>
-            <div class="flex items-center gap-2 text-slate-900">
-              <UIcon name="i-lucide-layers" class="w-5 h-5" />
-              <span class="font-medium">Architecture Guidance</span>
-            </div>
-          </template>
-          <p class="text-slate-600">
-            The SDK repository lacks guidance on clean architecture patterns. Moving the client into
-            a service layer with clear abstractions keeps the codebase easier to evolve and test.
-          </p>
-        </UCard>
-
-        <UCard>
-          <template #header>
-            <div class="flex items-center gap-2 text-slate-900">
-              <UIcon name="i-lucide-message-square-text" class="w-5 h-5" />
-              <span class="font-medium">UI Message Shape</span>
-            </div>
-          </template>
-          <p class="text-slate-600">
-            UI libraries often expect message-specific structures. Adapting responses with a `parts`
-            array (mirroring the AI SDK) makes it easier to plug into Nuxt UI components without
-            bespoke renderers.
-          </p>
-        </UCard>
-      </div>
-    </section>
+    <ExperimentFooter
+      conclusion="A stable message-part shape makes streamed text and generated media predictable for the interface. The transport can evolve without forcing every chat component to understand backend details."
+      :links="[
+        {
+          label: 'View the repository',
+          href: 'https://github.com/willylatorre/adrianlatorre.com',
+          external: true,
+        },
+        {
+          label: 'OpenAI Python SDK',
+          href: 'https://github.com/openai/openai-python',
+          external: true,
+        },
+      ]"
+    />
   </div>
 </template>

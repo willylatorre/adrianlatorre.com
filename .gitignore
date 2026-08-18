@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.worktrees
 .venv
 __pycache__/
 .DS_Store
@@ -37,6 +38,7 @@ components.d.ts
 .vagrant
 .env
 .superpowers/
+/docs/superpowers/
 adrian.db
 bin
 Vagrantfile

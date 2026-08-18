@@ -74,6 +74,27 @@ Use concrete language: "built," "shipped," "integrated," "measured," "reliable,"
 - Blog and project pages feel like part of the same world, even when they use different layouts.
 - The design still benefits from Nuxt UI components instead of replacing the component system.
 
+## Playground Experiment Anatomy
+
+The Playground currently contains five routes: `/orchestrator`, `/ai-chat`, `/tiptap-llm`, `/watermark`, and `/vue-go`. Media is a separate Pet projects surface and does not use this pattern.
+
+Every current and future Playground experiment follows the same content order:
+
+1. `ExperimentHeader` with the fixed `Playground` eyebrow, one page-level `h1`, and a concise one- or two-sentence introduction.
+2. A purpose-built experiment body shaped around the interaction or technical idea.
+3. `ExperimentFooter` with one concrete `What I learned` conclusion and a `Notes & links` list containing at least one useful source, build note, primary document, or repository link.
+
+Rules for future experiments:
+
+- Use `src/components/experiment/ExperimentHeader.vue` and `ExperimentFooter.vue`; do not recreate their markup or styling locally.
+- Keep breadcrumbs, experiment numbers, status badges, technology tags, and resource links out of the header.
+- Keep the introduction concise and do not repeat it in the first body section.
+- State an engineering or product lesson in the conclusion rather than summarizing the page again.
+- Preserve a purpose-built body. Shared framing should not turn distinct experiments into identical card layouts.
+- Use descriptive link labels. External destinations open safely in a new tab and display the shared external-link cue.
+- Keep a logical heading order, visible keyboard focus, readable line lengths, and mobile layouts without horizontal overflow.
+- Add new routes to the Playground navigation and search group when publishing them.
+
 ## Product Constraints
 
 - The frontend is Vue 3 with Vite and `@nuxt/ui` components, not a Nuxt app.

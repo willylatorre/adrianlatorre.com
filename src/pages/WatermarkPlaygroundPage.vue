@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import ExperimentFooter from '@/components/experiment/ExperimentFooter.vue'
+import ExperimentHeader from '@/components/experiment/ExperimentHeader.vue'
 import WatermarkConfidence from '@/components/watermark/WatermarkConfidence.vue'
 import WatermarkPassage from '@/components/watermark/WatermarkPassage.vue'
 import { watermarkPassage } from '@/data/watermarkPassage'
@@ -28,25 +30,10 @@ function resetPassage() {
 
 <template>
   <main class="watermark-page">
-    <header class="watermark-hero">
-      <div class="watermark-hero__meta">
-        <p class="watermark-kicker">Experiment 04</p>
-        <UBadge color="neutral" variant="outline" size="sm" icon="i-lucide-flask-conical">
-          Educational simulation
-        </UBadge>
-      </div>
-      <h1>A watermark you cannot see.</h1>
-      <p class="watermark-hero__intro">
-        After reading
-        <a
-          href="https://www.anthropic.com/news/claude-text-watermark"
-          target="_blank"
-          rel="noreferrer"
-        >Anthropic’s announcement about Claude’s text watermark</a>, I wanted to see what that
-        hidden pattern would feel like in your hands. Change the marked words and watch this
-        simplified version of the signal move.
-      </p>
-    </header>
+    <ExperimentHeader
+      title="A watermark you cannot see"
+      description="Change the marked words and watch a simplified hidden signal strengthen, weaken, or disappear across the passage."
+    />
 
     <section class="reading-desk" aria-label="Text watermark playground">
       <div class="reading-desk__passage">
@@ -123,29 +110,27 @@ function resetPassage() {
         </template>
       </UCollapsible>
 
-      <footer class="watermark-links">
-        <RouterLink to="/blog/notes-from-hiding-a-watermark-in-plain-text">
-          Read the build notes
-          <UIcon name="i-lucide-arrow-up-right" aria-hidden="true" />
-        </RouterLink>
-        <a
-          href="https://www.anthropic.com/news/claude-text-watermark"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Anthropic’s announcement
-          <UIcon name="i-lucide-external-link" aria-hidden="true" />
-        </a>
-        <a
-          href="https://www.nature.com/articles/s41586-024-08025-4"
-          target="_blank"
-          rel="noreferrer"
-        >
-          SynthID-Text paper
-          <UIcon name="i-lucide-external-link" aria-hidden="true" />
-        </a>
-      </footer>
     </section>
+
+    <ExperimentFooter
+      conclusion="A tiny preference at each word is not meaningful on its own. The signal becomes useful only when enough weak observations accumulate across a longer passage."
+      :links="[
+        {
+          label: 'Read the build notes',
+          href: '/blog/notes-from-hiding-a-watermark-in-plain-text',
+        },
+        {
+          label: 'Anthropic’s announcement',
+          href: 'https://www.anthropic.com/news/claude-text-watermark',
+          external: true,
+        },
+        {
+          label: 'SynthID-Text paper',
+          href: 'https://www.nature.com/articles/s41586-024-08025-4',
+          external: true,
+        },
+      ]"
+    />
   </main>
 </template>
 
@@ -155,61 +140,6 @@ function resetPassage() {
   max-width: 70rem;
   margin: 0 auto;
   color: var(--site-ink);
-}
-
-.watermark-hero {
-  max-width: 55rem;
-  padding: clamp(0.5rem, 2vw, 1.25rem) 0 clamp(2rem, 6vw, 4.5rem);
-}
-
-.watermark-hero__meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.8rem;
-  margin-bottom: 1.2rem;
-}
-
-.watermark-kicker {
-  margin: 0;
-  color: var(--site-accent);
-  font-size: 0.7rem;
-  font-weight: 720;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.watermark-hero h1 {
-  max-width: 13ch;
-  margin: 0;
-  font-size: clamp(2.65rem, 7vw, 5.6rem);
-  font-weight: 660;
-  letter-spacing: -0.065em;
-  line-height: 0.94;
-}
-
-.watermark-hero__intro {
-  max-width: 58ch;
-  margin: clamp(1.25rem, 3vw, 2rem) 0 0;
-  color: var(--site-muted);
-  font-size: clamp(1.02rem, 0.95rem + 0.35vw, 1.25rem);
-  line-height: 1.62;
-}
-
-.watermark-hero__intro a {
-  color: var(--site-ink);
-  text-decoration-color: var(--site-border-strong);
-  text-underline-offset: 0.18em;
-}
-
-.watermark-hero__intro a:hover {
-  color: var(--site-accent);
-}
-
-.watermark-hero__intro a:focus-visible {
-  border-radius: 0.2rem;
-  outline: 2px solid var(--site-accent);
-  outline-offset: 3px;
 }
 
 .reading-desk {
@@ -305,42 +235,7 @@ function resetPassage() {
   line-height: 1.7;
 }
 
-.watermark-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem 1.25rem;
-  padding-top: 0.25rem;
-}
-
-.watermark-links a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  color: var(--site-muted);
-  font-size: 0.78rem;
-  text-decoration: none;
-}
-
-.watermark-links a:hover {
-  color: var(--site-ink);
-}
-
-.watermark-links a:focus-visible {
-  border-radius: 0.2rem;
-  outline: 2px solid var(--site-accent);
-  outline-offset: 3px;
-}
-
-.watermark-links svg {
-  width: 0.78rem;
-  height: 0.78rem;
-}
-
 @media (max-width: 760px) {
-  .watermark-hero {
-    padding-bottom: 2.5rem;
-  }
-
   .reading-desk {
     display: flex;
     flex-direction: column;

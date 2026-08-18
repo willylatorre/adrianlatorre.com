@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import CodeSnippet from '@/components/CodeSnippet.vue'
+import ExperimentFooter from '@/components/experiment/ExperimentFooter.vue'
+import ExperimentHeader from '@/components/experiment/ExperimentHeader.vue'
 import { useApi } from '@/composables/useApi'
 
 type AgentId = 'joke_agent' | 'soccer_agent' | 'portfolio_agent' | 'none'
@@ -274,21 +276,13 @@ const runPrompt = async (nextPrompt?: string) => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-7xl space-y-12">
-    <section class="space-y-4">
-      <div class="max-w-3xl">
-        <p class="text-sm font-medium uppercase tracking-wide text-[var(--site-muted)]">
-          Agent orchestration
-        </p>
-        <h1 class="mt-2 text-3xl font-bold tracking-tight text-[var(--site-ink)]">
-          Router model, specialist agents, visible tool calls.
-        </h1>
-        <p class="mt-3 text-lg text-[var(--site-muted)]">
-          A small orchestrator calls a cheap router model, selects one specialist, streams each
-          execution event, and shows the final answer beside the trace.
-        </p>
-      </div>
+  <div class="mx-auto max-w-7xl">
+    <ExperimentHeader
+      title="Agent Orchestrator"
+      description="Watch a small router select one specialist, expose its tool calls, and stream the result through one visible event contract."
+    />
 
+    <section class="space-y-4">
       <div class="rounded-lg border border-[var(--site-border)] bg-[var(--site-surface)] p-4">
         <div class="flex flex-col gap-3 lg:flex-row">
           <UInput
@@ -323,7 +317,7 @@ const runPrompt = async (nextPrompt?: string) => {
       </div>
     </section>
 
-    <section class="grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_24rem]">
+    <section class="mt-12 grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_24rem]">
       <aside class="rounded-lg border border-[var(--site-border)] bg-[var(--site-surface)] p-4">
         <div class="mb-4 flex items-center justify-between">
           <h2 class="text-base font-semibold text-[var(--site-ink)]">Agents</h2>
@@ -425,7 +419,7 @@ const runPrompt = async (nextPrompt?: string) => {
       </aside>
     </section>
 
-    <section class="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <section class="mt-12 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div class="min-w-0 space-y-8">
         <div>
           <h2 class="text-2xl font-semibold text-[var(--site-ink)]">How the Orchestrator Works</h2>
@@ -618,5 +612,21 @@ const runPrompt = async (nextPrompt?: string) => {
         />
       </aside>
     </section>
+
+    <ExperimentFooter
+      conclusion="A small router stays understandable when selection, tool execution, and output share one explicit event contract. The trace becomes part of the product instead of hidden backend behavior."
+      :links="[
+        {
+          label: 'View the repository',
+          href: 'https://github.com/willylatorre/adrianlatorre.com',
+          external: true,
+        },
+        {
+          label: 'OpenAI function calling guide',
+          href: 'https://developers.openai.com/api/docs/guides/function-calling',
+          external: true,
+        },
+      ]"
+    />
   </div>
 </template>
