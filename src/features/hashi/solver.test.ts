@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { countSolutions } from './solver'
+import { countSolutions, countSolutionsWithDeadline } from './solver'
 import type { HashiPuzzle } from './types'
 
 const forcedPuzzle: HashiPuzzle = {
@@ -53,5 +53,16 @@ describe('Hashi solution counter', () => {
     }
 
     expect(countSolutions(crossingPuzzle, 2)).toBe(0)
+  })
+
+  it('aborts recursive search safely when its deadline expires', () => {
+    let clock = 0
+
+    expect(
+      countSolutionsWithDeadline(forcedPuzzle, 2, {
+        deadline: 2,
+        now: () => clock++,
+      }),
+    ).toEqual({ count: 0, timedOut: true })
   })
 })

@@ -1,6 +1,6 @@
 import { cloneFallback } from './fallbacks'
 import { corridorsCross, getVisibleCorridors } from './geometry'
-import { countSolutions } from './solver'
+import { countSolutionsWithDeadline } from './solver'
 import type { BridgeCounts, Corridor, HashiCategory, HashiPuzzle, Island } from './types'
 
 export const CATEGORY_CONFIG = {
@@ -15,14 +15,32 @@ export interface GeneratedPuzzle {
   solution: BridgeCounts
 }
 
+export interface PuzzleGenerationOptions {
+  timeBudgetMs?: number
+  uniquenessTimeBudgetMs?: number
+  now?: () => number
+}
+
 type CategoryConfig = (typeof CATEGORY_CONFIG)[HashiCategory]
 type Random = () => number
 
-export function generatePuzzle(category: HashiCategory, seed: number): GeneratedPuzzle {
+const DEFAULT_GENERATION_TIME_BUDGET_MS = 1_500
+const DEFAULT_UNIQUENESS_TIME_BUDGET_MS = 250
+
+export function generatePuzzle(
+  category: HashiCategory,
+  seed: number,
+  options: PuzzleGenerationOptions = {},
+): GeneratedPuzzle {
   const random = mulberry32(seed)
   const config = CATEGORY_CONFIG[category]
+  const now = options.now ?? Date.now
+  const generationDeadline = now() + (options.timeBudgetMs ?? DEFAULT_GENERATION_TIME_BUDGET_MS)
+  const uniquenessTimeBudgetMs = options.uniquenessTimeBudgetMs ?? DEFAULT_UNIQUENESS_TIME_BUDGET_MS
 
   for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (now() >= generationDeadline) break
+
     const islands = placeSpacedIslands(config, random)
     const corridors = getVisibleCorridors(islands)
     const solution = buildConnectedPlanarSolution(islands, corridors, config, random)
@@ -33,9 +51,15 @@ export function generatePuzzle(category: HashiCategory, seed: number): Generated
       corridors,
       solution,
     )
+    const uniquenessDeadline = Math.min(generationDeadline, now() + uniquenessTimeBudgetMs)
+    const solutionCount = countSolutionsWithDeadline(puzzle, 2, {
+      deadline: uniquenessDeadline,
+      now,
+    })
     if (
       puzzle.islands.every(({ clue }) => clue >= 1 && clue <= 8) &&
-      countSolutions(puzzle, 2) === 1
+      !solutionCount.timedOut &&
+      solutionCount.count === 1
     ) {
       return { puzzle: { ...puzzle, id: fingerprintPuzzle(puzzle) }, solution }
     }

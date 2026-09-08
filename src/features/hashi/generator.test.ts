@@ -26,6 +26,27 @@ describe('Hashi puzzle generation', () => {
     expect(generatePuzzle('intro', 42)).toEqual(generatePuzzle('intro', 42))
   })
 
+  it('returns the validated fallback when the overall generation budget is exhausted', () => {
+    expect(
+      generatePuzzle('monthly', 42, {
+        timeBudgetMs: 0,
+        now: () => 100,
+      }),
+    ).toEqual(cloneFallback('monthly'))
+  })
+
+  it('retries after a uniqueness search times out while overall time remains', () => {
+    let clockReads = 0
+    const generated = generatePuzzle('intro', 314159, {
+      timeBudgetMs: 100,
+      uniquenessTimeBudgetMs: 1,
+      now: () => (clockReads++ < 4 ? 0 : 2),
+    })
+
+    expect(generated.puzzle.id).not.toBe('fallback-intro')
+    expect(generated).not.toEqual(generatePuzzle('intro', 314159))
+  })
+
   it.each(categories)('provides a valid unique %s fallback', (category) => {
     const fallback = cloneFallback(category)
 

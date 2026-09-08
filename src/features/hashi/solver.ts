@@ -11,7 +11,25 @@ interface SolverCorridor extends Corridor {
 const VALUES: BridgeCount[] = [0, 1, 2]
 
 export function countSolutions(puzzle: HashiPuzzle, limit = 2): number {
-  if (limit <= 0 || puzzle.islands.length === 0) return 0
+  return countSolutionsWithDeadline(puzzle, limit).count
+}
+
+export interface SolutionSearchDeadline {
+  deadline: number
+  now: () => number
+}
+
+export interface SolutionCountResult {
+  count: number
+  timedOut: boolean
+}
+
+export function countSolutionsWithDeadline(
+  puzzle: HashiPuzzle,
+  limit = 2,
+  deadline?: SolutionSearchDeadline,
+): SolutionCountResult {
+  if (limit <= 0 || puzzle.islands.length === 0) return { count: 0, timedOut: false }
 
   const corridors = prepareCorridors(puzzle)
   const clues = puzzle.islands.map(({ clue }) => clue)
@@ -20,6 +38,7 @@ export function countSolutions(puzzle: HashiPuzzle, limit = 2): number {
   const assignments = new Int8Array(corridors.length).fill(-1)
   const counts: BridgeCounts = {}
   let solutions = 0
+  let timedOut = false
 
   for (const corridor of corridors) {
     remaining[corridor.aIndex] += 1
@@ -29,11 +48,15 @@ export function countSolutions(puzzle: HashiPuzzle, limit = 2): number {
   if (
     puzzle.islands.some((_, index) => clues[index]! < 0 || clues[index]! > remaining[index]! * 2)
   ) {
-    return 0
+    return { count: 0, timedOut: false }
   }
 
   function search(assignedCount: number) {
-    if (solutions >= limit) return
+    if (timedOut || solutions >= limit) return
+    if (deadline && deadline.now() >= deadline.deadline) {
+      timedOut = true
+      return
+    }
     if (assignedCount === corridors.length) {
       if (evaluatePuzzle(puzzle, counts).solved) solutions += 1
       return
@@ -60,7 +83,7 @@ export function countSolutions(puzzle: HashiPuzzle, limit = 2): number {
 
       sums[corridor.aIndex] -= value
       sums[corridor.bIndex] -= value
-      if (solutions >= limit) break
+      if (timedOut || solutions >= limit) break
     }
 
     remaining[corridor.aIndex] += 1
@@ -70,7 +93,7 @@ export function countSolutions(puzzle: HashiPuzzle, limit = 2): number {
   }
 
   search(0)
-  return solutions
+  return { count: solutions, timedOut }
 }
 
 function prepareCorridors(puzzle: HashiPuzzle): SolverCorridor[] {
