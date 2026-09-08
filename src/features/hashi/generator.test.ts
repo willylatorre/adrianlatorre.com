@@ -26,6 +26,28 @@ describe('Hashi puzzle generation', () => {
     expect(generatePuzzle('intro', 42)).toEqual(generatePuzzle('intro', 42))
   })
 
+  it.each(categories)('uses the configured bridge multiplicity for %s puzzles', (category) => {
+    const generated = Array.from({ length: 8 }, (_, seed) =>
+      generatePuzzle(category, 700_000 + seed),
+    )
+    const bridgeCounts = generated.flatMap(({ solution }) =>
+      Object.values(solution).filter((count) => count > 0),
+    )
+    const clues = generated.flatMap(({ puzzle }) => puzzle.islands.map(({ clue }) => clue))
+    const doubleShare = bridgeCounts.filter((count) => count === 2).length / bridgeCounts.length
+    const oddClueShare = clues.filter((clue) => clue % 2 === 1).length / clues.length
+
+    expect(generated.every(({ puzzle }) => !puzzle.id.startsWith('fallback-'))).toBe(true)
+    expect(
+      generated.every(
+        ({ puzzle }) => puzzle.islands.length === CATEGORY_CONFIG[category].targetIslands,
+      ),
+    ).toBe(true)
+    expect(Math.abs(doubleShare - CATEGORY_CONFIG[category].doubleRate)).toBeLessThan(0.08)
+    expect(oddClueShare).toBeGreaterThan(0.1)
+    expect(new Set(clues).size).toBeGreaterThanOrEqual(4)
+  })
+
   it('returns the validated fallback when the overall generation budget is exhausted', () => {
     expect(
       generatePuzzle('monthly', 42, {

@@ -41,7 +41,7 @@ export function generatePuzzle(
   for (let attempt = 0; attempt < 40; attempt += 1) {
     if (now() >= generationDeadline) break
 
-    const islands = placeSpacedIslands(config, random)
+    const islands = placeGuardedTreeIslands(config, random)
     const corridors = getVisibleCorridors(islands)
     const solution = buildConnectedPlanarSolution(islands, corridors, config, random)
     if (!solution) continue
@@ -80,25 +80,54 @@ function mulberry32(seed: number): Random {
   }
 }
 
-function placeSpacedIslands(config: CategoryConfig, random: Random): Island[] {
-  const candidates: Array<Pick<Island, 'x' | 'y'>> = []
+function placeGuardedTreeIslands(config: CategoryConfig, random: Random): Island[] {
+  const maxRows = config.height - 2
+  const maxColumns = config.width - 2
+  let rowCount = maxRows - randomIndex(Math.min(3, maxRows - 2), random)
+  let columnCount = maxColumns - randomIndex(Math.min(3, maxColumns - 2), random)
 
-  for (let y = 1; y < config.height - 1; y += 2) {
-    for (let x = 1; x < config.width - 1; x += 2) candidates.push({ x, y })
+  if (rowCount + columnCount > config.targetIslands + 1) {
+    const minimumRows = Math.max(3, config.targetIslands + 1 - maxColumns)
+    const maximumRows = Math.min(maxRows, config.targetIslands - 2)
+    rowCount = minimumRows + randomIndex(maximumRows - minimumRows + 1, random)
+    columnCount = config.targetIslands + 1 - rowCount
   }
 
-  const chosen = [candidates.splice(randomIndex(candidates.length, random), 1)[0]!]
-  while (chosen.length < config.targetIslands) {
-    const frontierIndexes = candidates.flatMap((candidate, index) =>
-      chosen.some((island) => island.x === candidate.x || island.y === candidate.y) ? [index] : [],
-    )
-    if (frontierIndexes.length === 0) return []
+  const crossingCount = config.targetIslands - rowCount - columnCount + 1
+  if (crossingCount < 0 || crossingCount > columnCount - 2) return []
 
-    const candidateIndex = frontierIndexes[randomIndex(frontierIndexes.length, random)]!
-    chosen.push(candidates.splice(candidateIndex, 1)[0]!)
-  }
+  const xs = chooseCoordinates(config.width, columnCount, random)
+  const ys = chooseCoordinates(config.height, rowCount, random)
+  const barrierIndex = 1 + randomIndex(rowCount - 2, random)
+  const longAboveBarrier = random() < 0.5
+  const longRowIndex = longAboveBarrier
+    ? randomIndex(barrierIndex, random)
+    : barrierIndex + 1 + randomIndex(rowCount - barrierIndex - 1, random)
+  const shortRowIndex = longAboveBarrier
+    ? barrierIndex + 1 + randomIndex(rowCount - barrierIndex - 1, random)
+    : randomIndex(barrierIndex, random)
+  const leafOnLeft = random() < 0.5
+  const orderedXs = leafOnLeft ? xs : [...xs].reverse()
+  const [leafX, ...fromLeafToHub] = orderedXs
+  const hubX = fromLeafToHub.at(-1)!
+  const barrierY = ys[barrierIndex]!
+  const longY = ys[longRowIndex]!
+  const shortY = ys[shortRowIndex]!
+  const shortXs = fromLeafToHub.slice(-(crossingCount + 1))
 
-  return chosen.map(({ x, y }, index) => ({ id: `i${index}`, x, y, clue: 0 }))
+  // The leaf-to-hub corridor crosses every otherwise cycle-forming rung between the two rows.
+  // Its leaf clue forces that guard active, leaving a visible tree whose edge values are unique.
+  const positions = [
+    { x: leafX!, y: barrierY },
+    { x: hubX, y: barrierY },
+    ...fromLeafToHub.map((x) => ({ x, y: longY })),
+    ...shortXs.map((x) => ({ x, y: shortY })),
+    ...ys
+      .filter((_, index) => ![barrierIndex, longRowIndex, shortRowIndex].includes(index))
+      .map((y) => ({ x: hubX, y })),
+  ]
+
+  return positions.map(({ x, y }, index) => ({ id: `i${index}`, x, y, clue: 0 }))
 }
 
 function buildConnectedPlanarSolution(
@@ -110,7 +139,7 @@ function buildConnectedPlanarSolution(
   if (islands.length === 0) return undefined
 
   const islandById = new Map(islands.map((island) => [island.id, island]))
-  const visited = new Set([islands[randomIndex(islands.length, random)]!.id])
+  const visited = new Set([islands[0]!.id])
   const activeCorridors: Corridor[] = []
   const solution: BridgeCounts = {}
 
@@ -123,8 +152,7 @@ function buildConnectedPlanarSolution(
     if (candidates.length === 0) return undefined
 
     const corridor = candidates[randomIndex(candidates.length, random)]!
-    // Saturating the connected backbone keeps large uniqueness checks predictably bounded.
-    solution[corridor.id] = 2
+    solution[corridor.id] = random() < config.doubleRate ? 2 : 1
     activeCorridors.push(corridor)
     visited.add(visited.has(corridor.a) ? corridor.b : corridor.a)
   }
@@ -197,6 +225,15 @@ function shuffled<T>(values: T[], random: Random) {
   }
 
   return result
+}
+
+function chooseCoordinates(size: number, count: number, random: Random) {
+  return shuffled(
+    Array.from({ length: size - 2 }, (_, index) => index + 1),
+    random,
+  )
+    .slice(0, count)
+    .sort((left, right) => left - right)
 }
 
 function randomIndex(length: number, random: Random) {
