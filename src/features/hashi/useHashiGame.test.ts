@@ -114,6 +114,19 @@ describe('Hashi game state', () => {
     })
   })
 
+  it('persists a newly created run before the first move', () => {
+    const storage = createStorage()
+    createHashiGame(fixedPuzzle, () => 1_000, { storage })
+
+    expect(loadHashiState(storage)).toMatchObject({
+      preferredCategory: 'intro',
+      puzzle: fixedPuzzle,
+      bridgeCounts: {},
+      startedAt: 1_000,
+      history: [],
+    })
+  })
+
   it('selects a category and starts a fresh generated puzzle', () => {
     const dailyPuzzle = { ...fixedPuzzle, id: 'daily', category: 'daily' as const }
     const game = useHashiGame({

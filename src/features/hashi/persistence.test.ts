@@ -67,4 +67,29 @@ describe('Hashi persistence', () => {
       ),
     ).toBeNull()
   })
+
+  it('drops persisted active bridge pairs that cross', () => {
+    const storage = createStorage()
+    const crossingState: PersistedHashiState = {
+      ...state,
+      puzzle: {
+        id: 'crossing',
+        category: 'intro',
+        width: 5,
+        height: 5,
+        islands: [
+          { id: 'a', x: 0, y: 2, clue: 2 },
+          { id: 'b', x: 4, y: 2, clue: 2 },
+          { id: 'c', x: 2, y: 0, clue: 2 },
+          { id: 'd', x: 2, y: 4, clue: 2 },
+        ],
+      },
+      bridgeCounts: { 'a:b': 1, 'c:d': 1 },
+      history: [],
+    }
+    storage.setItem(HASHI_STORAGE_KEY, JSON.stringify(crossingState))
+
+    expect(loadHashiState(storage)).toBeNull()
+    expect(storage.getItem(HASHI_STORAGE_KEY)).toBeNull()
+  })
 })

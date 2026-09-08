@@ -95,6 +95,8 @@ export function createHashiGame(
     evaluation = evaluatePuzzle(puzzle, bridgeCounts)
   }
 
+  persist()
+
   return {
     get puzzle() {
       return puzzle

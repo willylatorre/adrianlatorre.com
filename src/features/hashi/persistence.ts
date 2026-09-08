@@ -1,4 +1,4 @@
-import { getVisibleCorridors } from './geometry'
+import { corridorsCross, getVisibleCorridors } from './geometry'
 import type { BridgeCount, BridgeCounts, HashiCategory, HashiPuzzle, Island } from './types'
 
 export const HASHI_STORAGE_KEY = 'adrianlatorre.hashi.v1'
@@ -54,6 +54,7 @@ export function parsePersistedHashiState(raw: string | null): PersistedHashiStat
     const value: unknown = JSON.parse(raw)
     if (!isRecord(value) || value.version !== 1 || !isCategory(value.preferredCategory)) return null
     if (!isPuzzle(value.puzzle) || !isBridgeCounts(value.bridgeCounts, value.puzzle)) return null
+    if (hasCrossingBridgeCounts(value.puzzle, value.bridgeCounts)) return null
     if (!isTimestamp(value.startedAt) || !isHistory(value.history, value.puzzle)) return null
     if (value.solvedAt !== undefined && value.solvedAt !== null && !isTimestamp(value.solvedAt)) {
       return null
@@ -78,9 +79,13 @@ export function isCategory(value: unknown): value is HashiCategory {
 }
 
 function resolveStorage(storage?: HashiStorage | null): HashiStorage | null {
-  if (storage !== undefined) return storage
-  if (typeof window === 'undefined') return null
-  return window.localStorage
+  try {
+    if (storage !== undefined) return storage
+    if (typeof window === 'undefined') return null
+    return window.localStorage
+  } catch {
+    return null
+  }
 }
 
 function isPuzzle(value: unknown): value is HashiPuzzle {
@@ -113,6 +118,22 @@ function isBridgeCounts(value: unknown, puzzle: HashiPuzzle): value is BridgeCou
   const corridorIds = new Set(getVisibleCorridors(puzzle.islands).map(({ id }) => id))
   return Object.entries(value).every(
     ([corridorId, count]) => corridorIds.has(corridorId) && isBridgeCount(count),
+  )
+}
+
+function hasCrossingBridgeCounts(puzzle: HashiPuzzle, counts: BridgeCounts) {
+  const islandById = new Map(puzzle.islands.map((island) => [island.id, island]))
+  const activeCorridors = getVisibleCorridors(puzzle.islands).filter(
+    (corridor) => (counts[corridor.id] ?? 0) > 0,
+  )
+
+  return activeCorridors.some((corridor, index) =>
+    activeCorridors.slice(index + 1).some((other) =>
+      corridorsCross(
+        { a: islandById.get(corridor.a)!, b: islandById.get(corridor.b)! },
+        { a: islandById.get(other.a)!, b: islandById.get(other.b)! },
+      ),
+    ),
   )
 }
 
