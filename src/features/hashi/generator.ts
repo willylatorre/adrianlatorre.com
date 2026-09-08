@@ -41,7 +41,7 @@ export function generatePuzzle(
   for (let attempt = 0; attempt < 40; attempt += 1) {
     if (now() >= generationDeadline) break
 
-    const islands = placeGuardedTreeIslands(config, random)
+    const islands = placeGuardedCycleIslands(config, random)
     const corridors = getVisibleCorridors(islands)
     const solution = buildConnectedPlanarSolution(islands, corridors, config, random)
     if (!solution) continue
@@ -80,52 +80,59 @@ function mulberry32(seed: number): Random {
   }
 }
 
-function placeGuardedTreeIslands(config: CategoryConfig, random: Random): Island[] {
-  const maxRows = config.height - 2
-  const maxColumns = config.width - 2
-  let rowCount = maxRows - randomIndex(Math.min(3, maxRows - 2), random)
-  let columnCount = maxColumns - randomIndex(Math.min(3, maxColumns - 2), random)
+function placeGuardedCycleIslands(config: CategoryConfig, random: Random): Island[] {
+  const gadgetCount = Math.min(5, Math.max(2, Math.round(config.targetIslands / 15)))
+  const columnCounts = Array<number>(gadgetCount).fill(3)
+  const rungCounts = Array<number>(gadgetCount).fill(1)
+  const maxNonHubColumns = config.width - 3
+  let usedNonHubColumns = gadgetCount * 2
+  let remainingIslands = config.targetIslands - gadgetCount * 6
 
-  if (rowCount + columnCount > config.targetIslands + 1) {
-    const minimumRows = Math.max(3, config.targetIslands + 1 - maxColumns)
-    const maximumRows = Math.min(maxRows, config.targetIslands - 2)
-    rowCount = minimumRows + randomIndex(maximumRows - minimumRows + 1, random)
-    columnCount = config.targetIslands + 1 - rowCount
+  while (remainingIslands > 0) {
+    let placed = false
+
+    for (let index = 0; index < gadgetCount && remainingIslands > 0; index += 1) {
+      if (usedNonHubColumns >= maxNonHubColumns) break
+      columnCounts[index]! += 1
+      usedNonHubColumns += 1
+      remainingIslands -= 1
+      placed = true
+    }
+    for (let index = 0; index < gadgetCount && remainingIslands > 0; index += 1) {
+      if (rungCounts[index]! >= columnCounts[index]! - 2) continue
+      rungCounts[index]! += 1
+      remainingIslands -= 1
+      placed = true
+    }
+
+    if (!placed) return []
   }
 
-  const crossingCount = config.targetIslands - rowCount - columnCount + 1
-  if (crossingCount < 0 || crossingCount > columnCount - 2) return []
+  const xs = chooseCoordinates(config.width, usedNonHubColumns + 1, random)
+  const ys = chooseCoordinates(config.height, gadgetCount * 3, random)
+  const orderedXs = random() < 0.5 ? xs : [...xs].reverse()
+  const hubX = orderedXs.at(-1)!
+  let xIndex = 0
+  const positions: Array<Pick<Island, 'x' | 'y'>> = []
 
-  const xs = chooseCoordinates(config.width, columnCount, random)
-  const ys = chooseCoordinates(config.height, rowCount, random)
-  const barrierIndex = 1 + randomIndex(rowCount - 2, random)
-  const longAboveBarrier = random() < 0.5
-  const longRowIndex = longAboveBarrier
-    ? randomIndex(barrierIndex, random)
-    : barrierIndex + 1 + randomIndex(rowCount - barrierIndex - 1, random)
-  const shortRowIndex = longAboveBarrier
-    ? barrierIndex + 1 + randomIndex(rowCount - barrierIndex - 1, random)
-    : randomIndex(barrierIndex, random)
-  const leafOnLeft = random() < 0.5
-  const orderedXs = leafOnLeft ? xs : [...xs].reverse()
-  const [leafX, ...fromLeafToHub] = orderedXs
-  const hubX = fromLeafToHub.at(-1)!
-  const barrierY = ys[barrierIndex]!
-  const longY = ys[longRowIndex]!
-  const shortY = ys[shortRowIndex]!
-  const shortXs = fromLeafToHub.slice(-(crossingCount + 1))
+  // Each three-row gadget has one outer rung that can close a planar cycle. Its inner rungs cross
+  // the forced leaf-to-hub guard, keeping the legal graph a cactus when several cycles are selected.
+  for (let gadgetIndex = 0; gadgetIndex < gadgetCount; gadgetIndex += 1) {
+    const nonHubCount = columnCounts[gadgetIndex]! - 1
+    const gadgetXs = [...orderedXs.slice(xIndex, xIndex + nonHubCount), hubX]
+    const [outerX, leafX, ...fromLeafToHub] = gadgetXs
+    const [topY, barrierY, bottomY] = ys.slice(gadgetIndex * 3, gadgetIndex * 3 + 3)
+    const [longY, shortY] = random() < 0.5 ? [topY!, bottomY!] : [bottomY!, topY!]
+    const shortXs = [outerX!, ...fromLeafToHub.slice(-rungCounts[gadgetIndex]!)]
 
-  // The leaf-to-hub corridor crosses every otherwise cycle-forming rung between the two rows.
-  // Its leaf clue forces that guard active, leaving a visible tree whose edge values are unique.
-  const positions = [
-    { x: leafX!, y: barrierY },
-    { x: hubX, y: barrierY },
-    ...fromLeafToHub.map((x) => ({ x, y: longY })),
-    ...shortXs.map((x) => ({ x, y: shortY })),
-    ...ys
-      .filter((_, index) => ![barrierIndex, longRowIndex, shortRowIndex].includes(index))
-      .map((y) => ({ x: hubX, y })),
-  ]
+    positions.push(
+      { x: leafX!, y: barrierY! },
+      { x: hubX, y: barrierY! },
+      ...[outerX!, ...fromLeafToHub].map((x) => ({ x, y: longY })),
+      ...shortXs.map((x) => ({ x, y: shortY })),
+    )
+    xIndex += nonHubCount
+  }
 
   return positions.map(({ x, y }, index) => ({ id: `i${index}`, x, y, clue: 0 }))
 }
@@ -139,6 +146,14 @@ function buildConnectedPlanarSolution(
   if (islands.length === 0) return undefined
 
   const islandById = new Map(islands.map((island) => [island.id, island]))
+  const corridorCounts = new Map(islands.map(({ id }) => [id, 0]))
+  for (const corridor of corridors) {
+    corridorCounts.set(corridor.a, corridorCounts.get(corridor.a)! + 1)
+    corridorCounts.set(corridor.b, corridorCounts.get(corridor.b)! + 1)
+  }
+  const guardCorridors = corridors.filter(
+    (corridor) => corridorCounts.get(corridor.a) === 1 || corridorCounts.get(corridor.b) === 1,
+  )
   const visited = new Set([islands[0]!.id])
   const activeCorridors: Corridor[] = []
   const solution: BridgeCounts = {}
@@ -147,12 +162,13 @@ function buildConnectedPlanarSolution(
     const candidates = corridors.filter(
       (corridor) =>
         visited.has(corridor.a) !== visited.has(corridor.b) &&
+        !crossesAny(corridor, guardCorridors, islandById) &&
         !crossesAny(corridor, activeCorridors, islandById),
     )
     if (candidates.length === 0) return undefined
 
     const corridor = candidates[randomIndex(candidates.length, random)]!
-    solution[corridor.id] = random() < config.doubleRate ? 2 : 1
+    solution[corridor.id] = sampleBridgeCount(config.doubleRate, random)
     activeCorridors.push(corridor)
     visited.add(visited.has(corridor.a) ? corridor.b : corridor.a)
   }
@@ -161,7 +177,7 @@ function buildConnectedPlanarSolution(
     if (solution[corridor.id] || random() >= config.extraEdgeRate) continue
     if (crossesAny(corridor, activeCorridors, islandById)) continue
 
-    solution[corridor.id] = random() < config.doubleRate ? 2 : 1
+    solution[corridor.id] = sampleBridgeCount(config.doubleRate, random)
     activeCorridors.push(corridor)
   }
 
@@ -234,6 +250,10 @@ function chooseCoordinates(size: number, count: number, random: Random) {
   )
     .slice(0, count)
     .sort((left, right) => left - right)
+}
+
+function sampleBridgeCount(doubleRate: number, random: Random) {
+  return random() < doubleRate ? 2 : 1
 }
 
 function randomIndex(length: number, random: Random) {

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cloneFallback } from './fallbacks'
 import { CATEGORY_CONFIG, generatePuzzle } from './generator'
+import { corridorsCross, getVisibleCorridors } from './geometry'
 import { evaluatePuzzle } from './rules'
 import { countSolutions } from './solver'
 import type { HashiCategory } from './types'
@@ -46,6 +47,72 @@ describe('Hashi puzzle generation', () => {
     expect(Math.abs(doubleShare - CATEGORY_CONFIG[category].doubleRate)).toBeLessThan(0.08)
     expect(oddClueShare).toBeGreaterThan(0.1)
     expect(new Set(clues).size).toBeGreaterThanOrEqual(4)
+  })
+
+  it.each([
+    ['weekly', 123457],
+    ['monthly', 123456],
+  ] as const)(
+    'generates a representative non-crossing %s puzzle with a cycle',
+    (category, seed) => {
+      const { puzzle, solution } = generatePuzzle(category, seed)
+      const islandById = new Map(puzzle.islands.map((island) => [island.id, island]))
+      const selected = getVisibleCorridors(puzzle.islands).filter(({ id }) => solution[id] > 0)
+
+      expect(puzzle.id).not.toBe(`fallback-${category}`)
+      expect(selected.length).toBeGreaterThan(puzzle.islands.length - 1)
+      expect(
+        selected.every((first, firstIndex) =>
+          selected
+            .slice(firstIndex + 1)
+            .every(
+              (second) =>
+                !corridorsCross(
+                  { a: islandById.get(first.a)!, b: islandById.get(first.b)! },
+                  { a: islandById.get(second.a)!, b: islandById.get(second.b)! },
+                ),
+            ),
+        ),
+      ).toBe(true)
+    },
+  )
+
+  it('uses category extra-edge rates across deterministic samples', () => {
+    const observedRates = Object.fromEntries(
+      categories.map((category) => {
+        let selectedSurplus = 0
+        let availableSurplus = 0
+
+        for (let seed = 0; seed < 24; seed += 1) {
+          const { puzzle, solution } = generatePuzzle(category, 800_000 + seed)
+          const corridors = getVisibleCorridors(puzzle.islands)
+          const islandById = new Map(puzzle.islands.map((island) => [island.id, island]))
+          const selected = corridors.filter(({ id }) => solution[id] > 0)
+          const compatible = corridors.filter(
+            (candidate) =>
+              solution[candidate.id] > 0 ||
+              selected.every(
+                (active) =>
+                  !corridorsCross(
+                    { a: islandById.get(candidate.a)!, b: islandById.get(candidate.b)! },
+                    { a: islandById.get(active.a)!, b: islandById.get(active.b)! },
+                  ),
+              ),
+          )
+
+          expect(puzzle.id).not.toBe(`fallback-${category}`)
+          expect(puzzle.islands).toHaveLength(CATEGORY_CONFIG[category].targetIslands)
+          selectedSurplus += selected.length - puzzle.islands.length + 1
+          availableSurplus += compatible.length - puzzle.islands.length + 1
+        }
+
+        const observedRate = availableSurplus === 0 ? 0 : selectedSurplus / availableSurplus
+        expect(Math.abs(observedRate - CATEGORY_CONFIG[category].extraEdgeRate)).toBeLessThan(0.1)
+        return [category, observedRate]
+      }),
+    ) as Record<HashiCategory, number>
+
+    expect(observedRates.monthly).toBeGreaterThan(observedRates.intro + 0.12)
   })
 
   it('returns the validated fallback when the overall generation budget is exhausted', () => {
