@@ -52,7 +52,7 @@
     "eslint-plugin-vue": "~10.9.0",
     "highlight.js": "^11.11.1",
     "jiti": "^2.5.1",
-    "jsdom": "^30.0.1",
+    "jsdom": "^26.1.0",
     "markdown-it-highlightjs": "^4.2.0",
     "npm-run-all2": "^9.0.2",
     "oxlint": "~1.70.0",
