@@ -104,6 +104,12 @@ const baseSearchGroups = [
         to: '/watermark',
         icon: 'i-lucide-fingerprint',
       },
+      {
+        label: 'Hashi',
+        suffix: 'Bridge-building logic puzzle',
+        to: '/hashi',
+        icon: 'i-lucide-git-branch',
+      },
     ],
   },
   {
@@ -177,6 +183,11 @@ const links = computed<NavigationMenuItem[]>(() => [
         label: 'LLM Watermark',
         icon: 'i-lucide-fingerprint',
         to: '/watermark',
+      },
+      {
+        label: 'Hashi',
+        icon: 'i-lucide-git-branch',
+        to: '/hashi',
       },
       {
         label: 'Stocks',

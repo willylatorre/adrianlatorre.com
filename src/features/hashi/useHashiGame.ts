@@ -1,5 +1,7 @@
 import { computed, getCurrentScope, onScopeDispose, ref } from 'vue'
 import { generatePuzzle } from './generator'
+import { cloneFallback } from './fallbacks'
+import type { GeneratePuzzleMessage, GeneratedPuzzleMessage } from './generator.worker'
 import { corridorsCross, getVisibleCorridors } from './geometry'
 import {
   loadHashiState,
@@ -32,6 +34,14 @@ export interface UseHashiGameOptions extends Omit<HashiGameOptions, 'initialStat
   initialPuzzle?: HashiPuzzle
   defaultCategory?: HashiCategory
   now?: () => number
+  workerFactory?: () => HashiPuzzleWorker | null
+}
+
+export interface HashiPuzzleWorker {
+  onmessage: ((event: MessageEvent<GeneratedPuzzleMessage>) => void) | null
+  onerror: ((event: Event) => void) | null
+  postMessage(message: GeneratePuzzleMessage): void
+  terminate(): void
 }
 
 export interface HashiGame {
@@ -47,6 +57,7 @@ export interface HashiGame {
   reset(): void
   newPuzzle(): void
   selectCategory(category: HashiCategory): void
+  replaceGeneratedPuzzle(puzzle: HashiPuzzle): void
 }
 
 export function createHashiGame(
@@ -57,7 +68,7 @@ export function createHashiGame(
   const restored = options.initialState
   let puzzle = restored?.puzzle ?? initialPuzzle
   let preferredCategory = restored?.preferredCategory ?? puzzle.category
-  let bridgeCounts = { ...(restored?.bridgeCounts ?? {}) }
+  let bridgeCounts = { ...restored?.bridgeCounts }
   let history = [...(restored?.history ?? [])]
   let evaluation = evaluatePuzzle(puzzle, bridgeCounts)
   let startedAt = restored?.startedAt ?? now()
@@ -87,7 +98,11 @@ export function createHashiGame(
 
   const replacePuzzle = (category: HashiCategory) => {
     puzzleSerial += 1
-    puzzle = puzzleGenerator(category, Math.floor(now()) + puzzleSerial)
+    replaceGeneratedPuzzle(puzzleGenerator(category, Math.floor(now()) + puzzleSerial))
+  }
+
+  const replaceGeneratedPuzzle = (nextPuzzle: HashiPuzzle) => {
+    puzzle = nextPuzzle
     bridgeCounts = {}
     history = []
     startedAt = now()
@@ -143,7 +158,7 @@ export function createHashiGame(
       history = history.slice(0, -1)
       bridgeCounts = { ...bridgeCounts, [entry.corridorId]: entry.previous }
       evaluation = evaluatePuzzle(puzzle, bridgeCounts)
-      solvedAt = evaluation.solved ? solvedAt ?? now() : null
+      solvedAt = evaluation.solved ? (solvedAt ?? now()) : null
       changed()
       return true
     },
@@ -164,6 +179,11 @@ export function createHashiGame(
       replacePuzzle(category)
       changed()
     },
+    replaceGeneratedPuzzle(nextPuzzle) {
+      preferredCategory = nextPuzzle.category
+      replaceGeneratedPuzzle(nextPuzzle)
+      changed()
+    },
   }
 }
 
@@ -173,11 +193,9 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
   const clock = ref(now())
   const restored = loadHashiState(options.storage)
   const defaultCategory = options.defaultCategory ?? 'intro'
-  const puzzleGenerator = options.generatePuzzle ?? defaultPuzzleGenerator
+  const puzzleGenerator = options.generatePuzzle ?? fallbackPuzzleGenerator
   const initialPuzzle =
-    restored?.puzzle ??
-    options.initialPuzzle ??
-    puzzleGenerator(defaultCategory, Math.floor(now()))
+    restored?.puzzle ?? options.initialPuzzle ?? puzzleGenerator(defaultCategory, Math.floor(now()))
   const game = createHashiGame(initialPuzzle, now, {
     initialState: restored ?? undefined,
     storage: options.storage,
@@ -186,17 +204,79 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
       revision.value += 1
     },
   })
+  let worker: HashiPuzzleWorker | null = null
+  let workerFailed = false
+  let activeRequestId = 0
+
+  const discardWorker = () => {
+    worker?.terminate()
+    worker = null
+  }
+
+  const requestPuzzle = (category: HashiCategory) => {
+    if (options.generatePuzzle || workerFailed) return
+
+    const requestId = activeRequestId + 1
+    activeRequestId = requestId
+
+    if (!worker) {
+      try {
+        worker = (options.workerFactory ?? createBrowserPuzzleWorker)()
+      } catch {
+        workerFailed = true
+        return
+      }
+      if (!worker) {
+        workerFailed = true
+        return
+      }
+      worker.onmessage = (event) => {
+        const { data } = event
+        if (
+          data.type !== 'generated' ||
+          data.requestId !== activeRequestId ||
+          data.puzzle.category !== game.preferredCategory ||
+          game.history.length > 0
+        ) {
+          return
+        }
+        game.replaceGeneratedPuzzle(data.puzzle)
+      }
+      worker.onerror = () => {
+        workerFailed = true
+        discardWorker()
+      }
+    }
+
+    try {
+      worker.postMessage({
+        type: 'generate',
+        category,
+        seed: Math.floor(now()) + requestId,
+        requestId,
+      })
+    } catch {
+      workerFailed = true
+      discardWorker()
+    }
+  }
+
   const value = <T>(read: () => T) =>
     computed(() => {
-      revision.value
+      void revision.value
       return read()
     })
   if (getCurrentScope()) {
     const timer = setInterval(() => {
       if (game.solvedAt === null) clock.value = now()
     }, 1_000)
-    onScopeDispose(() => clearInterval(timer))
+    onScopeDispose(() => {
+      clearInterval(timer)
+      discardWorker()
+    })
   }
+
+  if (!restored && !options.initialPuzzle) requestPuzzle(defaultCategory)
 
   return {
     puzzle: value(() => game.puzzle),
@@ -206,20 +286,37 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     evaluation: value(() => game.evaluation),
     solvedAt: value(() => game.solvedAt),
     elapsedMs: computed(() => {
-      revision.value
-      clock.value
+      void revision.value
+      void clock.value
       return game.elapsedMs
     }),
     cycleCorridor: game.cycleCorridor,
     undo: game.undo,
     reset: game.reset,
-    newPuzzle: game.newPuzzle,
-    selectCategory: game.selectCategory,
+    newPuzzle: () => {
+      game.newPuzzle()
+      requestPuzzle(game.preferredCategory)
+    },
+    selectCategory: (category: HashiCategory) => {
+      game.selectCategory(category)
+      requestPuzzle(category)
+    },
   }
 }
 
 function defaultPuzzleGenerator(category: HashiCategory, seed: number): HashiPuzzle {
   return generatePuzzle(category, seed).puzzle
+}
+
+function fallbackPuzzleGenerator(category: HashiCategory): HashiPuzzle {
+  return cloneFallback(category).puzzle
+}
+
+function createBrowserPuzzleWorker(): HashiPuzzleWorker | null {
+  if (typeof Worker === 'undefined') return null
+  return new Worker(new URL('./generator.worker.ts', import.meta.url), {
+    type: 'module',
+  }) as unknown as HashiPuzzleWorker
 }
 
 function wouldCross(candidate: Corridor, puzzle: HashiPuzzle, counts: BridgeCounts) {

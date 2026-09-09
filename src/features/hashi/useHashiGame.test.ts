@@ -2,7 +2,35 @@ import { effectScope } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { loadHashiState, saveHashiState, type HashiStorage } from './persistence'
 import { createHashiGame, useHashiGame } from './useHashiGame'
-import type { HashiPuzzle } from './types'
+import type { HashiCategory, HashiPuzzle } from './types'
+
+type WorkerRequest = {
+  type: 'generate'
+  category: HashiCategory
+  seed: number
+  requestId: number
+}
+
+class PuzzleWorkerDouble {
+  onmessage:
+    | ((event: MessageEvent<{ type: 'generated'; puzzle: HashiPuzzle; requestId: number }>) => void)
+    | null = null
+  onerror: ((event: Event) => void) | null = null
+  requests: WorkerRequest[] = []
+  terminated = false
+
+  postMessage(message: WorkerRequest) {
+    this.requests.push(message)
+  }
+
+  terminate() {
+    this.terminated = true
+  }
+
+  deliver(requestId: number, puzzle: HashiPuzzle) {
+    this.onmessage?.({ data: { type: 'generated', requestId, puzzle } } as MessageEvent)
+  }
+}
 
 const fixedPuzzle: HashiPuzzle = {
   id: 'fixed',
@@ -163,5 +191,63 @@ describe('Hashi game state', () => {
     expect(game.preferredCategory.value).toBe('daily')
     expect(game.puzzle.value.id).toBe('saved')
     expect(game.history.value).toEqual([{ corridorId: 'a:b', previous: 0 }])
+  })
+
+  it('keeps the latest worker puzzle when category changes race', () => {
+    const worker = new PuzzleWorkerDouble()
+    const dailyPuzzle = { ...fixedPuzzle, id: 'daily-worker', category: 'daily' as const }
+    const freshDailyPuzzle = {
+      ...fixedPuzzle,
+      id: 'daily-worker-fresh',
+      category: 'daily' as const,
+    }
+    const game = useHashiGame({
+      now: () => 1_000,
+      storage: null,
+      workerFactory: () => worker,
+    })
+
+    expect(game.puzzle.value.id).toBe('fallback-intro')
+    expect(worker.requests).toMatchObject([{ category: 'intro', requestId: 1 }])
+
+    game.selectCategory('daily')
+    game.newPuzzle()
+    worker.deliver(2, dailyPuzzle)
+
+    expect(game.preferredCategory.value).toBe('daily')
+    expect(game.puzzle.value.id).toBe('fallback-daily')
+
+    worker.deliver(3, freshDailyPuzzle)
+
+    expect(game.puzzle.value).toEqual(freshDailyPuzzle)
+    expect(game.bridgeCounts.value).toEqual({})
+  })
+
+  it('stays playable with a bundled fallback when the worker is unavailable', () => {
+    const game = useHashiGame({
+      now: () => 1_000,
+      storage: null,
+      workerFactory: () => null,
+    })
+
+    expect(game.puzzle.value.id).toBe('fallback-intro')
+    game.selectCategory('monthly')
+    expect(game.puzzle.value.id).toBe('fallback-monthly')
+  })
+
+  it('keeps fallback progress when its worker response arrives late', () => {
+    const worker = new PuzzleWorkerDouble()
+    const generatedPuzzle = { ...fixedPuzzle, id: 'generated-intro' }
+    const game = useHashiGame({
+      now: () => 1_000,
+      storage: null,
+      workerFactory: () => worker,
+    })
+
+    game.cycleCorridor('i0:i1')
+    worker.deliver(1, generatedPuzzle)
+
+    expect(game.puzzle.value.id).toBe('fallback-intro')
+    expect(game.bridgeCounts.value['i0:i1']).toBe(1)
   })
 })

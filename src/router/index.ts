@@ -57,6 +57,11 @@ const router = createRouter({
       component: lazy(() => import('../pages/WatermarkPlaygroundPage.vue')),
     },
     {
+      path: '/hashi',
+      name: 'Hashi',
+      component: lazy(() => import('../pages/HashiPage.vue')),
+    },
+    {
       path: '/media',
       name: 'Media',
       component: lazy(() => import('../pages/MediaPage.vue')),
