@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import HashiBoard from '../components/hashi/HashiBoard.vue'
 import HashiControls from '../components/hashi/HashiControls.vue'
 import { useHashiGame } from '../features/hashi/useHashiGame'
+import HashiLeaderboard from '../components/hashi/HashiLeaderboard.vue'
+import { useHashiLeaderboard } from '../features/hashi/useHashiLeaderboard'
 
 const game = useHashiGame()
+const leaderboard = useHashiLeaderboard()
+const nicknameDialogOpen = ref(false)
+const nickname = ref('')
+const pendingScore = ref<{ durationMs: number; puzzleFingerprint: string } | null>(null)
+const submittedFingerprints = new Set<string>()
 
 const categoryLabels = {
   intro: 'Intro puzzle',
@@ -21,6 +28,53 @@ const formattedElapsed = computed(() => {
 
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 })
+const validNickname = computed(
+  () => nickname.value.trim().length >= 1 && nickname.value.trim().length <= 20,
+)
+
+async function loadLeaderboard() {
+  await leaderboard.load(game.preferredCategory.value)
+}
+
+async function maybeQualify() {
+  const fingerprint = game.puzzle.value.id
+  if (!game.evaluation.value.solved || submittedFingerprints.has(fingerprint) || pendingScore.value)
+    return
+  const entries = await leaderboard.load(game.preferredCategory.value)
+  if (!leaderboard.error.value && leaderboard.qualifies(game.elapsedMs.value, entries)) {
+    pendingScore.value = { durationMs: game.elapsedMs.value, puzzleFingerprint: fingerprint }
+    nickname.value = ''
+    nicknameDialogOpen.value = true
+  }
+}
+
+async function submitScore() {
+  if (!pendingScore.value || !validNickname.value) return
+  const saved = await leaderboard.submit({
+    category: game.preferredCategory.value,
+    puzzleFingerprint: pendingScore.value.puzzleFingerprint,
+    nickname: nickname.value.trim(),
+    durationMs: pendingScore.value.durationMs,
+  })
+  if (!saved) return
+  submittedFingerprints.add(pendingScore.value.puzzleFingerprint)
+  pendingScore.value = null
+  nicknameDialogOpen.value = false
+}
+
+function discardScore() {
+  pendingScore.value = null
+  nicknameDialogOpen.value = false
+}
+
+onMounted(loadLeaderboard)
+watch(() => game.preferredCategory.value, loadLeaderboard)
+watch(
+  () => game.evaluation.value.solved,
+  (solved) => {
+    if (solved) void maybeQualify()
+  },
+)
 </script>
 
 <template>
@@ -111,10 +165,47 @@ const formattedElapsed = computed(() => {
       class="hashi-leaderboard"
       aria-labelledby="hashi-leaderboard-title"
     >
-      <p class="hashi-kicker">Coming next</p>
-      <h2 id="hashi-leaderboard-title">Leaderboard</h2>
-      <p>Fast solves will have a quiet place here soon.</p>
+      <HashiLeaderboard
+        :category="game.preferredCategory.value"
+        :entries="leaderboard.entries.value"
+        :loading="leaderboard.loading.value"
+        :error="leaderboard.error.value"
+        @retry="loadLeaderboard"
+      />
     </section>
+
+    <UModal
+      v-model:open="nicknameDialogOpen"
+      :dismissible="true"
+      @update:open="(open) => !open && discardScore()"
+    >
+      <template #content>
+        <form class="hashi-nickname-dialog" @submit.prevent="submitScore">
+          <p class="hashi-kicker">Top five time</p>
+          <h2>Put a name on it?</h2>
+          <p>Your solve joins the {{ categoryLabel.toLowerCase() }} board.</p>
+          <label for="hashi-nickname">Nickname</label>
+          <UInput
+            id="hashi-nickname"
+            v-model="nickname"
+            maxlength="20"
+            autocomplete="nickname"
+            autofocus
+          />
+          <div class="hashi-nickname-actions">
+            <UButton type="button" color="neutral" variant="ghost" @click="discardScore"
+              >Not now</UButton
+            >
+            <UButton
+              type="submit"
+              color="primary"
+              :disabled="!validNickname || leaderboard.loading.value"
+              >Save time</UButton
+            >
+          </div>
+        </form>
+      </template>
+    </UModal>
   </main>
 </template>
 
@@ -272,7 +363,6 @@ const formattedElapsed = computed(() => {
 
 .hashi-leaderboard {
   margin-top: clamp(2.2rem, 6vw, 4rem);
-  padding: 1.2rem 0 0;
 }
 
 .hashi-leaderboard h2 {
@@ -286,6 +376,34 @@ const formattedElapsed = computed(() => {
   margin: 0.35rem 0 0;
   color: var(--site-muted);
   font-size: 0.86rem;
+}
+
+.hashi-nickname-dialog {
+  width: min(100vw - 2rem, 24rem);
+  padding: 1.5rem;
+  background: var(--site-surface);
+}
+.hashi-nickname-dialog h2 {
+  margin: 0.55rem 0 0;
+  font-size: 1.45rem;
+  letter-spacing: -0.04em;
+}
+.hashi-nickname-dialog > p:not(.hashi-kicker) {
+  margin: 0.45rem 0 1.3rem;
+  color: var(--site-muted);
+  font-size: 0.9rem;
+}
+.hashi-nickname-dialog label {
+  display: block;
+  margin-bottom: 0.45rem;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+.hashi-nickname-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  margin-top: 1.1rem;
 }
 
 @media (max-width: 700px) {

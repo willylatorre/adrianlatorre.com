@@ -48,3 +48,23 @@ export interface ImageGenerationResponse {
 export interface OrchestratorRequest {
   prompt: string
 }
+
+export type HashiCategory = 'intro' | 'daily' | 'weekly' | 'monthly'
+
+export interface HashiScore {
+  nickname: string
+  durationMs: number
+  createdAt: string
+}
+
+export interface HashiLeaderboardResponse {
+  category: HashiCategory
+  entries: HashiScore[]
+}
+
+export interface HashiScoreCreate {
+  category: HashiCategory
+  puzzleFingerprint: string
+  nickname: string
+  durationMs: number
+}
