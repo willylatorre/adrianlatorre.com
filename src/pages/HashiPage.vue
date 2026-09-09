@@ -76,7 +76,7 @@ const formattedElapsed = computed(() => {
     </section>
 
     <section data-section="rules" class="hashi-rules" aria-labelledby="hashi-rules-title">
-      <UCollapsible>
+      <UCollapsible :ui="{ content: 'motion-reduce:!animate-none' }">
         <template #default>
           <button
             id="hashi-rules-title"

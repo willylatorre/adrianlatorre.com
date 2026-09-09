@@ -9,4 +9,8 @@ describe('application routes', () => {
       expect.arrayContaining([expect.objectContaining({ path: '/hashi', name: 'Hashi' })]),
     )
   })
+
+  it('marks Hashi for the dashboard panel’s wide layout', () => {
+    expect(router.resolve('/hashi').meta).toMatchObject({ widePanel: true })
+  })
 })

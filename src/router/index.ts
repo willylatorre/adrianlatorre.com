@@ -59,6 +59,7 @@ const router = createRouter({
     {
       path: '/hashi',
       name: 'Hashi',
+      meta: { widePanel: true },
       component: lazy(() => import('../pages/HashiPage.vue')),
     },
     {

@@ -194,6 +194,7 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
   const restored = loadHashiState(options.storage)
   const defaultCategory = options.defaultCategory ?? 'intro'
   const puzzleGenerator = options.generatePuzzle ?? fallbackPuzzleGenerator
+  let gameActionRevision = 0
   const initialPuzzle =
     restored?.puzzle ?? options.initialPuzzle ?? puzzleGenerator(defaultCategory, Math.floor(now()))
   const game = createHashiGame(initialPuzzle, now, {
@@ -201,12 +202,14 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     storage: options.storage,
     generatePuzzle: puzzleGenerator,
     onChange: () => {
+      gameActionRevision += 1
       revision.value += 1
     },
   })
   let worker: HashiPuzzleWorker | null = null
   let workerFailed = false
   let activeRequestId = 0
+  let activeRequestGameRevision = 0
 
   const discardWorker = () => {
     worker?.terminate()
@@ -218,6 +221,7 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
 
     const requestId = activeRequestId + 1
     activeRequestId = requestId
+    activeRequestGameRevision = gameActionRevision
 
     if (!worker) {
       try {
@@ -236,7 +240,7 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
           data.type !== 'generated' ||
           data.requestId !== activeRequestId ||
           data.puzzle.category !== game.preferredCategory ||
-          game.history.length > 0
+          activeRequestGameRevision !== gameActionRevision
         ) {
           return
         }

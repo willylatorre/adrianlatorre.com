@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import type { NavigationMenuItem } from '@nuxt/ui'
 import AdrianStatus from './components/AdrianStatus.vue'
 import CoffeeCounter from './components/CoffeeCounter.vue'
@@ -9,6 +10,8 @@ import { formatBlogDate, parseBlogDateMs } from './utils/blogDate'
 import { buildBlogSidebarChildren } from './utils/blogSidebar'
 
 const isModalOpen = ref(false)
+const route = useRoute()
+const isWidePanel = computed(() => Boolean(route.meta.widePanel))
 
 type BlogPost = {
   slug: string
@@ -273,7 +276,10 @@ const links = computed<NavigationMenuItem[]>(() => [
         </template>
 
         <template #body>
-          <UContainer class="px-5 py-8 sm:px-8 lg:px-10 lg:py-14">
+          <UContainer
+            class="px-5 py-8 sm:px-8 lg:px-10 lg:py-14"
+            :style="isWidePanel ? { maxWidth: 'none' } : undefined"
+          >
             <RouterView />
           </UContainer>
         </template>

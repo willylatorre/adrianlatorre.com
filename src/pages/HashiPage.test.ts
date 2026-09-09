@@ -49,4 +49,10 @@ describe('HashiPage', () => {
     expect(legend.text()).toContain('Satisfied islands and bridges recede')
     expect(legend.text()).toContain('Overfilled islands need a bridge removed')
   })
+
+  it('disables the collapsible content animation for reduced motion', () => {
+    const wrapper = mount(HashiPage, { global: { plugins: [router] } })
+
+    expect(wrapper.get('[data-slot="content"]').classes()).toContain('motion-reduce:!animate-none')
+  })
 })

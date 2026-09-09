@@ -250,4 +250,38 @@ describe('Hashi game state', () => {
     expect(game.puzzle.value.id).toBe('fallback-intro')
     expect(game.bridgeCounts.value['i0:i1']).toBe(1)
   })
+
+  it('keeps a reset fallback when its pending worker response arrives', () => {
+    const worker = new PuzzleWorkerDouble()
+    const generatedPuzzle = { ...fixedPuzzle, id: 'generated-after-reset' }
+    const game = useHashiGame({
+      now: () => 1_000,
+      storage: null,
+      workerFactory: () => worker,
+    })
+
+    game.reset()
+    worker.deliver(1, generatedPuzzle)
+
+    expect(game.puzzle.value.id).toBe('fallback-intro')
+    expect(game.bridgeCounts.value).toEqual({})
+  })
+
+  it('keeps an undone fallback when its pending worker response arrives', () => {
+    const worker = new PuzzleWorkerDouble()
+    const generatedPuzzle = { ...fixedPuzzle, id: 'generated-after-undo' }
+    const game = useHashiGame({
+      now: () => 1_000,
+      storage: null,
+      workerFactory: () => worker,
+    })
+
+    game.cycleCorridor('i0:i1')
+    game.undo()
+    worker.deliver(1, generatedPuzzle)
+
+    expect(game.history.value).toEqual([])
+    expect(game.puzzle.value.id).toBe('fallback-intro')
+    expect(game.bridgeCounts.value['i0:i1']).toBe(0)
+  })
 })
