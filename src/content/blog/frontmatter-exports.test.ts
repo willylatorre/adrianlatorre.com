@@ -18,4 +18,12 @@ describe('blog markdown frontmatter exports', () => {
     expect(mod.date).toMatch(/^2026-08-17/)
     expect(mod.description).toMatch(/^I built a small playground to understand/)
   })
+
+  it('exports the Hashi build notes metadata', async () => {
+    const mod = await import('./notes-from-building-hashi-one-rule-at-a-time.md')
+
+    expect(mod.default).toBeTruthy()
+    expect(mod.title).toBe('Notes From Building Hashi One Rule At A Time')
+    expect(mod.date).toMatch(/^2026-09-08/)
+  })
 })

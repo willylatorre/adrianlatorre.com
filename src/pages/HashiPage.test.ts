@@ -7,7 +7,13 @@ import HashiPage from './HashiPage.vue'
 
 const router = createRouter({
   history: createMemoryHistory(),
-  routes: [{ path: '/', component: { template: '<div />' } }],
+  routes: [
+    { path: '/', component: { template: '<div />' } },
+    {
+      path: '/blog/notes-from-building-hashi-one-rule-at-a-time',
+      component: { template: '<div />' },
+    },
+  ],
 })
 
 beforeAll(async () => {

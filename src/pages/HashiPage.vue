@@ -172,6 +172,10 @@ watch(
         :error="leaderboard.error.value"
         @retry="loadLeaderboard"
       />
+      <RouterLink class="hashi-build-notes" to="/blog/notes-from-building-hashi-one-rule-at-a-time">
+        Read the build notes
+        <UIcon name="i-lucide-arrow-up-right" aria-hidden="true" />
+      </RouterLink>
     </section>
 
     <UModal
@@ -404,6 +408,20 @@ watch(
   justify-content: flex-end;
   gap: 0.45rem;
   margin-top: 1.1rem;
+}
+
+.hashi-build-notes {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 1rem;
+  color: var(--site-ink);
+  font-size: 0.84rem;
+  font-weight: 620;
+  text-decoration: none;
+}
+.hashi-build-notes:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 700px) {
