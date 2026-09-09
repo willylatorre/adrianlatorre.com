@@ -3,7 +3,7 @@ from pathlib import Path
 import json
 import logging
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, PlainTextResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,8 +13,13 @@ from wave_counter.fastapi import create_router
 
 from .api_football_service import ApiFootballService
 from .config import Settings, get_settings
+from .hashi_leaderboard import HashiLeaderboard
 from .models import (
     ChatRequest,
+    HashiCategory,
+    HashiLeaderboardResponse,
+    HashiScore,
+    HashiScoreCreate,
     ImageGenerationRequest,
     ImageGenerationResponse,
     OrchestratorRequest,
@@ -44,6 +49,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         database_path=settings.database_path,
         initial_counts={"coffee": 134},
     )
+    leaderboard = HashiLeaderboard(settings.database_path)
     app.include_router(create_router(counter), prefix="/api/waves")
     pages_dir = _resolve_pages_dir()
     openai_service = OpenAIService(settings.openai_api_key, pages_dir, settings.openai_model)
@@ -68,6 +74,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/api/ping", response_class=PlainTextResponse)
     async def ping() -> str:
         return "pong"
+
+    @app.get("/api/hashi/leaderboard", response_model=HashiLeaderboardResponse)
+    async def get_hashi_leaderboard(
+        category: HashiCategory,
+        limit: int = Query(5, ge=1, le=20),
+    ) -> HashiLeaderboardResponse:
+        return HashiLeaderboardResponse(category=category, entries=leaderboard.top(category, limit))
+
+    @app.post("/api/hashi/scores", response_model=HashiScore, status_code=201)
+    async def create_hashi_score(score: HashiScoreCreate) -> HashiScore:
+        return leaderboard.add(score)
 
     @app.post("/api/chat/message")
     async def send_message(

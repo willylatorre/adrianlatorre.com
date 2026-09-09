@@ -20,6 +20,71 @@ def build_client(tmp_path: Path) -> TestClient:
     return TestClient(app)
 
 
+def test_hashi_leaderboard_orders_times_and_isolates_categories(tmp_path: Path) -> None:
+    client = build_client(tmp_path)
+
+    for nickname, duration in [("Ada", 90_000), ("Lin", 45_000), ("Sam", 61_000)]:
+        response = client.post(
+            "/api/hashi/scores",
+            json={
+                "category": "daily",
+                "puzzleFingerprint": "a" * 16,
+                "nickname": nickname,
+                "durationMs": duration,
+            },
+        )
+        assert response.status_code == 201
+
+    response = client.post(
+        "/api/hashi/scores",
+        json={
+            "category": "weekly",
+            "puzzleFingerprint": "b" * 16,
+            "nickname": "Bea",
+            "durationMs": 1_000,
+        },
+    )
+    assert response.status_code == 201
+
+    body = client.get("/api/hashi/leaderboard?category=daily&limit=2").json()
+
+    assert body["category"] == "daily"
+    assert [entry["nickname"] for entry in body["entries"]] == ["Lin", "Sam"]
+    assert [entry["durationMs"] for entry in body["entries"]] == [45_000, 61_000]
+
+
+def test_hashi_score_rejects_bad_category_nickname_duration_and_fingerprint(tmp_path: Path) -> None:
+    client = build_client(tmp_path)
+
+    response = client.post(
+        "/api/hashi/scores",
+        json={
+            "category": "yearly",
+            "puzzleFingerprint": "x",
+            "nickname": "",
+            "durationMs": -1,
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_hashi_score_rejects_whitespace_only_nickname(tmp_path: Path) -> None:
+    client = build_client(tmp_path)
+
+    response = client.post(
+        "/api/hashi/scores",
+        json={
+            "category": "daily",
+            "puzzleFingerprint": "a" * 16,
+            "nickname": "   ",
+            "durationMs": 10_000,
+        },
+    )
+
+    assert response.status_code == 422
+
+
 def test_wave_counter_preserves_seed_total_and_records_events(tmp_path: Path) -> None:
     client = build_client(tmp_path)
 
