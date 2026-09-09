@@ -27,7 +27,7 @@ afterEach(() => {
 describe('HashiBoard', () => {
   it('emits cycle from click, Enter, and Space', async () => {
     const wrapper = mount(HashiBoard, { props: { puzzle, bridgeCounts: {} } })
-    const target = wrapper.get('[data-corridor="a:b"]')
+    const target = wrapper.get('[data-corridor-hit="a:b"]')
 
     await target.trigger('click')
     await target.trigger('keydown.enter')
@@ -36,13 +36,47 @@ describe('HashiBoard', () => {
     expect(wrapper.emitted('cycle')?.map(([id]) => id)).toEqual(['a:b', 'a:b', 'a:b'])
   })
 
+  it('keeps zero-bridge corridors interactive through their hit target', async () => {
+    const wrapper = mount(HashiBoard, { props: { puzzle, bridgeCounts: {} } })
+    const target = wrapper.get('[data-corridor-hit="c:d"]')
+
+    await target.trigger('click')
+    await target.trigger('keydown.enter')
+    await target.trigger('keydown.space')
+
+    expect(wrapper.emitted('cycle')?.map(([id]) => id)).toEqual(['c:d', 'c:d', 'c:d'])
+  })
+
   it('renders an expanded transparent corridor hit stroke', () => {
     const wrapper = mount(HashiBoard, { props: { puzzle, bridgeCounts: {} } })
-    const hit = wrapper.get('[data-corridor="a:b"] .hashi-hit')
+    const hit = wrapper.get('[data-corridor-hit="a:b"] .hashi-hit')
 
     expect(hit.attributes('stroke')).toBe('transparent')
     expect(hit.attributes('stroke-width')).toBe('28')
     expect(hit.attributes('pointer-events')).toBe('stroke')
+  })
+
+  it('renders global grid, bridge, hit, and island layers in order', () => {
+    const wrapper = mount(HashiBoard, {
+      props: { puzzle, bridgeCounts: { 'a:b': 1, 'c:d': 2 } },
+    })
+    const layers = wrapper.get('svg').element.children
+
+    expect([...layers].map((layer) => layer.getAttribute('class'))).toEqual([
+      'hashi-grid',
+      'hashi-bridges',
+      'hashi-hits',
+      'hashi-islands',
+    ])
+    expect(wrapper.findAll('.hashi-bridges .hashi-bridge')).toHaveLength(3)
+    expect(wrapper.findAll('.hashi-hits .hashi-hit')).toHaveLength(2)
+    expect(wrapper.get('.hashi-bridges').attributes('aria-hidden')).toBe('true')
+    expect(wrapper.get('.hashi-bridges').attributes('role')).toBeUndefined()
+    expect(wrapper.get('.hashi-bridges').attributes('tabindex')).toBeUndefined()
+    expect(wrapper.get('[data-corridor-hit="a:b"]').attributes()).toMatchObject({
+      role: 'button',
+      tabindex: '0',
+    })
   })
 
   it('uses one coordinate system for exact island and bridge geometry', () => {
@@ -70,7 +104,7 @@ describe('HashiBoard', () => {
       props: { puzzle, bridgeCounts: { 'a:b': 2 } },
     })
 
-    expect(wrapper.get('[data-corridor="a:b"]').attributes('aria-label')).toContain('2 bridges')
+    expect(wrapper.get('[data-corridor-hit="a:b"]').attributes('aria-label')).toContain('2 bridges')
     expect(wrapper.get('[data-island="a"]').classes()).toContain('is-overfilled')
     expect(wrapper.get('[data-island="a"]').attributes('aria-label')).toContain('overfilled')
     expect(wrapper.get('[data-island="a"] .hashi-island-status').text()).toBe('!')
@@ -83,6 +117,22 @@ describe('HashiBoard', () => {
 
     expect(wrapper.get('[data-island="a"]').classes()).toContain('is-satisfied')
     expect(wrapper.get('[data-corridor="a:b"] .hashi-bridge').classes()).toContain('is-satisfied')
+  })
+
+  it('recedes a bridge when exactly one endpoint is satisfied', () => {
+    const oneSatisfiedPuzzle = {
+      ...puzzle,
+      islands: puzzle.islands.map((island) =>
+        island.id === 'b' ? { ...island, clue: 2 } : island,
+      ),
+    }
+    const wrapper = mount(HashiBoard, {
+      props: { puzzle: oneSatisfiedPuzzle, bridgeCounts: { 'a:b': 1 } },
+    })
+
+    expect(wrapper.get('[data-island="a"]').classes()).toContain('is-satisfied')
+    expect(wrapper.get('[data-island="b"]').classes()).not.toContain('is-satisfied')
+    expect(wrapper.get('.hashi-bridges .hashi-bridge').classes()).toContain('is-satisfied')
   })
 })
 

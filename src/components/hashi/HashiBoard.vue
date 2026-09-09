@@ -117,70 +117,82 @@ function islandLabel(island: Island) {
         />
       </g>
 
-      <g
-        v-for="corridor in corridors"
-        :key="corridor.id"
-        class="hashi-corridor"
-        :class="corridorStateClasses(corridor)"
-        :data-corridor="corridor.id"
-        role="button"
-        tabindex="0"
-        :aria-label="corridorLabel(corridor)"
-        @click="emit('cycle', corridor.id)"
-        @keydown.enter.prevent="emit('cycle', corridor.id)"
-        @keydown.space.prevent="emit('cycle', corridor.id)"
-      >
-        <line
-          v-for="segment in bridgeSegmentsFor(corridor)"
-          :key="segmentKey(segment)"
-          class="hashi-bridge"
+      <g class="hashi-bridges" aria-hidden="true">
+        <g
+          v-for="corridor in corridors"
+          :key="corridor.id"
+          class="hashi-corridor"
           :class="corridorStateClasses(corridor)"
-          v-bind="segment"
-          aria-hidden="true"
-        />
-        <line
-          class="hashi-hit"
-          v-bind="hitSegment(corridor)"
-          stroke="transparent"
-          stroke-width="28"
-          pointer-events="stroke"
-          aria-hidden="true"
-        />
+          :data-corridor="corridor.id"
+        >
+          <line
+            v-for="segment in bridgeSegmentsFor(corridor)"
+            :key="segmentKey(segment)"
+            class="hashi-bridge"
+            :class="corridorStateClasses(corridor)"
+            v-bind="segment"
+          />
+        </g>
       </g>
 
-      <g
-        v-for="island in puzzle.islands"
-        :key="island.id"
-        class="hashi-island"
-        :class="`is-${islandStates.get(island.id)}`"
-        :data-island="island.id"
-        role="img"
-        :aria-label="islandLabel(island)"
-      >
-        <rect
-          :x="island.x * CELL_SIZE - ISLAND_HALF"
-          :y="island.y * CELL_SIZE - ISLAND_HALF"
-          :width="ISLAND_SIZE"
-          :height="ISLAND_SIZE"
-          rx="11"
-        />
-        <text
-          class="hashi-island-number"
-          :x="island.x * CELL_SIZE"
-          :y="island.y * CELL_SIZE"
-          aria-hidden="true"
+      <g class="hashi-hits">
+        <g
+          v-for="corridor in corridors"
+          :key="corridor.id"
+          class="hashi-corridor-hit"
+          :data-corridor-hit="corridor.id"
+          role="button"
+          tabindex="0"
+          :aria-label="corridorLabel(corridor)"
+          @click="emit('cycle', corridor.id)"
+          @keydown.enter.prevent="emit('cycle', corridor.id)"
+          @keydown.space.prevent="emit('cycle', corridor.id)"
         >
-          {{ island.clue }}
-        </text>
-        <text
-          v-if="islandStates.get(island.id) === 'overfilled'"
-          class="hashi-island-status"
-          :x="island.x * CELL_SIZE + 13"
-          :y="island.y * CELL_SIZE - 10"
-          aria-hidden="true"
+          <line
+            class="hashi-hit"
+            v-bind="hitSegment(corridor)"
+            stroke="transparent"
+            stroke-width="28"
+            pointer-events="stroke"
+          />
+        </g>
+      </g>
+
+      <g class="hashi-islands">
+        <g
+          v-for="island in puzzle.islands"
+          :key="island.id"
+          class="hashi-island"
+          :class="`is-${islandStates.get(island.id)}`"
+          :data-island="island.id"
+          role="img"
+          :aria-label="islandLabel(island)"
         >
-          !
-        </text>
+          <rect
+            :x="island.x * CELL_SIZE - ISLAND_HALF"
+            :y="island.y * CELL_SIZE - ISLAND_HALF"
+            :width="ISLAND_SIZE"
+            :height="ISLAND_SIZE"
+            rx="11"
+          />
+          <text
+            class="hashi-island-number"
+            :x="island.x * CELL_SIZE"
+            :y="island.y * CELL_SIZE"
+            aria-hidden="true"
+          >
+            {{ island.clue }}
+          </text>
+          <text
+            v-if="islandStates.get(island.id) === 'overfilled'"
+            class="hashi-island-status"
+            :x="island.x * CELL_SIZE + 13"
+            :y="island.y * CELL_SIZE - 10"
+            aria-hidden="true"
+          >
+            !
+          </text>
+        </g>
       </g>
     </svg>
   </div>
@@ -233,12 +245,17 @@ function islandLabel(island: Island) {
   transition: stroke 180ms ease-out;
 }
 
-.hashi-corridor:hover .hashi-hit,
-.hashi-corridor:focus-visible .hashi-hit {
+.hashi-corridor-hit {
+  cursor: pointer;
+  outline: none;
+}
+
+.hashi-corridor-hit:hover .hashi-hit,
+.hashi-corridor-hit:focus-visible .hashi-hit {
   stroke: color-mix(in oklch, var(--site-accent) 22%, transparent);
 }
 
-.hashi-corridor:focus-visible .hashi-hit {
+.hashi-corridor-hit:focus-visible .hashi-hit {
   stroke-dasharray: 3 3;
 }
 
