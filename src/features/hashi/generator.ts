@@ -244,12 +244,16 @@ function shuffled<T>(values: T[], random: Random) {
 }
 
 function chooseCoordinates(size: number, count: number, random: Random) {
-  return shuffled(
-    Array.from({ length: size - 2 }, (_, index) => index + 1),
-    random,
-  )
-    .slice(0, count)
-    .sort((left, right) => left - right)
+  if (count < 2 || count > size) return []
+
+  return [
+    0,
+    ...shuffled(
+      Array.from({ length: size - 2 }, (_, index) => index + 1),
+      random,
+    ).slice(0, count - 2),
+    size - 1,
+  ].sort((left, right) => left - right)
 }
 
 function sampleBridgeCount(doubleRate: number, random: Random) {

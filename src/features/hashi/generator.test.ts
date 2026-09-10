@@ -4,9 +4,19 @@ import { CATEGORY_CONFIG, generatePuzzle } from './generator'
 import { corridorsCross, getVisibleCorridors } from './geometry'
 import { evaluatePuzzle } from './rules'
 import { countSolutions } from './solver'
-import type { HashiCategory } from './types'
+import type { HashiCategory, HashiPuzzle } from './types'
 
 const categories: HashiCategory[] = ['intro', 'daily', 'weekly', 'monthly']
+
+function expectIslandsTouchEveryBoundary(puzzle: HashiPuzzle) {
+  const xs = puzzle.islands.map(({ x }) => x)
+  const ys = puzzle.islands.map(({ y }) => y)
+
+  expect(Math.min(...xs)).toBe(0)
+  expect(Math.max(...xs)).toBe(puzzle.width - 1)
+  expect(Math.min(...ys)).toBe(0)
+  expect(Math.max(...ys)).toBe(puzzle.height - 1)
+}
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -21,6 +31,7 @@ describe('Hashi puzzle generation', () => {
     expect(generated.puzzle.width).toBe(CATEGORY_CONFIG[category].width)
     expect(generated.puzzle.height).toBe(CATEGORY_CONFIG[category].height)
     expect(generated.puzzle.islands).toHaveLength(CATEGORY_CONFIG[category].targetIslands)
+    expectIslandsTouchEveryBoundary(generated.puzzle)
   })
 
   it('is deterministic for a supplied seed', () => {
@@ -143,6 +154,7 @@ describe('Hashi puzzle generation', () => {
     expect(countSolutions(fallback.puzzle, 2)).toBe(1)
     expect(fallback.puzzle.width).toBe(CATEGORY_CONFIG[category].width)
     expect(fallback.puzzle.height).toBe(CATEGORY_CONFIG[category].height)
+    expectIslandsTouchEveryBoundary(fallback.puzzle)
   })
 
   it('returns a generated puzzle through the worker protocol', async () => {
