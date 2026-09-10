@@ -46,6 +46,13 @@ for each island:
 
 puzzle = remove_the_solution_but_keep_the_numbers()`
 
+const boardBoundsSnippet = `coordinates = [first_edge, ...random_interior, last_edge]
+
+assert min(island.x) == 0
+assert max(island.x) == width - 1
+assert min(island.y) == 0
+assert max(island.y) == height - 1`
+
 const uniquenessSnippet = `solutions = solve(puzzle, stop_after = 2)
 
 if solutions == 1:
@@ -58,6 +65,7 @@ island_edge = island_size / 2
 
 bridge.start = first_center + direction * island_edge
 bridge.end = second_center - direction * island_edge
+nearest_bridge_length = cell_size - island_size
 click_target = same_line_with_a_wider_transparent_stroke`
 </script>
 
@@ -191,6 +199,14 @@ The more reliable direction is backward:
 
 First I place islands on the grid. From their visible corridors, I build a connected spanning network while refusing crossings. Some selected corridors receive double bridges, and the harder categories get more islands, more optional edges, and more doubles.
 
+Even the empty grid needs a rule. If a puzzle says it has 15 rows, there should be an island in row 1 and another in row 15. Otherwise it is really a 13-row puzzle wearing an oversized coat. The same applies to the first and last columns, so the random coordinate picker always keeps both edges and shuffles only the interior:
+
+<ProsePre language="text" :code="boardBoundsSnippet">
+  <ProseCode class="language-text">
+{{ boardBoundsSnippet }}
+  </ProseCode>
+</ProsePre>
+
 Once that hidden network exists, each clue is easy: add the bridge counts touching that island. The answer creates the question. Then I throw away the visible answer and keep the islands with their derived numbers.
 
 This guarantees that at least one solution exists and that it obeys the main rules. It does not guarantee that the solution is unique. A cycle can often redistribute bridges while preserving every island total, which is clever when a player discovers it and less charming when the generator shipped it by accident.
@@ -226,6 +242,8 @@ The fix was to derive every visual measurement from the same SVG coordinate syst
 <HashiArticleDemo kind="geometry" />
 
 Island centers live on grid coordinates multiplied by a fixed cell size. Bridges begin and end at the island edges, not at their centers and not in the gap a few pixels away. A double bridge uses equal offsets on either side of that centerline. Rounded-square islands sit above all bridge lines, and the grid sits behind everything.
+
+The shortest corridor needs room too. With 40 pixels between neighboring grid points and a 30-pixel island, even two adjacent islands leave a visible 10-pixel bridge. My earlier 38-pixel islands technically left a line, in the same sense that a cupboard gap technically counts as a hallway.
 
 SVG also gives every corridor a second line that the player never sees: a wide transparent stroke used only for clicking and keyboard focus. The visible bridge can stay thin and precise while the hit target remains forgiving. This is particularly important on an empty corridor, where the clickable thing has no visible bridge yet. A collection of absolutely positioned `div` elements could do the job, but SVG lets the drawing and its interactions share the same geometry instead of negotiating through CSS from neighboring countries.
 
