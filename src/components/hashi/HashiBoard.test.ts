@@ -47,6 +47,19 @@ describe('HashiBoard', () => {
     expect(wrapper.emitted('cycle')?.map(([id]) => id)).toEqual(['c:d', 'c:d', 'c:d'])
   })
 
+  it('removes button semantics and events in read-only diagrams', async () => {
+    const wrapper = mount(HashiBoard, {
+      props: { puzzle, bridgeCounts: { 'a:b': 1 }, interactive: false },
+    })
+    const target = wrapper.get('[data-corridor-hit="a:b"]')
+
+    await target.trigger('click')
+
+    expect(target.attributes('role')).toBeUndefined()
+    expect(target.attributes('tabindex')).toBeUndefined()
+    expect(wrapper.emitted('cycle')).toBeUndefined()
+  })
+
   it('renders an expanded transparent corridor hit stroke', () => {
     const wrapper = mount(HashiBoard, { props: { puzzle, bridgeCounts: {} } })
     const hit = wrapper.get('[data-corridor-hit="a:b"] .hashi-hit')

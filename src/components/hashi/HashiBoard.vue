@@ -15,10 +15,14 @@ const CELL_SIZE = 40
 const ISLAND_SIZE = 38
 const ISLAND_HALF = ISLAND_SIZE / 2
 
-const props = defineProps<{
-  puzzle: HashiPuzzle
-  bridgeCounts: BridgeCounts
-}>()
+const props = withDefaults(
+  defineProps<{
+    puzzle: HashiPuzzle
+    bridgeCounts: BridgeCounts
+    interactive?: boolean
+  }>(),
+  { interactive: true },
+)
 
 const emit = defineEmits<{
   cycle: [corridorId: string]
@@ -140,20 +144,21 @@ function islandLabel(island: Island) {
           v-for="corridor in corridors"
           :key="corridor.id"
           class="hashi-corridor-hit"
+          :class="{ 'is-readonly': !interactive }"
           :data-corridor-hit="corridor.id"
-          role="button"
-          tabindex="0"
+          :role="interactive ? 'button' : undefined"
+          :tabindex="interactive ? 0 : undefined"
           :aria-label="corridorLabel(corridor)"
-          @click="emit('cycle', corridor.id)"
-          @keydown.enter.prevent="emit('cycle', corridor.id)"
-          @keydown.space.prevent="emit('cycle', corridor.id)"
+          @click="interactive && emit('cycle', corridor.id)"
+          @keydown.enter.prevent="interactive && emit('cycle', corridor.id)"
+          @keydown.space.prevent="interactive && emit('cycle', corridor.id)"
         >
           <line
             class="hashi-hit"
             v-bind="hitSegment(corridor)"
             stroke="transparent"
             stroke-width="28"
-            pointer-events="stroke"
+            :pointer-events="interactive ? 'stroke' : 'none'"
           />
         </g>
       </g>
@@ -248,6 +253,10 @@ function islandLabel(island: Island) {
 .hashi-corridor-hit {
   cursor: pointer;
   outline: none;
+}
+
+.hashi-corridor-hit.is-readonly {
+  cursor: default;
 }
 
 .hashi-corridor-hit:hover .hashi-hit,

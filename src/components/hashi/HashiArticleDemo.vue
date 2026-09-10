@@ -173,11 +173,16 @@ function cycle(corridor: string) {
         <HashiBoard
           :puzzle="uniquePuzzle"
           :bridge-counts="{ [corridorId('unique-a', 'unique-b')]: 1 }"
+          :interactive="false"
         />
       </div>
       <div>
         <span class="hashi-demo-label">More than one</span>
-        <HashiBoard :puzzle="ambiguousPuzzle" :bridge-counts="ambiguousCounts" />
+        <HashiBoard
+          :puzzle="ambiguousPuzzle"
+          :bridge-counts="ambiguousCounts"
+          :interactive="false"
+        />
         <button type="button" class="hashi-demo-button" @click="toggled = !toggled">
           Show another answer
         </button>
@@ -200,7 +205,12 @@ function cycle(corridor: string) {
     </div>
 
     <div v-else class="hashi-demo-board" :class="`is-${kind}`">
-      <HashiBoard :puzzle="activePuzzle" :bridge-counts="displayCounts" @cycle="cycle" />
+      <HashiBoard
+        :puzzle="activePuzzle"
+        :bridge-counts="displayCounts"
+        :interactive="kind === 'cycle' || kind === 'crossing' || kind === 'totals'"
+        @cycle="cycle"
+      />
       <p v-if="kind === 'visible'" class="hashi-demo-note">
         The nearer center island blocks the faded island behind it.
       </p>
