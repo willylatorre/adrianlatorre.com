@@ -69,6 +69,43 @@ describe('HashiBoard', () => {
     expect(hit.attributes('pointer-events')).toBe('stroke')
   })
 
+  it('keeps the wide hit stroke separate from the thin focus indicator', () => {
+    const wrapper = mount(HashiBoard, { props: { puzzle, bridgeCounts: {} } })
+    const target = wrapper.get('[data-corridor-hit="a:b"]')
+
+    expect(target.get('.hashi-hit').attributes()).toMatchObject({
+      stroke: 'transparent',
+      'stroke-width': '28',
+    })
+    expect(target.get('.hashi-focus').attributes()).toMatchObject({
+      'aria-hidden': 'true',
+      'pointer-events': 'none',
+      'stroke-width': '3',
+    })
+  })
+
+  it('leaves a visible bridge between islands in neighboring cells', () => {
+    const adjacentPuzzle: HashiPuzzle = {
+      id: 'adjacent',
+      category: 'intro',
+      width: 2,
+      height: 1,
+      islands: [
+        { id: 'a', x: 0, y: 0, clue: 1 },
+        { id: 'b', x: 1, y: 0, clue: 1 },
+      ],
+    }
+    const wrapper = mount(HashiBoard, {
+      props: { puzzle: adjacentPuzzle, bridgeCounts: { 'a:b': 1 } },
+    })
+
+    expect(wrapper.get('[data-island="a"] rect').attributes('width')).toBe('30')
+    expect(wrapper.get('[data-corridor="a:b"] .hashi-bridge').attributes()).toMatchObject({
+      x1: '15',
+      x2: '25',
+    })
+  })
+
   it('renders global grid, bridge, hit, and island layers in order', () => {
     const wrapper = mount(HashiBoard, {
       props: { puzzle, bridgeCounts: { 'a:b': 1, 'c:d': 2 } },
@@ -101,14 +138,16 @@ describe('HashiBoard', () => {
     const vertical = wrapper.findAll('[data-corridor="c:d"] .hashi-bridge')
 
     expect(island.attributes()).toMatchObject({
-      x: '21',
-      y: '21',
-      width: '38',
-      height: '38',
+      x: '25',
+      y: '25',
+      width: '30',
+      height: '30',
       rx: '11',
     })
-    expect(horizontal.attributes()).toMatchObject({ x1: '59', y1: '40', x2: '181', y2: '40' })
+    expect(horizontal.attributes()).toMatchObject({ x1: '55', y1: '40', x2: '185', y2: '40' })
     expect(vertical.map((line) => line.attributes('x1'))).toEqual(['117', '123'])
+    expect(vertical.map((line) => line.attributes('y1'))).toEqual(['135', '135'])
+    expect(vertical.map((line) => line.attributes('y2'))).toEqual(['185', '185'])
     expect(wrapper.get('svg').attributes('viewBox')).toBe('-20 -20 280 280')
   })
 

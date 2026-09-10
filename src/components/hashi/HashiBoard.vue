@@ -12,7 +12,7 @@ import type {
 } from '../../features/hashi/types'
 
 const CELL_SIZE = 40
-const ISLAND_SIZE = 38
+const ISLAND_SIZE = 30
 const ISLAND_HALF = ISLAND_SIZE / 2
 
 const props = withDefaults(
@@ -160,6 +160,14 @@ function islandLabel(island: Island) {
             stroke-width="28"
             :pointer-events="interactive ? 'stroke' : 'none'"
           />
+          <line
+            class="hashi-focus"
+            v-bind="hitSegment(corridor)"
+            stroke="transparent"
+            stroke-width="3"
+            pointer-events="none"
+            aria-hidden="true"
+          />
         </g>
       </g>
 
@@ -246,7 +254,7 @@ function islandLabel(island: Island) {
     opacity 180ms ease-out;
 }
 
-.hashi-hit {
+.hashi-focus {
   transition: stroke 180ms ease-out;
 }
 
@@ -259,12 +267,12 @@ function islandLabel(island: Island) {
   cursor: default;
 }
 
-.hashi-corridor-hit:hover .hashi-hit,
-.hashi-corridor-hit:focus-visible .hashi-hit {
+.hashi-corridor-hit:hover .hashi-focus,
+.hashi-corridor-hit:focus-visible .hashi-focus {
   stroke: color-mix(in oklch, var(--site-accent) 22%, transparent);
 }
 
-.hashi-corridor-hit:focus-visible .hashi-hit {
+.hashi-corridor-hit:focus-visible .hashi-focus {
   stroke-dasharray: 3 3;
 }
 
