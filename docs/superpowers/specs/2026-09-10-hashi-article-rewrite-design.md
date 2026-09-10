@@ -28,6 +28,23 @@ Replace the current short Hashi build note with a useful, entertaining engineeri
 
 Each snippet answers one practical question and appears immediately after the idea it demonstrates. Snippets should cover visible corridors, bridge cycling, crossing rejection, island totals, connectivity, solution-first generation, uniqueness checking, and SVG edge endpoints.
 
+## Mini board demonstrations
+
+Place a compact SVG demonstration beside or immediately after each pseudocode example. Reuse the production `HashiBoard`, game state, geometry helpers, and rule evaluation rather than maintaining a separate interpretation of Hashi.
+
+Use interaction only when it makes the rule easier to understand:
+
+- **Visible neighbors:** A fixed annotated board highlights the nearest legal corridors and dims a farther island blocked by a nearer one.
+- **Bridge cycle:** A live corridor cycles through `0 → 1 → 2 → 0` using the production click and keyboard interaction.
+- **Crossings:** One bridge starts active. Attempting the perpendicular corridor is refused by the production crossing rule and accompanied by concise visible feedback.
+- **Island totals:** A live small board lets the reader move an island between open, satisfied, and overfilled states.
+- **Connectivity:** A fixed locally satisfied but stranded network can be toggled to its connected solution.
+- **Generation:** A toggle reveals the generated solution network, then hides it while retaining the derived island clues.
+- **Uniqueness:** A compact comparison shows a puzzle with one solution and an ambiguous puzzle with two valid arrangements.
+- **SVG geometry:** A fixed annotated diagram labels island centers, island edges, the visible bridge segment, and the wider transparent hit stroke.
+
+Create one article-only wrapper responsible for the example puzzles, captions, annotations, and toggles. Do not add tutorial-specific controls or annotations to the main `/hashi` game. Every control must be keyboard accessible, every demonstration needs a short text caption, and motion must not be required to understand the rule.
+
 ## Exclusions
 
 - No leaderboard discussion.
