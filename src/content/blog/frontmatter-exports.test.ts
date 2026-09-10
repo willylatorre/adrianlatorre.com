@@ -26,4 +26,21 @@ describe('blog markdown frontmatter exports', () => {
     expect(mod.title).toBe('Notes From Building Hashi One Rule At A Time')
     expect(mod.date).toMatch(/^2026-09-08/)
   })
+
+  it('places one mini board beside every Hashi implementation step', async () => {
+    const source = await import('./notes-from-building-hashi-one-rule-at-a-time.md?raw')
+    const kinds = [
+      'visible',
+      'cycle',
+      'crossing',
+      'totals',
+      'connectivity',
+      'generation',
+      'uniqueness',
+      'geometry',
+    ]
+
+    expect(source.default.match(/<HashiArticleDemo/g)).toHaveLength(8)
+    for (const kind of kinds) expect(source.default).toContain(`kind="${kind}"`)
+  })
 })

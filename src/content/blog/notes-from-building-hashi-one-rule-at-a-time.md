@@ -5,6 +5,8 @@ description: What a bridge puzzle taught me about geometry, graph connectivity, 
 ---
 
 <script setup>
+import HashiArticleDemo from '@/components/hashi/HashiArticleDemo.vue'
+
 const visibleCorridorsSnippet = `for each island:
     look north, east, south, and west
     keep only the nearest island in each direction
@@ -59,11 +61,9 @@ bridge.end = second_center - direction * island_edge
 click_target = same_line_with_a_wider_transparent_stroke`
 </script>
 
-I have spent an unreasonable amount of time playing [Hashi](/hashi), a puzzle about connecting numbered islands with bridges. It has the dangerous quality of looking completely manageable. There are shapes. There are numbers. There are straight lines. Surely this is a pleasant five-minute activity.
+I have spent an unreasonable amount of time playing [Hashi](/hashi), a puzzle about connecting numbered islands with bridges. It has the dangerous quality of being easy but challenging at the same time.
 
-Then forty minutes disappear, one corner of the board becomes a municipal infrastructure crisis, and a pair of islands stares at me as if I personally approved the zoning plan.
-
-That felt like a good reason to build my own version.
+As (video)games fascinate me, I've always wondered how would I code it.
 
 Hashi is also a particularly nice programming puzzle because its rules arrive in layers. The first rule is local: an island can only see certain neighbors. The next few rules care about one bridge or one island. The final rule suddenly asks whether the entire board is connected. The interface can look like a drawing tool, but underneath it is a graph politely pretending to be a map.
 
@@ -83,6 +83,8 @@ So before rendering anything clickable, I compute every legal corridor:
   </ProseCode>
 </ProsePre>
 
+<HashiArticleDemo kind="visible" />
+
 For each island, I collect the other islands on the same row or column. I split those candidates by direction, sort them by distance, and keep the first one. A pair is stored only once, even though both islands can discover it.
 
 This calculation happens when the puzzle is loaded. The resulting corridor list becomes the shared vocabulary for everything else: drawing bridges, handling clicks, adding totals, checking crossings, solving the puzzle, and generating a new one. If a connection is not in that list, the rest of the application gets to behave as if it has never heard of it.
@@ -99,11 +101,11 @@ Each corridor can hold zero, one, or two bridges. Clicking it should add the fir
   </ProseCode>
 </ProsePre>
 
+<HashiArticleDemo kind="cycle" />
+
 Modulo arithmetic does all the administrative work. No bridge becomes one, one becomes two, and two wraps back to zero. The current board state is just a map from corridor IDs to those counts.
 
 This runs on every corridor click or keyboard activation. Before changing the count, I save the previous value in a small history stack. Undo then has a wonderfully boring job: take the latest entry and put its old value back. Boring undo code is a luxury. It means the interesting mistakes can remain on the board where they belong.
-
-The third click clearing a corridor matters more than it first appears. A puzzle player spends a lot of time making a confident decision, becoming less confident, adding a second bridge, becoming suspicious of the entire neighborhood, and removing everything. The data model should support this emotional journey without opening a menu.
 
 ## Stop crossings before they happen
 
@@ -116,6 +118,8 @@ The useful moment to check this is just before activating a corridor:
 {{ crossingSnippet }}
   </ProseCode>
 </ProsePre>
+
+<HashiArticleDemo kind="crossing" />
 
 If the next state is zero, the move is always safe because it removes bridges. If the next state is one or two, I compare the candidate with every active corridor.
 
@@ -137,6 +141,8 @@ After every accepted move, I sum the active bridge counts for each island:
   </ProseCode>
 </ProsePre>
 
+<HashiArticleDemo kind="totals" />
+
 This is a continuous feedback check, not a final validation step. When the total matches, the island recedes into a quiet green state. When the total exceeds the clue, it becomes clearly overfilled. Otherwise it stays open.
 
 I deliberately allow overfilling. Suppose a `2` already has one bridge and the player clicks another corridor twice. The board now knows the island has three bridges and can say so. Silently refusing the second click would protect the player from seeing the state they just asked for, which is a peculiar kind of helpfulness.
@@ -156,6 +162,8 @@ The finished puzzle must contain one connected network, so completion needs two 
 {{ connectivitySnippet }}
   </ProseCode>
 </ProsePre>
+
+<HashiArticleDemo kind="connectivity" />
 
 The first check repeats the island totals and confirms that every clue matches exactly. Only then does the board need the global question: starting from one island, how many islands can I reach by following active bridges?
 
@@ -179,6 +187,8 @@ The more reliable direction is backward:
   </ProseCode>
 </ProsePre>
 
+<HashiArticleDemo kind="generation" />
+
 First I place islands on the grid. From their visible corridors, I build a connected spanning network while refusing crossings. Some selected corridors receive double bridges, and the harder categories get more islands, more optional edges, and more doubles.
 
 Once that hidden network exists, each clue is easy: add the bridge counts touching that island. The answer creates the question. Then I throw away the visible answer and keep the islands with their derived numbers.
@@ -192,6 +202,8 @@ So every candidate puzzle has to sit its own exam:
 {{ uniquenessSnippet }}
   </ProseCode>
 </ProsePre>
+
+<HashiArticleDemo kind="uniqueness" />
 
 The solver tries bridge counts for each corridor, abandoning branches as soon as an island cannot possibly reach its clue or a bridge would cross an active one. It stops after finding two solutions because the difference between two and four hundred is academically interesting but equally fatal to this puzzle.
 
@@ -210,6 +222,8 @@ The fix was to derive every visual measurement from the same SVG coordinate syst
 {{ svgSnippet }}
   </ProseCode>
 </ProsePre>
+
+<HashiArticleDemo kind="geometry" />
 
 Island centers live on grid coordinates multiplied by a fixed cell size. Bridges begin and end at the island edges, not at their centers and not in the gap a few pixels away. A double bridge uses equal offsets on either side of that centerline. Rounded-square islands sit above all bridge lines, and the grid sits behind everything.
 
