@@ -7,6 +7,12 @@ import { countSolutions } from './solver'
 import type { HashiCategory, HashiPuzzle } from './types'
 
 const categories: HashiCategory[] = ['intro', 'daily', 'weekly', 'monthly']
+const expectedIslandCounts: Record<HashiCategory, number> = {
+  intro: 32,
+  daily: 72,
+  weekly: 108,
+  monthly: 150,
+}
 
 function expectIslandsTouchEveryBoundary(puzzle: HashiPuzzle) {
   const xs = puzzle.islands.map(({ x }) => x)
@@ -18,6 +24,29 @@ function expectIslandsTouchEveryBoundary(puzzle: HashiPuzzle) {
   expect(Math.max(...ys)).toBe(puzzle.height - 1)
 }
 
+function expectNoNeighboringIslands(puzzle: HashiPuzzle) {
+  for (const [index, island] of puzzle.islands.entries()) {
+    for (const other of puzzle.islands.slice(index + 1)) {
+      expect(Math.abs(island.x - other.x) > 1 || Math.abs(island.y - other.y) > 1).toBe(true)
+    }
+  }
+}
+
+function expectNoLargeEmptyBands(puzzle: HashiPuzzle) {
+  for (const [coordinates, size] of [
+    [puzzle.islands.map(({ x }) => x), puzzle.width],
+    [puzzle.islands.map(({ y }) => y), puzzle.height],
+  ] as const) {
+    const occupied = [...new Set(coordinates)].sort((left, right) => left - right)
+
+    expect(occupied[0]).toBe(0)
+    expect(occupied.at(-1)).toBe(size - 1)
+    expect(
+      occupied.slice(1).every((coordinate, index) => coordinate - occupied[index]! <= 3),
+    ).toBe(true)
+  }
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
@@ -26,19 +55,34 @@ describe('Hashi puzzle generation', () => {
   it.each(categories)('generates a valid unique %s puzzle', (category) => {
     const generated = generatePuzzle(category, 123456)
 
+    expect(CATEGORY_CONFIG[category].targetIslands).toBe(expectedIslandCounts[category])
     expect(evaluatePuzzle(generated.puzzle, generated.solution).solved).toBe(true)
     expect(countSolutions(generated.puzzle, 2)).toBe(1)
     expect(generated.puzzle.width).toBe(CATEGORY_CONFIG[category].width)
     expect(generated.puzzle.height).toBe(CATEGORY_CONFIG[category].height)
     expect(generated.puzzle.islands).toHaveLength(CATEGORY_CONFIG[category].targetIslands)
     expectIslandsTouchEveryBoundary(generated.puzzle)
+    expectNoNeighboringIslands(generated.puzzle)
+    expectNoLargeEmptyBands(generated.puzzle)
+  })
+
+  it.each(categories)('keeps representative %s layouts separated and distributed', (category) => {
+    for (let seed = 0; seed < 5; seed += 1) {
+      const { puzzle } = generatePuzzle(category, 910_000 + seed)
+
+      expect(puzzle.id).not.toBe(`fallback-${category}`)
+      expect(puzzle.islands).toHaveLength(expectedIslandCounts[category])
+      expectIslandsTouchEveryBoundary(puzzle)
+      expectNoNeighboringIslands(puzzle)
+      expectNoLargeEmptyBands(puzzle)
+    }
   })
 
   it('is deterministic for a supplied seed', () => {
     expect(generatePuzzle('intro', 42)).toEqual(generatePuzzle('intro', 42))
   })
 
-  it.each(categories)('uses the configured bridge multiplicity for %s puzzles', (category) => {
+  it.each(categories)('keeps a readable bridge and clue mix in %s puzzles', (category) => {
     const generated = Array.from({ length: 8 }, (_, seed) =>
       generatePuzzle(category, 700_000 + seed),
     )
@@ -55,7 +99,10 @@ describe('Hashi puzzle generation', () => {
         ({ puzzle }) => puzzle.islands.length === CATEGORY_CONFIG[category].targetIslands,
       ),
     ).toBe(true)
-    expect(Math.abs(doubleShare - CATEGORY_CONFIG[category].doubleRate)).toBeLessThan(0.08)
+    expect(doubleShare).toBeGreaterThan(0.75)
+    expect(doubleShare).toBeLessThan(0.99)
+    expect(bridgeCounts.some((count) => count === 1)).toBe(true)
+    expect(bridgeCounts.some((count) => count === 2)).toBe(true)
     expect(oddClueShare).toBeGreaterThan(0.1)
     expect(new Set(clues).size).toBeGreaterThanOrEqual(4)
   })
@@ -88,44 +135,6 @@ describe('Hashi puzzle generation', () => {
     },
   )
 
-  it('uses category extra-edge rates across deterministic samples', () => {
-    const observedRates = Object.fromEntries(
-      categories.map((category) => {
-        let selectedSurplus = 0
-        let availableSurplus = 0
-
-        for (let seed = 0; seed < 24; seed += 1) {
-          const { puzzle, solution } = generatePuzzle(category, 800_000 + seed)
-          const corridors = getVisibleCorridors(puzzle.islands)
-          const islandById = new Map(puzzle.islands.map((island) => [island.id, island]))
-          const selected = corridors.filter(({ id }) => solution[id] > 0)
-          const compatible = corridors.filter(
-            (candidate) =>
-              solution[candidate.id] > 0 ||
-              selected.every(
-                (active) =>
-                  !corridorsCross(
-                    { a: islandById.get(candidate.a)!, b: islandById.get(candidate.b)! },
-                    { a: islandById.get(active.a)!, b: islandById.get(active.b)! },
-                  ),
-              ),
-          )
-
-          expect(puzzle.id).not.toBe(`fallback-${category}`)
-          expect(puzzle.islands).toHaveLength(CATEGORY_CONFIG[category].targetIslands)
-          selectedSurplus += selected.length - puzzle.islands.length + 1
-          availableSurplus += compatible.length - puzzle.islands.length + 1
-        }
-
-        const observedRate = availableSurplus === 0 ? 0 : selectedSurplus / availableSurplus
-        expect(Math.abs(observedRate - CATEGORY_CONFIG[category].extraEdgeRate)).toBeLessThan(0.1)
-        return [category, observedRate]
-      }),
-    ) as Record<HashiCategory, number>
-
-    expect(observedRates.monthly).toBeGreaterThan(observedRates.intro + 0.12)
-  })
-
   it('returns the validated fallback when the overall generation budget is exhausted', () => {
     expect(
       generatePuzzle('monthly', 42, {
@@ -155,6 +164,7 @@ describe('Hashi puzzle generation', () => {
     expect(fallback.puzzle.width).toBe(CATEGORY_CONFIG[category].width)
     expect(fallback.puzzle.height).toBe(CATEGORY_CONFIG[category].height)
     expectIslandsTouchEveryBoundary(fallback.puzzle)
+    expectNoNeighboringIslands(fallback.puzzle)
   })
 
   it('returns a generated puzzle through the worker protocol', async () => {

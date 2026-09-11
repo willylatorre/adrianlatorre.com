@@ -53,6 +53,12 @@ assert max(island.x) == width - 1
 assert min(island.y) == 0
 assert max(island.y) == height - 1`
 
+const islandPlacementSnippet = `for each candidate position:
+    reject if any of the eight neighboring cells has an island
+
+assert island_count == category.target
+assert every_row_and_column_band_is_used()`
+
 const uniquenessSnippet = `solutions = solve(puzzle, stop_after = 2)
 
 if solutions == 1:
@@ -197,7 +203,7 @@ The more reliable direction is backward:
 
 <HashiArticleDemo kind="generation" />
 
-First I place islands on the grid. From their visible corridors, I build a connected spanning network while refusing crossings. Some selected corridors receive double bridges, and the harder categories get more islands, more optional edges, and more doubles.
+First I place islands on the grid. From their visible corridors, I build a connected spanning network while refusing crossings. The island count does most of the visible work of separating the categories: 32 for the intro, then 72, 108, and 150 for the daily, weekly, and monthly boards.
 
 Even the empty grid needs a rule. If a puzzle says it has 15 rows, there should be an island in row 1 and another in row 15. Otherwise it is really a 13-row puzzle wearing an oversized coat. The same applies to the first and last columns, so the random coordinate picker always keeps both edges and shuffles only the interior:
 
@@ -207,9 +213,21 @@ Even the empty grid needs a rule. If a puzzle says it has 15 rows, there should 
   </ProseCode>
 </ProsePre>
 
+Those are official dimensions, but spacing is an editorial choice. Hashi's rules do not forbid neighboring islands. This generator does: as a house rule, every island gets a one-cell moat, covering all eight neighboring cells. It prevents bridge stubs, crowded numbers, and the peculiar waterfront development where twelve islands all move into the same column.
+
+<ProsePre language="text" :code="islandPlacementSnippet">
+  <ProseCode class="language-text">
+{{ islandPlacementSnippet }}
+  </ProseCode>
+</ProsePre>
+
+I start with a connected lattice whose coordinate lines are at least two cells apart, then remove positions in random order. A removal survives only if the remaining shape stays connected and every row and column band is still represented. That gives randomness some room without letting it put the entire archipelago behind one bus shelter.
+
 Once that hidden network exists, each clue is easy: add the bridge counts touching that island. The answer creates the question. Then I throw away the visible answer and keep the islands with their derived numbers.
 
-This guarantees that at least one solution exists and that it obeys the main rules. It does not guarantee that the solution is unique. A cycle can often redistribute bridges while preserving every island total, which is clever when a player discovers it and less charming when the generator shipped it by accident.
+There is one extra trick for keeping the answer unique without making the browser contemplate its career choices. I keep a spanning tree active, then visit the islands in a shuffled order. At each island, all still-undecided corridors are assigned to the same extreme—zero or two—so its remaining clue forces that whole group. When only one required corridor remains, it may be a single bridge. Read in that construction order, each decision has only one answer; the general solver still checks the finished puzzle before it ships.
+
+This constructs one forced solution and keeps it connected, but I still do not let the generator mark its own homework. A small mistake in the forcing order—or a cycle I failed to account for—could redistribute bridges while preserving every island total, which is clever when a player discovers it and less charming when the generator shipped it by accident.
 
 So every candidate puzzle has to sit its own exam:
 

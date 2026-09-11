@@ -1,5 +1,5 @@
 import { computed, getCurrentScope, onScopeDispose, ref } from 'vue'
-import { generatePuzzle } from './generator'
+import { generatePuzzle, HASHI_GENERATOR_VERSION } from './generator'
 import { cloneFallback } from './fallbacks'
 import type { GeneratePuzzleMessage, GeneratedPuzzleMessage } from './generator.worker'
 import { corridorsCross, getVisibleCorridors } from './geometry'
@@ -192,13 +192,19 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
   const revision = ref(0)
   const clock = ref(now())
   const restored = loadHashiState(options.storage)
-  const defaultCategory = options.defaultCategory ?? 'intro'
+  const staleGeneratedPuzzle =
+    restored?.puzzle.id.startsWith('hashi-') === true &&
+    !restored.puzzle.id.startsWith(`hashi-${HASHI_GENERATOR_VERSION}-`)
+  const activeRestored = staleGeneratedPuzzle ? null : restored
+  const defaultCategory = restored?.preferredCategory ?? options.defaultCategory ?? 'intro'
   const puzzleGenerator = options.generatePuzzle ?? fallbackPuzzleGenerator
   let gameActionRevision = 0
   const initialPuzzle =
-    restored?.puzzle ?? options.initialPuzzle ?? puzzleGenerator(defaultCategory, Math.floor(now()))
+    activeRestored?.puzzle ??
+    options.initialPuzzle ??
+    puzzleGenerator(defaultCategory, Math.floor(now()))
   const game = createHashiGame(initialPuzzle, now, {
-    initialState: restored ?? undefined,
+    initialState: activeRestored ?? undefined,
     storage: options.storage,
     generatePuzzle: puzzleGenerator,
     onChange: () => {
@@ -280,7 +286,7 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     })
   }
 
-  if (!restored && !options.initialPuzzle) requestPuzzle(defaultCategory)
+  if (!activeRestored && !options.initialPuzzle) requestPuzzle(defaultCategory)
 
   return {
     puzzle: value(() => game.puzzle),

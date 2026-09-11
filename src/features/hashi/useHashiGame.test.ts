@@ -193,6 +193,38 @@ describe('Hashi game state', () => {
     expect(game.history.value).toEqual([{ corridorId: 'a:b', previous: 0 }])
   })
 
+  it('replaces a persisted puzzle from the previous generator while keeping its category', () => {
+    const storage = createStorage()
+    const freshDailyPuzzle = {
+      ...fixedPuzzle,
+      id: 'hashi-v2-daily-fresh',
+      category: 'daily' as const,
+    }
+    saveHashiState(
+      {
+        version: 1,
+        preferredCategory: 'daily',
+        puzzle: { ...fixedPuzzle, id: 'hashi-daily-old', category: 'daily' },
+        bridgeCounts: { 'a:b': 1 },
+        startedAt: 500,
+        history: [{ corridorId: 'a:b', previous: 0 }],
+        solvedAt: null,
+      },
+      storage,
+    )
+
+    const game = useHashiGame({
+      now: () => 1_000,
+      storage,
+      generatePuzzle: () => freshDailyPuzzle,
+    })
+
+    expect(game.preferredCategory.value).toBe('daily')
+    expect(game.puzzle.value).toEqual(freshDailyPuzzle)
+    expect(game.bridgeCounts.value).toEqual({})
+    expect(game.history.value).toEqual([])
+  })
+
   it('keeps the latest worker puzzle when category changes race', () => {
     const worker = new PuzzleWorkerDouble()
     const dailyPuzzle = { ...fixedPuzzle, id: 'daily-worker', category: 'daily' as const }

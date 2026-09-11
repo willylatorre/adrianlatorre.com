@@ -43,4 +43,12 @@ describe('blog markdown frontmatter exports', () => {
     expect(source.default.match(/<HashiArticleDemo/g)).toHaveLength(8)
     for (const kind of kinds) expect(source.default).toContain(`kind="${kind}"`)
   })
+
+  it('explains the Hashi generator house rules', async () => {
+    const source = await import('./notes-from-building-hashi-one-rule-at-a-time.md?raw')
+
+    expect(source.default).toContain('house rule')
+    expect(source.default).toContain('eight neighboring cells')
+    expect(source.default).toContain('island count')
+  })
 })
