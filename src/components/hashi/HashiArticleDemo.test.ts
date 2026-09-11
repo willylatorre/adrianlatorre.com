@@ -11,7 +11,8 @@ const kinds = [
   'totals',
   'connectivity',
   'generation',
-  'uniqueness',
+  'density',
+  'mix',
   'geometry',
 ] as const
 
@@ -48,8 +49,8 @@ describe('HashiArticleDemo', () => {
     const wrapper = mount(HashiArticleDemo, { props: { kind: 'visible' } })
 
     expect(wrapper.findAll('.hashi-island')).toHaveLength(3)
-    expect(wrapper.findAll('.hashi-bridge')).toHaveLength(1)
-    expect(wrapper.get('figcaption').text()).toContain('left island can reach the middle island')
+    expect(wrapper.findAll('.hashi-bridge')).toHaveLength(2)
+    expect(wrapper.get('figcaption').text()).toContain('two short corridors')
   })
 
   it('toggles the generated solution without changing the island clues', async () => {

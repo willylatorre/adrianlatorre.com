@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cloneFallback } from './fallbacks'
 import { CATEGORY_CONFIG, generatePuzzle } from './generator'
-import { corridorsCross, getVisibleCorridors } from './geometry'
+import { corridorsCross, countCorridorCrossings, getVisibleCorridors } from './geometry'
 import { evaluatePuzzle } from './rules'
 import { countSolutions } from './solver'
 import type { HashiCategory, HashiPuzzle } from './types'
@@ -12,6 +12,46 @@ const expectedIslandCounts: Record<HashiCategory, number> = {
   daily: 72,
   weekly: 108,
   monthly: 150,
+}
+
+const expectedDimensions: Record<HashiCategory, [number, number]> = {
+  intro: [15, 15],
+  daily: [15, 30],
+  weekly: [18, 35],
+  monthly: [20, 40],
+}
+
+const challengingCategories = ['daily', 'weekly', 'monthly'] as const
+const minimumCrossingPairs = { daily: 4, weekly: 8, monthly: 12 } as const
+
+function expectBalancedChallenge(
+  category: (typeof challengingCategories)[number],
+  generated: ReturnType<typeof generatePuzzle>,
+) {
+  const { puzzle, solution } = generated
+  const histogram = new Map<number, number>()
+  for (const { clue } of puzzle.islands) histogram.set(clue, (histogram.get(clue) ?? 0) + 1)
+
+  const activeCounts = Object.values(solution).filter((count) => count > 0)
+  const doubleShare = activeCounts.filter((count) => count === 2).length / activeCounts.length
+  const highClueShare = ((histogram.get(6) ?? 0) + (histogram.get(7) ?? 0)) / puzzle.islands.length
+  const eightShare = (histogram.get(8) ?? 0) / puzzle.islands.length
+  const cycleEdges = activeCounts.length - puzzle.islands.length + 1
+
+  expect(puzzle.id).not.toBe(`fallback-${category}`)
+  for (let clue = 1; clue <= 7; clue += 1) expect(histogram.get(clue) ?? 0).toBeGreaterThan(0)
+  for (let clue = 1; clue <= 5; clue += 1) {
+    expect((histogram.get(clue) ?? 0) / puzzle.islands.length).toBeGreaterThanOrEqual(0.04)
+  }
+  expect(highClueShare).toBeGreaterThanOrEqual(0.04)
+  expect(highClueShare).toBeLessThanOrEqual(0.25)
+  expect(eightShare).toBeLessThanOrEqual(0.03)
+  expect(doubleShare).toBeGreaterThanOrEqual(0.15)
+  expect(doubleShare).toBeLessThanOrEqual(0.3)
+  expect(countCorridorCrossings(puzzle.islands)).toBeGreaterThanOrEqual(
+    minimumCrossingPairs[category],
+  )
+  expect(cycleEdges).toBeGreaterThanOrEqual(CATEGORY_CONFIG[category].targetCycleEdges)
 }
 
 function expectIslandsTouchEveryBoundary(puzzle: HashiPuzzle) {
@@ -41,9 +81,9 @@ function expectNoLargeEmptyBands(puzzle: HashiPuzzle) {
 
     expect(occupied[0]).toBe(0)
     expect(occupied.at(-1)).toBe(size - 1)
-    expect(
-      occupied.slice(1).every((coordinate, index) => coordinate - occupied[index]! <= 3),
-    ).toBe(true)
+    expect(occupied.slice(1).every((coordinate, index) => coordinate - occupied[index]! <= 3)).toBe(
+      true,
+    )
   }
 }
 
@@ -52,12 +92,14 @@ afterEach(() => {
 })
 
 describe('Hashi puzzle generation', () => {
-  it.each(categories)('generates a valid unique %s puzzle', (category) => {
+  it.each(categories)('generates a valid %s puzzle', (category) => {
     const generated = generatePuzzle(category, 123456)
 
     expect(CATEGORY_CONFIG[category].targetIslands).toBe(expectedIslandCounts[category])
+    expect([CATEGORY_CONFIG[category].width, CATEGORY_CONFIG[category].height]).toEqual(
+      expectedDimensions[category],
+    )
     expect(evaluatePuzzle(generated.puzzle, generated.solution).solved).toBe(true)
-    expect(countSolutions(generated.puzzle, 2)).toBe(1)
     expect(generated.puzzle.width).toBe(CATEGORY_CONFIG[category].width)
     expect(generated.puzzle.height).toBe(CATEGORY_CONFIG[category].height)
     expect(generated.puzzle.islands).toHaveLength(CATEGORY_CONFIG[category].targetIslands)
@@ -82,56 +124,42 @@ describe('Hashi puzzle generation', () => {
     expect(generatePuzzle('intro', 42)).toEqual(generatePuzzle('intro', 42))
   })
 
-  it.each(categories)('keeps a readable bridge and clue mix in %s puzzles', (category) => {
-    const generated = Array.from({ length: 8 }, (_, seed) =>
-      generatePuzzle(category, 700_000 + seed),
-    )
-    const bridgeCounts = generated.flatMap(({ solution }) =>
-      Object.values(solution).filter((count) => count > 0),
-    )
-    const clues = generated.flatMap(({ puzzle }) => puzzle.islands.map(({ clue }) => clue))
-    const doubleShare = bridgeCounts.filter((count) => count === 2).length / bridgeCounts.length
-    const oddClueShare = clues.filter((clue) => clue % 2 === 1).length / clues.length
+  it('keeps intro puzzles in the low-numbered range', () => {
+    for (let seed = 0; seed < 5; seed += 1) {
+      const { puzzle } = generatePuzzle('intro', 600_000 + seed)
+      const clues = puzzle.islands.map(({ clue }) => clue)
 
-    expect(generated.every(({ puzzle }) => !puzzle.id.startsWith('fallback-'))).toBe(true)
-    expect(
-      generated.every(
-        ({ puzzle }) => puzzle.islands.length === CATEGORY_CONFIG[category].targetIslands,
-      ),
-    ).toBe(true)
-    expect(doubleShare).toBeGreaterThan(0.75)
-    expect(doubleShare).toBeLessThan(0.99)
-    expect(bridgeCounts.some((count) => count === 1)).toBe(true)
-    expect(bridgeCounts.some((count) => count === 2)).toBe(true)
-    expect(oddClueShare).toBeGreaterThan(0.1)
-    expect(new Set(clues).size).toBeGreaterThanOrEqual(4)
+      expect(puzzle.id).not.toBe('fallback-intro')
+      expect(Math.max(...clues)).toBeLessThanOrEqual(5)
+      for (let clue = 1; clue <= 4; clue += 1) expect(clues).toContain(clue)
+    }
   })
 
-  it.each([
-    ['weekly', 123457],
-    ['monthly', 123456],
-  ] as const)(
-    'generates a representative non-crossing %s puzzle with a cycle',
-    (category, seed) => {
-      const { puzzle, solution } = generatePuzzle(category, seed)
-      const islandById = new Map(puzzle.islands.map((island) => [island.id, island]))
-      const selected = getVisibleCorridors(puzzle.islands).filter(({ id }) => solution[id] > 0)
+  it.each(challengingCategories)(
+    'keeps every generated %s puzzle balanced and challenging',
+    (category) => {
+      for (let seed = 0; seed < 3; seed += 1) {
+        const generated = generatePuzzle(category, 700_000 + seed)
+        expectBalancedChallenge(category, generated)
 
-      expect(puzzle.id).not.toBe(`fallback-${category}`)
-      expect(selected.length).toBeGreaterThan(puzzle.islands.length - 1)
-      expect(
-        selected.every((first, firstIndex) =>
-          selected
-            .slice(firstIndex + 1)
-            .every(
-              (second) =>
-                !corridorsCross(
-                  { a: islandById.get(first.a)!, b: islandById.get(first.b)! },
-                  { a: islandById.get(second.a)!, b: islandById.get(second.b)! },
-                ),
-            ),
-        ),
-      ).toBe(true)
+        const { puzzle, solution } = generated
+        const islandById = new Map(puzzle.islands.map((island) => [island.id, island]))
+        const selected = getVisibleCorridors(puzzle.islands).filter(({ id }) => solution[id] > 0)
+
+        expect(
+          selected.every((first, firstIndex) =>
+            selected
+              .slice(firstIndex + 1)
+              .every(
+                (second) =>
+                  !corridorsCross(
+                    { a: islandById.get(first.a)!, b: islandById.get(first.b)! },
+                    { a: islandById.get(second.a)!, b: islandById.get(second.b)! },
+                  ),
+              ),
+          ),
+        ).toBe(true)
+      }
     },
   )
 
@@ -142,18 +170,6 @@ describe('Hashi puzzle generation', () => {
         now: () => 100,
       }),
     ).toEqual(cloneFallback('monthly'))
-  })
-
-  it('retries after a uniqueness search times out while overall time remains', () => {
-    let clockReads = 0
-    const generated = generatePuzzle('intro', 314159, {
-      timeBudgetMs: 100,
-      uniquenessTimeBudgetMs: 1,
-      now: () => (clockReads++ < 4 ? 0 : 2),
-    })
-
-    expect(generated.puzzle.id).not.toBe('fallback-intro')
-    expect(generated).not.toEqual(generatePuzzle('intro', 314159))
   })
 
   it.each(categories)('provides a valid unique %s fallback', (category) => {

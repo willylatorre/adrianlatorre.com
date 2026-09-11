@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { bridgeSegments, corridorsCross, getVisibleCorridors } from './geometry'
+import {
+  bridgeSegments,
+  corridorsCross,
+  countCorridorCrossings,
+  getVisibleCorridors,
+} from './geometry'
 import type { HashiPuzzle } from './types'
 
 const puzzle: HashiPuzzle = {
@@ -61,5 +66,16 @@ describe('Hashi geometry', () => {
         { a: { x: 2, y: 2 }, b: { x: 2, y: 4 } },
       ),
     ).toBe(false)
+  })
+
+  it('counts crossing choices in a set of visible corridors', () => {
+    const islands = [
+      { id: 'left', x: 0, y: 2, clue: 1 },
+      { id: 'right', x: 4, y: 2, clue: 1 },
+      { id: 'top', x: 2, y: 0, clue: 1 },
+      { id: 'bottom', x: 2, y: 4, clue: 1 },
+    ]
+
+    expect(countCorridorCrossings(islands)).toBe(1)
   })
 })

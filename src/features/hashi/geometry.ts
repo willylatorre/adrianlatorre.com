@@ -102,6 +102,29 @@ export function corridorsCross(first: CorridorLine, second: CorridorLine) {
   return false
 }
 
+export function countCorridorCrossings(
+  islands: Island[],
+  corridors = getVisibleCorridors(islands),
+) {
+  const islandById = new Map(islands.map((island) => [island.id, island]))
+  let count = 0
+
+  for (const [index, first] of corridors.entries()) {
+    for (const second of corridors.slice(index + 1)) {
+      if (
+        corridorsCross(
+          { a: islandById.get(first.a)!, b: islandById.get(first.b)! },
+          { a: islandById.get(second.a)!, b: islandById.get(second.b)! },
+        )
+      ) {
+        count += 1
+      }
+    }
+  }
+
+  return count
+}
+
 function isStrictlyBetween(value: number, endpointA: number, endpointB: number) {
   return value > Math.min(endpointA, endpointB) && value < Math.max(endpointA, endpointB)
 }

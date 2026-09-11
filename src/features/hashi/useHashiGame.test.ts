@@ -195,16 +195,16 @@ describe('Hashi game state', () => {
 
   it('replaces a persisted puzzle from the previous generator while keeping its category', () => {
     const storage = createStorage()
-    const freshDailyPuzzle = {
+    const freshMonthlyPuzzle = {
       ...fixedPuzzle,
-      id: 'hashi-v2-daily-fresh',
-      category: 'daily' as const,
+      id: 'hashi-v4-monthly-fresh',
+      category: 'monthly' as const,
     }
     saveHashiState(
       {
         version: 1,
-        preferredCategory: 'daily',
-        puzzle: { ...fixedPuzzle, id: 'hashi-daily-old', category: 'daily' },
+        preferredCategory: 'monthly',
+        puzzle: { ...fixedPuzzle, id: 'hashi-v3-monthly-old', category: 'monthly' },
         bridgeCounts: { 'a:b': 1 },
         startedAt: 500,
         history: [{ corridorId: 'a:b', previous: 0 }],
@@ -216,11 +216,11 @@ describe('Hashi game state', () => {
     const game = useHashiGame({
       now: () => 1_000,
       storage,
-      generatePuzzle: () => freshDailyPuzzle,
+      generatePuzzle: () => freshMonthlyPuzzle,
     })
 
-    expect(game.preferredCategory.value).toBe('daily')
-    expect(game.puzzle.value).toEqual(freshDailyPuzzle)
+    expect(game.preferredCategory.value).toBe('monthly')
+    expect(game.puzzle.value).toEqual(freshMonthlyPuzzle)
     expect(game.bridgeCounts.value).toEqual({})
     expect(game.history.value).toEqual([])
   })
@@ -239,6 +239,7 @@ describe('Hashi game state', () => {
       workerFactory: () => worker,
     })
 
+    expect(game.generating.value).toBe(true)
     expect(game.puzzle.value.id).toBe('fallback-intro')
     expect(worker.requests).toMatchObject([{ category: 'intro', requestId: 1 }])
 
@@ -251,20 +252,30 @@ describe('Hashi game state', () => {
 
     worker.deliver(3, freshDailyPuzzle)
 
+    expect(game.generating.value).toBe(false)
     expect(game.puzzle.value).toEqual(freshDailyPuzzle)
     expect(game.bridgeCounts.value).toEqual({})
   })
 
-  it('stays playable with a bundled fallback when the worker is unavailable', () => {
+  it('synchronously creates a full puzzle when the worker is unavailable', () => {
+    const generatedIntro = { ...fixedPuzzle, id: 'generated-intro' }
+    const generatedMonthly = {
+      ...fixedPuzzle,
+      id: 'generated-monthly',
+      category: 'monthly' as const,
+    }
     const game = useHashiGame({
       now: () => 1_000,
       storage: null,
       workerFactory: () => null,
+      fallbackGeneratePuzzle: (category) =>
+        category === 'monthly' ? generatedMonthly : generatedIntro,
     })
 
-    expect(game.puzzle.value.id).toBe('fallback-intro')
+    expect(game.generating.value).toBe(false)
+    expect(game.puzzle.value.id).toBe('generated-intro')
     game.selectCategory('monthly')
-    expect(game.puzzle.value.id).toBe('fallback-monthly')
+    expect(game.puzzle.value.id).toBe('generated-monthly')
   })
 
   it('keeps fallback progress when its worker response arrives late', () => {

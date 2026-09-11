@@ -64,12 +64,15 @@ const islandPlacementSnippet = `for each candidate position:
 assert island_count == category.target
 assert every_chosen_lattice_row_and_column_is_used()`
 
-const uniquenessSnippet = `solutions = solve(puzzle, stop_after = 2)
+const clueMixSnippet = `candidate = build_connected_non_crossing_network()
+add_a_few_cycles(candidate)
+make_about_one_in_five_bridges_double(candidate)
 
-if solutions == 1:
-    publish(puzzle)
-else:
-    try_another_random_network()`
+numbers = count_bridges_touching_each_island(candidate)
+
+reject if 1_to_5_are_too_rare(numbers)
+reject if 6_and_7_take_over(numbers)
+reject if 8_is_not_rare(numbers)`
 
 const svgSnippet = `center = grid_position * cell_size
 island_edge = island_size / 2
@@ -82,7 +85,7 @@ click_target = same_line_with_a_wider_transparent_stroke`
 
 I have spent an unreasonable amount of time playing [Hashi](/hashi), a puzzle about connecting numbered islands with bridges. It has the dangerous quality of being easy but challenging at the same time.
 
-As (video)games fascinate me, I've always wondered how would I code it.
+As (video)games fascinate me, I've always wondered how I would code one.
 
 Hashi is also a particularly nice programming puzzle because its rules arrive in layers. The first rule is local: an island can only see certain neighbors. The next few rules care about one bridge or one island. The final rule suddenly asks whether the entire board is connected. The interface can look like a drawing tool, but underneath it is a graph politely pretending to be a map.
 
@@ -214,9 +217,11 @@ First I place islands on the grid. From their visible corridors, I build a conne
 
 A large board is not automatically a difficult board. Stretch ten islands across twice as much space and the puzzle mostly becomes a longer walk between the same ten decisions. More islands create more corridors, more competing bridge totals, and more places where a local choice changes the rest of the network.
 
-So each category has an explicit island target. The 15×15 intro has 32 islands. Daily has 72, weekly 108, and monthly 150. The dimensions still grow, especially horizontally, but density is what stops the larger boards from becoming empty wallpaper.
+So each category has an explicit island target. The 15×15 intro has 32 islands. Daily is 15×30 with 72 islands, weekly is 18×35 with 108, and monthly is 20×40 with 150. The larger boards grow vertically, while density stops them from becoming empty wallpaper.
 
 Those numbers are deliberately simple rather than scientific. The boards are random and luck remains part of the experience; the targets merely keep each category in the right neighborhood.
+
+<HashiArticleDemo kind="density" />
 
 Even the empty grid needs a rule. If a puzzle says it has 15 rows, there should be an island in row 1 and another in row 15. Otherwise it is really a 13-row puzzle wearing an oversized coat. The same applies to the first and last columns, so the random coordinate picker always keeps both edges and shuffles only the interior:
 
@@ -238,23 +243,21 @@ I start with a connected lattice whose coordinate lines are at least two cells a
 
 Once that hidden network exists, each clue is easy: add the bridge counts touching that island. The answer creates the question. Then I throw away the visible answer and keep the islands with their derived numbers.
 
-There is one extra trick for keeping the answer unique without making the browser contemplate its career choices. I keep a spanning tree active, then visit the islands in a shuffled order. At each island, all still-undecided corridors are assigned to the same extreme—zero or two—so its remaining clue forces that whole group. When only one required corridor remains, it may be a single bridge. Read in that construction order, each decision has only one answer; the general solver still checks the finished puzzle before it ships.
+The first version made nearly every bridge double. It was valid, but the resulting board was a wall of `6`, `7`, and `8` islands. Technically Hashi; spiritually a tax form.
 
-This constructs one forced solution and keeps it connected, but I still do not let the generator mark its own homework. A small mistake in the forcing order—or a cycle I failed to account for—could redistribute bridges while preserving every island total, which is clever when a player discovers it and less charming when the generator shipped it by accident.
+The fix was to make the shape and the number mix separate decisions. I start with a spanning tree so every island belongs to one network. Then I add a controlled number of non-crossing edges to create loops and alternative-looking routes. About one bridge in five becomes double. Only after that do I derive the clues and inspect their distribution:
 
-So every candidate puzzle has to sit its own exam:
-
-<ProsePre language="text" :code="uniquenessSnippet">
+<ProsePre language="text" :code="clueMixSnippet">
   <ProseCode class="language-text">
-{{ uniquenessSnippet }}
+{{ clueMixSnippet }}
   </ProseCode>
 </ProsePre>
 
-<HashiArticleDemo kind="uniqueness" />
+<HashiArticleDemo kind="mix" />
 
-The solver tries bridge counts for each corridor, abandoning branches as soon as an island cannot possibly reach its clue or a bridge would cross an active one. It stops after finding two solutions because the difference between two and four hundred is academically interesting but equally fatal to this puzzle.
+The generator keeps a healthy presence of `1` through `5`, allows a smaller group of `6` and `7`, and treats `8` as seasoning rather than soup. Candidates with too few crossings or too few cycles are rejected too. This does not scientifically prove that one board will feel harder than another, but it reliably avoids the two boring extremes: a sparse board with nothing to reason about and a carpet of high numbers.
 
-If it finds exactly one solution, the puzzle is accepted. If it finds none or reaches a second, the generator tries another network. Both generation and solving have time limits, with known fallback boards waiting nearby. A monthly puzzle should be difficult for the player, not for the browser's event loop.
+The intro uses the same idea with fewer islands, no added cycles, and no demand for high clues. The daily, weekly, and monthly puzzles add more islands and loops. Every category is a random, connected, non-crossing construction with a known valid answer, but the puzzle is not required to have only one possible answer. That keeps generation quick and the boards varied; occasionally luck offers a shortcut. For this little game, I like that better than pretending every random board is a tournament artifact.
 
 ## One coordinate system for everything
 
@@ -282,11 +285,11 @@ SVG also gives every corridor a second line that the player never sees: a wide t
 
 Once the rules and geometry were stable, the remaining interface choices became much smaller.
 
-The board comes first. Instructions, feedback, and build notes follow it rather than pushing the puzzle below a ceremonial landing page. Intro puzzles fit comfortably, while daily, weekly, and monthly boards become progressively wider and scroll horizontally instead of shrinking the islands into aspirin.
+The board comes first. Instructions, feedback, and build notes follow it rather than pushing the puzzle below a ceremonial landing page. Intro puzzles fit comfortably, while daily, weekly, and monthly boards grow downward into portrait shapes instead of turning the page into a railway timetable.
 
 Completed islands and their bridges lower their opacity so attention moves toward unfinished work. Overfilled islands stay stronger and warmer. Undo stores corridor changes, reset clears the current board, and local storage keeps the preferred category and active puzzle across refreshes.
 
-Large puzzles are generated in a Web Worker. The page can show a ready fallback immediately, then replace it with the generated puzzle only if the player has not already started interacting. A late worker response is not allowed to erase someone's bridges. Computers are fast, but apparently they still need rules about interrupting people.
+Large puzzles are generated in a Web Worker. While it works, the page shows a quiet loading frame instead of pretending that a tiny emergency puzzle is the real thing. If the worker is unavailable, the page generates a full puzzle directly. A late response still cannot erase someone's bridges. Computers are fast, but apparently they still need rules about interrupting people.
 
 That is the whole machine: discover legal corridors, cycle bridge counts, reject crossings, count locally, verify connectivity globally, generate from a hidden answer, and draw every part from one set of coordinates.
 

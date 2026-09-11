@@ -12,22 +12,24 @@ type DemoKind =
   | 'totals'
   | 'connectivity'
   | 'generation'
-  | 'uniqueness'
+  | 'density'
+  | 'mix'
   | 'geometry'
 
 const props = defineProps<{ kind: DemoKind }>()
 
 const captions: Record<DemoKind, string> = {
   visible:
-    'The left island can reach the middle island. The faded island is hidden behind it, so there is no direct left-to-right bridge.',
+    'The three islands create two short corridors. There is no long left-to-right corridor through the middle island.',
   cycle: 'Try the corridor: one bridge, two bridges, then clear it.',
   crossing: 'The horizontal bridge is already active. Try adding the vertical one.',
   totals: 'Add bridges around the center 2. It recedes when satisfied and warns when overfilled.',
   connectivity: 'Every 2 is satisfied in both views, but only one view connects all four islands.',
   generation:
     'The hidden bridge network creates the island numbers. Toggle it without changing the clues.',
-  uniqueness:
-    'The first puzzle has one answer. The second can swap between multiple valid networks.',
+  density:
+    'More islands create more choices and dependencies. Difficulty comes from decisions, not empty distance.',
+  mix: 'A useful random board has plenty of 1–5 clues, fewer 6s and 7s, and only the occasional 8.',
   geometry:
     'The visible bridge stops at each island edge; its transparent interaction stroke is deliberately wider.',
 }
@@ -41,7 +43,7 @@ const puzzle = (id: string, width: number, height: number, islands: Island[]): H
   islands,
 })
 
-const demos: Record<Exclude<DemoKind, 'uniqueness' | 'geometry'>, HashiPuzzle> = {
+const demos: Record<Exclude<DemoKind, 'geometry'>, HashiPuzzle> = {
   visible: puzzle('demo-visible', 7, 3, [
     island('visible-left', 1, 1, 1),
     island('visible-center', 3, 1, 2),
@@ -72,25 +74,44 @@ const demos: Record<Exclude<DemoKind, 'uniqueness' | 'geometry'>, HashiPuzzle> =
     island('generate-c', 1, 3, 2),
     island('generate-d', 5, 3, 2),
   ]),
+  density: puzzle('demo-density', 5, 5, [
+    island('density-a', 0, 0, 2),
+    island('density-b', 2, 0, 3),
+    island('density-c', 4, 0, 2),
+    island('density-d', 0, 2, 3),
+    island('density-e', 2, 2, 4),
+    island('density-f', 4, 2, 3),
+    island('density-g', 0, 4, 2),
+    island('density-h', 2, 4, 3),
+    island('density-i', 4, 4, 2),
+  ]),
+  mix: puzzle('demo-mix', 7, 7, [
+    island('mix-a', 0, 0, 1),
+    island('mix-b', 2, 0, 4),
+    island('mix-c', 4, 0, 3),
+    island('mix-d', 6, 0, 1),
+    island('mix-e', 0, 2, 3),
+    island('mix-f', 2, 2, 8),
+    island('mix-g', 4, 2, 5),
+    island('mix-h', 6, 2, 2),
+    island('mix-i', 0, 4, 2),
+    island('mix-j', 2, 4, 5),
+    island('mix-k', 4, 4, 7),
+    island('mix-l', 6, 4, 4),
+    island('mix-m', 0, 6, 2),
+    island('mix-n', 2, 6, 3),
+    island('mix-o', 4, 6, 4),
+    island('mix-p', 6, 6, 2),
+  ]),
 }
 
-const uniquePuzzle = puzzle('demo-unique', 6, 3, [
-  island('unique-a', 1, 1, 1),
-  island('unique-b', 4, 1, 1),
-])
-const ambiguousPuzzle = puzzle('demo-ambiguous', 7, 5, [
-  island('ambiguous-a', 1, 1, 2),
-  island('ambiguous-b', 5, 1, 2),
-  island('ambiguous-c', 1, 3, 2),
-  island('ambiguous-d', 5, 3, 2),
-])
 const geometryPuzzle = puzzle('demo-geometry', 6, 3, [
   island('geometry-a', 1, 1, 1),
   island('geometry-b', 4, 1, 1),
 ])
 
 const activePuzzle = computed(() =>
-  props.kind === 'uniqueness' || props.kind === 'geometry' ? uniquePuzzle : demos[props.kind],
+  props.kind === 'geometry' ? geometryPuzzle : demos[props.kind],
 )
 const game = createHashiGame(activePuzzle.value, Date.now, { storage: null })
 const liveCounts = ref<BridgeCounts>({})
@@ -120,6 +141,7 @@ const generatedSolution: BridgeCounts = {
 }
 const visibleCounts: BridgeCounts = {
   [corridorId('visible-left', 'visible-center')]: 1,
+  [corridorId('visible-center', 'visible-blocked')]: 1,
 }
 
 const displayCounts = computed<BridgeCounts>(() => {
@@ -128,18 +150,6 @@ const displayCounts = computed<BridgeCounts>(() => {
   if (props.kind === 'generation') return toggled.value ? generatedSolution : {}
   return liveCounts.value
 })
-
-const ambiguousCounts = computed<BridgeCounts>(() =>
-  toggled.value
-    ? {
-        [corridorId('ambiguous-a', 'ambiguous-c')]: 2,
-        [corridorId('ambiguous-b', 'ambiguous-d')]: 2,
-      }
-    : {
-        [corridorId('ambiguous-a', 'ambiguous-b')]: 2,
-        [corridorId('ambiguous-c', 'ambiguous-d')]: 2,
-      },
-)
 
 const geometrySegment = bridgeSegments(
   { id: 'geometry', a: 'geometry-a', b: 'geometry-b', axis: 'horizontal' },
@@ -162,29 +172,7 @@ function cycle(corridor: string) {
 
 <template>
   <figure class="hashi-article-demo" :data-demo="kind">
-    <div v-if="kind === 'uniqueness'" class="hashi-demo-comparison">
-      <div>
-        <span class="hashi-demo-label">One answer</span>
-        <HashiBoard
-          :puzzle="uniquePuzzle"
-          :bridge-counts="{ [corridorId('unique-a', 'unique-b')]: 1 }"
-          :interactive="false"
-        />
-      </div>
-      <div>
-        <span class="hashi-demo-label">More than one</span>
-        <HashiBoard
-          :puzzle="ambiguousPuzzle"
-          :bridge-counts="ambiguousCounts"
-          :interactive="false"
-        />
-        <button type="button" class="hashi-demo-button" @click="toggled = !toggled">
-          Show another answer
-        </button>
-      </div>
-    </div>
-
-    <div v-else-if="kind === 'geometry'" class="hashi-geometry-wrap">
+    <div v-if="kind === 'geometry'" class="hashi-geometry-wrap">
       <svg viewBox="0 0 240 130" role="img" aria-label="Bridge and hit target geometry">
         <line class="hashi-geometry-hit" v-bind="geometrySegment" />
         <line class="hashi-geometry-bridge" v-bind="geometrySegment" />
@@ -207,7 +195,7 @@ function cycle(corridor: string) {
         @cycle="cycle"
       />
       <p v-if="kind === 'visible'" class="hashi-demo-note">
-        Looking right from the left island, the search stops at the middle island.
+        Each search stops at the first island it meets.
       </p>
       <p v-if="feedback" role="status" class="hashi-demo-status">{{ feedback }}</p>
       <button
@@ -243,34 +231,13 @@ function cycle(corridor: string) {
   background: color-mix(in oklch, var(--site-surface) 74%, transparent);
 }
 
-.hashi-demo-board,
-.hashi-demo-comparison > div {
+.hashi-demo-board {
   min-width: 0;
-}
-
-.hashi-demo-comparison {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.hashi-demo-label {
-  display: block;
-  margin-bottom: 0.45rem;
-  color: var(--site-muted);
-  font-size: 0.72rem;
-  font-weight: 680;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 :deep(.hashi-board-scroll) {
   max-width: 100%;
   border-color: color-mix(in oklch, var(--site-border) 78%, transparent);
-}
-
-.is-visible :deep([data-island='visible-blocked']) {
-  opacity: 0.28;
 }
 
 .hashi-demo-button {
@@ -346,12 +313,6 @@ figcaption {
   color: var(--site-muted);
   font-size: 0.78rem;
   line-height: 1.5;
-}
-
-@media (max-width: 620px) {
-  .hashi-demo-comparison {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

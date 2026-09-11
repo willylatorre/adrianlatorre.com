@@ -36,11 +36,12 @@ describe('blog markdown frontmatter exports', () => {
       'totals',
       'connectivity',
       'generation',
-      'uniqueness',
+      'density',
+      'mix',
       'geometry',
     ]
 
-    expect(source.default.match(/<HashiArticleDemo/g)).toHaveLength(8)
+    expect(source.default.match(/<HashiArticleDemo/g)).toHaveLength(9)
     for (const kind of kinds) expect(source.default).toContain(`kind="${kind}"`)
   })
 
@@ -52,6 +53,8 @@ describe('blog markdown frontmatter exports', () => {
     expect(source.default).toContain('explicit island target')
     expect(source.default).toContain('### Density is the difficulty dial')
     expect(source.default).toContain('More islands create more corridors')
+    expect(source.default).toContain('treats `8` as seasoning rather than soup')
+    expect(source.default).toContain('not required to have only one possible answer')
     expect(source.default).not.toContain('## First, decide which bridges can exist')
   })
 })

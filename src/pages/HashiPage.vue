@@ -105,7 +105,18 @@ watch(
           formattedElapsed
         }}</time>
       </div>
+      <div v-if="game.generating.value" class="hashi-board-loading" role="status">
+        Building puzzle…
+      </div>
+      <div
+        v-else-if="game.puzzle.value.id.startsWith('fallback-')"
+        class="hashi-board-loading"
+        role="status"
+      >
+        This puzzle could not be built. Try “New puzzle”.
+      </div>
       <HashiBoard
+        v-else
         :puzzle="game.puzzle.value"
         :bridge-counts="game.bridgeCounts.value"
         @cycle="game.cycleCorridor"
@@ -279,6 +290,15 @@ watch(
   color: var(--site-muted);
   font-size: 0.88rem;
   line-height: 1.55;
+}
+
+.hashi-board-loading {
+  display: grid;
+  min-height: min(64vh, 34rem);
+  place-items: center;
+  border: 1px solid var(--site-border);
+  color: var(--site-muted);
+  font-size: 0.82rem;
 }
 
 .hashi-legend {

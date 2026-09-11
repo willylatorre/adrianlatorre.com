@@ -35,6 +35,7 @@ export interface UseHashiGameOptions extends Omit<HashiGameOptions, 'initialStat
   defaultCategory?: HashiCategory
   now?: () => number
   workerFactory?: () => HashiPuzzleWorker | null
+  fallbackGeneratePuzzle?: (category: HashiCategory, seed: number) => HashiPuzzle
 }
 
 export interface HashiPuzzleWorker {
@@ -191,6 +192,7 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
   const now = options.now ?? Date.now
   const revision = ref(0)
   const clock = ref(now())
+  const generating = ref(false)
   const restored = loadHashiState(options.storage)
   const staleGeneratedPuzzle =
     restored?.puzzle.id.startsWith('hashi-') === true &&
@@ -222,22 +224,38 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     worker = null
   }
 
+  const recoverWithoutWorker = (category: HashiCategory, requestId: number) => {
+    workerFailed = true
+    discardWorker()
+    if (requestId !== activeRequestId || category !== game.preferredCategory) return
+
+    const generate = options.fallbackGeneratePuzzle ?? defaultPuzzleGenerator
+    game.replaceGeneratedPuzzle(generate(category, Math.floor(now()) + requestId))
+    generating.value = false
+  }
+
   const requestPuzzle = (category: HashiCategory) => {
-    if (options.generatePuzzle || workerFailed) return
+    if (options.generatePuzzle) return
 
     const requestId = activeRequestId + 1
     activeRequestId = requestId
     activeRequestGameRevision = gameActionRevision
+    generating.value = true
+
+    if (workerFailed) {
+      recoverWithoutWorker(category, requestId)
+      return
+    }
 
     if (!worker) {
       try {
         worker = (options.workerFactory ?? createBrowserPuzzleWorker)()
       } catch {
-        workerFailed = true
+        recoverWithoutWorker(category, requestId)
         return
       }
       if (!worker) {
-        workerFailed = true
+        recoverWithoutWorker(category, requestId)
         return
       }
       worker.onmessage = (event) => {
@@ -251,10 +269,10 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
           return
         }
         game.replaceGeneratedPuzzle(data.puzzle)
+        generating.value = false
       }
       worker.onerror = () => {
-        workerFailed = true
-        discardWorker()
+        recoverWithoutWorker(game.preferredCategory, activeRequestId)
       }
     }
 
@@ -266,8 +284,7 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
         requestId,
       })
     } catch {
-      workerFailed = true
-      discardWorker()
+      recoverWithoutWorker(category, requestId)
     }
   }
 
@@ -300,6 +317,7 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
       void clock.value
       return game.elapsedMs
     }),
+    generating,
     cycleCorridor: game.cycleCorridor,
     undo: game.undo,
     reset: game.reset,

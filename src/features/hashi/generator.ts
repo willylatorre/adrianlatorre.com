@@ -1,13 +1,36 @@
 import { cloneFallback } from './fallbacks'
-import { corridorsCross, getVisibleCorridors } from './geometry'
-import { countSolutionsWithDeadline } from './solver'
+import { corridorsCross, countCorridorCrossings, getVisibleCorridors } from './geometry'
 import type { BridgeCounts, Corridor, HashiCategory, HashiPuzzle, Island } from './types'
 
 export const CATEGORY_CONFIG = {
-  intro: { width: 15, height: 15, targetIslands: 32, optionalGroupRate: 0.08, loneDoubleRate: 0.12 },
-  daily: { width: 30, height: 15, targetIslands: 72, optionalGroupRate: 0.18, loneDoubleRate: 0.22 },
-  weekly: { width: 35, height: 18, targetIslands: 108, optionalGroupRate: 0.24, loneDoubleRate: 0.28 },
-  monthly: { width: 40, height: 20, targetIslands: 150, optionalGroupRate: 0.3, loneDoubleRate: 0.34 },
+  intro: {
+    width: 15,
+    height: 15,
+    targetIslands: 32,
+    targetCycleEdges: 0,
+    minimumCrossingPairs: 0,
+  },
+  daily: {
+    width: 15,
+    height: 30,
+    targetIslands: 72,
+    targetCycleEdges: 13,
+    minimumCrossingPairs: 4,
+  },
+  weekly: {
+    width: 18,
+    height: 35,
+    targetIslands: 108,
+    targetCycleEdges: 22,
+    minimumCrossingPairs: 8,
+  },
+  monthly: {
+    width: 20,
+    height: 40,
+    targetIslands: 150,
+    targetCycleEdges: 33,
+    minimumCrossingPairs: 12,
+  },
 } as const
 
 export interface GeneratedPuzzle {
@@ -17,16 +40,15 @@ export interface GeneratedPuzzle {
 
 export interface PuzzleGenerationOptions {
   timeBudgetMs?: number
-  uniquenessTimeBudgetMs?: number
   now?: () => number
 }
 
 type CategoryConfig = (typeof CATEGORY_CONFIG)[HashiCategory]
 type Random = () => number
 
-export const HASHI_GENERATOR_VERSION = 'v2'
-const DEFAULT_GENERATION_TIME_BUDGET_MS = 1_500
-const DEFAULT_UNIQUENESS_TIME_BUDGET_MS = 250
+export const HASHI_GENERATOR_VERSION = 'v4'
+const DEFAULT_GENERATION_TIME_BUDGET_MS = 3_000
+const DOUBLE_BRIDGE_SHARE = 0.22
 
 export function generatePuzzle(
   category: HashiCategory,
@@ -37,32 +59,25 @@ export function generatePuzzle(
   const config = CATEGORY_CONFIG[category]
   const now = options.now ?? Date.now
   const generationDeadline = now() + (options.timeBudgetMs ?? DEFAULT_GENERATION_TIME_BUDGET_MS)
-  const uniquenessTimeBudgetMs = options.uniquenessTimeBudgetMs ?? DEFAULT_UNIQUENESS_TIME_BUDGET_MS
 
-  for (let attempt = 0; attempt < 40; attempt += 1) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
     if (now() >= generationDeadline) break
 
-    const islands = placeSeparatedIslands(config, random)
+    const islands = placeSeparatedIslands(config, random, category === 'intro')
     const corridors = getVisibleCorridors(islands)
-    const solution = buildConnectedPlanarSolution(islands, corridors, config, random)
-    if (!solution) continue
+    const initialSolution = buildBalancedPlanarSolution(islands, corridors, config, random)
+    if (!initialSolution) continue
 
-    const puzzle = deriveClues(
+    const initialPuzzle = deriveClues(
       { id: '', category, width: config.width, height: config.height, islands },
       corridors,
-      solution,
+      initialSolution,
     )
-    const uniquenessDeadline = Math.min(generationDeadline, now() + uniquenessTimeBudgetMs)
-    const solutionCount = countSolutionsWithDeadline(puzzle, 2, {
-      deadline: uniquenessDeadline,
-      now,
-    })
-    if (
-      puzzle.islands.every(({ clue }) => clue >= 1 && clue <= 8) &&
-      !solutionCount.timedOut &&
-      solutionCount.count === 1
-    ) {
-      return { puzzle: { ...puzzle, id: fingerprintPuzzle(puzzle) }, solution }
+    if (hasCategoryShape(initialPuzzle, initialSolution, corridors, config)) {
+      return {
+        puzzle: { ...initialPuzzle, id: fingerprintPuzzle(initialPuzzle) },
+        solution: initialSolution,
+      }
     }
   }
 
@@ -88,11 +103,15 @@ interface LatticeCell {
   y: number
 }
 
-function placeSeparatedIslands(config: CategoryConfig, random: Random): Island[] {
+function placeSeparatedIslands(
+  config: CategoryConfig,
+  random: Random,
+  requirePlanarVisibility = false,
+): Island[] {
   const xs = chooseSeparatedCoordinates(config.width, random)
   const ys = chooseSeparatedCoordinates(config.height, random)
   let cells = xs.flatMap((x, column) =>
-    ys.map((y, row) => ({ column, row, x, y } satisfies LatticeCell)),
+    ys.map((y, row) => ({ column, row, x, y }) satisfies LatticeCell),
   )
 
   while (cells.length > config.targetIslands) {
@@ -103,7 +122,7 @@ function placeSeparatedIslands(config: CategoryConfig, random: Random): Island[]
       const remaining = cells.filter((cell) => cell !== candidate)
       if (!usesEveryLatticeLine(remaining, xs.length, ys.length)) continue
       if (!isLatticeConnected(remaining)) continue
-      if (!hasPlanarVisibilityGraph(remaining)) continue
+      if (requirePlanarVisibility && !hasPlanarVisibilityGraph(remaining)) continue
 
       cells = remaining
       removed = true
@@ -121,18 +140,7 @@ function placeSeparatedIslands(config: CategoryConfig, random: Random): Island[]
 
 function hasPlanarVisibilityGraph(cells: LatticeCell[]) {
   const islands = cells.map(({ x, y }, index) => ({ id: `i${index}`, x, y, clue: 0 }))
-  const islandById = new Map(islands.map((island) => [island.id, island]))
-  const corridors = getVisibleCorridors(islands)
-
-  return corridors.every((first, index) =>
-    corridors.slice(index + 1).every(
-      (second) =>
-        !corridorsCross(
-          { a: islandById.get(first.a)!, b: islandById.get(first.b)! },
-          { a: islandById.get(second.a)!, b: islandById.get(second.b)! },
-        ),
-    ),
-  )
+  return countCorridorCrossings(islands) === 0
 }
 
 export function hasMinimumIslandSpacing(islands: Island[]) {
@@ -178,58 +186,151 @@ function isLatticeConnected(cells: LatticeCell[]) {
   return visited.size === cells.length
 }
 
-function buildConnectedPlanarSolution(
+function buildBalancedPlanarSolution(
   islands: Island[],
   corridors: Corridor[],
   config: CategoryConfig,
   random: Random,
 ): BridgeCounts | undefined {
-  if (islands.length === 0) return undefined
+  const islandById = new Map(islands.map((island) => [island.id, island]))
 
-  const tree = buildSpanningTree(islands, corridors, random)
-  if (!tree) return undefined
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    const active = buildPlanarSpanningTree(islands, corridors, islandById, random)
+    if (!active) continue
 
-  const treeCorridors = new Set(tree.map(({ id }) => id))
-  const unassigned = new Set(corridors.map(({ id }) => id))
-  const solution: BridgeCounts = {}
+    const selectedIds = new Set(active.map(({ id }) => id))
+    for (const corridor of shuffled(corridors, random)) {
+      if (active.length - islands.length + 1 >= config.targetCycleEdges) break
+      if (selectedIds.has(corridor.id) || crossesAny(corridor, active, islandById)) continue
 
-  // Each island fixes all of its still-unknown corridors to the same extreme. Read in this order,
-  // its remaining clue is either zero or the full available capacity, so the answer is forced.
-  // A lone tree corridor may be single without introducing a choice.
-  for (const island of shuffled(islands, random)) {
-    const incident = corridors.filter(
-      (corridor) =>
-        unassigned.has(corridor.id) && (corridor.a === island.id || corridor.b === island.id),
+      active.push(corridor)
+      selectedIds.add(corridor.id)
+    }
+    if (active.length - islands.length + 1 < config.targetCycleEdges) continue
+
+    const activeCounts = assignBalancedBridgeCounts(
+      islands,
+      active,
+      random,
+      config.targetCycleEdges > 0,
     )
-    if (incident.length === 0) continue
 
-    const keepsTreeConnected = incident.some(({ id }) => treeCorridors.has(id))
-    const count = keepsTreeConnected
-      ? incident.length === 1
-        ? random() < config.loneDoubleRate
-          ? 2
-          : 1
-        : 2
-      : random() < config.optionalGroupRate
-        ? 2
-        : 0
+    return Object.fromEntries(
+      corridors.map(({ id }) => [id, selectedIds.has(id) ? activeCounts[id] : 0]),
+    ) as BridgeCounts
+  }
 
-    for (const corridor of incident) {
-      solution[corridor.id] = count
-      unassigned.delete(corridor.id)
+  return undefined
+}
+
+function assignBalancedBridgeCounts(
+  islands: Island[],
+  active: Corridor[],
+  random: Random,
+  includeHighClues: boolean,
+) {
+  const counts = Object.fromEntries(active.map(({ id }) => [id, 1])) as BridgeCounts
+  const totals = new Map(islands.map(({ id }) => [id, 0]))
+  for (const corridor of active) {
+    totals.set(corridor.a, totals.get(corridor.a)! + 1)
+    totals.set(corridor.b, totals.get(corridor.b)! + 1)
+  }
+
+  const targetShares = [0, 0.12, 0.24, 0.28, 0.18, 0.09, 0.05, 0.03, 0.01]
+  const histogram = () => {
+    const result = Array<number>(9).fill(0)
+    for (const total of totals.values()) result[total]! += 1
+    return result
+  }
+  const targetCounts = targetShares.map((share) => share * islands.length)
+  const doubled = new Set<string>()
+  const doubleTarget = Math.round(active.length * DOUBLE_BRIDGE_SHARE)
+
+  while (doubled.size < doubleTarget) {
+    const currentHistogram = histogram()
+    const candidates = active
+      .filter(
+        (corridor) =>
+          !doubled.has(corridor.id) && totals.get(corridor.a)! < 8 && totals.get(corridor.b)! < 8,
+      )
+      .map((corridor) => {
+        const nextHistogram = [...currentHistogram]
+        for (const islandId of [corridor.a, corridor.b]) {
+          const total = totals.get(islandId)!
+          nextHistogram[total]! -= 1
+          nextHistogram[total + 1]! += 1
+        }
+        const penalty = nextHistogram.reduce(
+          (sum, value, clue) => sum + (value - targetCounts[clue]!) ** 2,
+          0,
+        )
+        return { corridor, penalty, tieBreak: random() }
+      })
+      .sort((left, right) => left.penalty - right.penalty || left.tieBreak - right.tieBreak)
+
+    const selected = candidates[0]?.corridor
+    if (!selected) break
+    doubled.add(selected.id)
+    counts[selected.id] = 2
+    totals.set(selected.a, totals.get(selected.a)! + 1)
+    totals.set(selected.b, totals.get(selected.b)! + 1)
+  }
+
+  const promoteOneIsland = (target: number) => {
+    const candidateIslands = shuffled(
+      islands.filter(({ id }) => totals.get(id) === target - 1),
+      random,
+    )
+    for (const candidate of candidateIslands) {
+      const edge = shuffled(
+        active.filter(
+          (corridor) =>
+            !doubled.has(corridor.id) &&
+            (corridor.a === candidate.id || corridor.b === candidate.id),
+        ),
+        random,
+      ).find((corridor) => {
+        const neighbor = corridor.a === candidate.id ? corridor.b : corridor.a
+        return totals.get(neighbor)! < 8
+      })
+      if (!edge) continue
+
+      doubled.add(edge.id)
+      counts[edge.id] = 2
+      totals.set(edge.a, totals.get(edge.a)! + 1)
+      totals.set(edge.b, totals.get(edge.b)! + 1)
+      return true
+    }
+    return false
+  }
+
+  if (includeHighClues) {
+    if (![...totals.values()].includes(7)) promoteOneIsland(7)
+    const minimumHighClues = Math.ceil(islands.length * 0.04)
+    while (
+      [...totals.values()].filter((total) => total === 6 || total === 7).length < minimumHighClues
+    ) {
+      if (!promoteOneIsland(6)) break
     }
   }
 
-  return solution
+  return counts
 }
 
-function buildSpanningTree(islands: Island[], corridors: Corridor[], random: Random) {
+function buildPlanarSpanningTree(
+  islands: Island[],
+  corridors: Corridor[],
+  islandById: Map<string, Island>,
+  random: Random,
+) {
   const visited = new Set([islands[randomIndex(islands.length, random)]!.id])
   const tree: Corridor[] = []
 
   while (visited.size < islands.length) {
     const candidates = corridors.filter(
-      ({ a, b }) => visited.has(a) !== visited.has(b),
+      (corridor) =>
+        visited.has(corridor.a) !== visited.has(corridor.b) &&
+        !crossesAny(corridor, tree, islandById),
     )
     if (candidates.length === 0) return undefined
 
@@ -239,6 +340,45 @@ function buildSpanningTree(islands: Island[], corridors: Corridor[], random: Ran
   }
 
   return tree
+}
+
+function crossesAny(candidate: Corridor, selected: Corridor[], islandById: Map<string, Island>) {
+  return selected.some((active) =>
+    corridorsCross(
+      { a: islandById.get(candidate.a)!, b: islandById.get(candidate.b)! },
+      { a: islandById.get(active.a)!, b: islandById.get(active.b)! },
+    ),
+  )
+}
+
+function hasCategoryShape(
+  puzzle: HashiPuzzle,
+  solution: BridgeCounts,
+  corridors: Corridor[],
+  config: CategoryConfig,
+) {
+  const histogram = new Map<number, number>()
+  for (const { clue } of puzzle.islands) histogram.set(clue, (histogram.get(clue) ?? 0) + 1)
+
+  const activeCounts = Object.values(solution).filter((count) => count > 0)
+  const doubleShare = activeCounts.filter((count) => count === 2).length / activeCounts.length
+  const highClueShare = ((histogram.get(6) ?? 0) + (histogram.get(7) ?? 0)) / puzzle.islands.length
+  const eightShare = (histogram.get(8) ?? 0) / puzzle.islands.length
+
+  if (config.targetCycleEdges === 0) {
+    if ([...histogram.keys()].some((clue) => clue > 5)) return false
+    for (let clue = 1; clue <= 4; clue += 1) if (!(histogram.get(clue) ?? 0)) return false
+    return doubleShare <= 0.3
+  }
+
+  if (doubleShare < 0.15 || doubleShare > 0.3) return false
+  if (highClueShare < 0.04 || highClueShare > 0.25 || eightShare > 0.03) return false
+  for (let clue = 1; clue <= 7; clue += 1) if (!(histogram.get(clue) ?? 0)) return false
+  for (let clue = 1; clue <= 5; clue += 1) {
+    if ((histogram.get(clue) ?? 0) / puzzle.islands.length < 0.04) return false
+  }
+
+  return countCorridorCrossings(puzzle.islands, corridors) >= config.minimumCrossingPairs
 }
 
 function deriveClues(
@@ -301,10 +441,13 @@ function chooseSeparatedCoordinates(size: number, random: Random) {
     slack -= 1
   }
 
-  return gaps.reduce<number[]>((coordinates, gap) => {
-    coordinates.push(coordinates.at(-1)! + gap)
-    return coordinates
-  }, [0])
+  return gaps.reduce<number[]>(
+    (coordinates, gap) => {
+      coordinates.push(coordinates.at(-1)! + gap)
+      return coordinates
+    },
+    [0],
+  )
 }
 
 function randomIndex(length: number, random: Random) {
