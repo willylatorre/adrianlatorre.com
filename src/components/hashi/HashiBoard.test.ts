@@ -148,7 +148,11 @@ describe('HashiBoard', () => {
     expect(vertical.map((line) => line.attributes('x1'))).toEqual(['117', '123'])
     expect(vertical.map((line) => line.attributes('y1'))).toEqual(['135', '135'])
     expect(vertical.map((line) => line.attributes('y2'))).toEqual(['185', '185'])
-    expect(wrapper.get('svg').attributes('viewBox')).toBe('-20 -20 280 280')
+    expect(wrapper.get('svg').attributes()).toMatchObject({
+      viewBox: '-31 -31 302 302',
+      width: '302',
+      height: '302',
+    })
   })
 
   it('exposes corridor and island state without relying on color alone', () => {

@@ -44,6 +44,14 @@ describe('HashiArticleDemo', () => {
     expect(wrapper.get('[role="status"]').text()).toContain('would cross')
   })
 
+  it('isolates the nearest-visible-island rule in its opening example', () => {
+    const wrapper = mount(HashiArticleDemo, { props: { kind: 'visible' } })
+
+    expect(wrapper.findAll('.hashi-island')).toHaveLength(3)
+    expect(wrapper.findAll('.hashi-bridge')).toHaveLength(1)
+    expect(wrapper.get('figcaption').text()).toContain('left island can reach the middle island')
+  })
+
   it('toggles the generated solution without changing the island clues', async () => {
     const wrapper = mount(HashiArticleDemo, { props: { kind: 'generation' } })
     const clues = wrapper.findAll('.hashi-island-number').map((node) => node.text())

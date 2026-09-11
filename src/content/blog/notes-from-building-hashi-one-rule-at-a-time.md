@@ -7,10 +7,13 @@ description: What a bridge puzzle taught me about geometry, graph connectivity, 
 <script setup>
 import HashiArticleDemo from '@/components/hashi/HashiArticleDemo.vue'
 
-const visibleCorridorsSnippet = `for each island:
-    look north, east, south, and west
-    keep only the nearest island in each direction
-    add one corridor for each visible pair`
+const visibleCorridorsSnippet = `right_side = islands on the same row, farther right
+visible_right = nearest island in right_side
+
+if visible_right exists:
+    add_pair(current_island, visible_right)
+
+// Do the same looking left, up, and down.`
 
 const cycleBridgeSnippet = `next_bridge_count = (current_bridge_count + 1) % 3
 
@@ -46,7 +49,9 @@ for each island:
 
 puzzle = remove_the_solution_but_keep_the_numbers()`
 
-const boardBoundsSnippet = `coordinates = [first_edge, ...random_interior, last_edge]
+const boardBoundsSnippet = `coordinates = start_at(first_edge)
+add random gaps of two or three cells
+finish_at(last_edge)
 
 assert min(island.x) == 0
 assert max(island.x) == width - 1
@@ -57,7 +62,7 @@ const islandPlacementSnippet = `for each candidate position:
     reject if any of the eight neighboring cells has an island
 
 assert island_count == category.target
-assert every_row_and_column_band_is_used()`
+assert every_chosen_lattice_row_and_column_is_used()`
 
 const uniquenessSnippet = `solutions = solve(puzzle, stop_after = 2)
 
@@ -83,13 +88,13 @@ Hashi is also a particularly nice programming puzzle because its rules arrive in
 
 I built it in that order, one rule at a time.
 
-## First, decide which bridges can exist
+## Start with what each island can see
 
-The board begins as a set of islands. Each island has an `x` position, a `y` position, and a number. There are no arbitrary lines between them. An island may connect only to the nearest visible island in each cardinal direction.
+Take three islands in one row: left, middle, and right. The left island may connect to the middle one. It may not connect directly to the right one because the middle island is in the way.
 
-If three islands share a row, the island on the left cannot leap over the middle one to reach the island on the right. Hashi is a bridge puzzle, not an express rail proposal.
+That single example defines the first useful piece of the game. From each island, look in four directions: left, right, up, and down. Keep only the first island you meet. Each visible pair is a place where the player might draw zero, one, or two bridges. I call that place a corridor.
 
-So before rendering anything clickable, I compute every legal corridor:
+Here is the right-facing part of the search:
 
 <ProsePre language="text" :code="visibleCorridorsSnippet">
   <ProseCode class="language-text">
@@ -99,11 +104,11 @@ So before rendering anything clickable, I compute every legal corridor:
 
 <HashiArticleDemo kind="visible" />
 
-For each island, I collect the other islands on the same row or column. I split those candidates by direction, sort them by distance, and keep the first one. A pair is stored only once, even though both islands can discover it.
+The other three directions use the same test. If both islands discover each other, I still store the pair only once.
 
-This calculation happens when the puzzle is loaded. The resulting corridor list becomes the shared vocabulary for everything else: drawing bridges, handling clicks, adding totals, checking crossings, solving the puzzle, and generating a new one. If a connection is not in that list, the rest of the application gets to behave as if it has never heard of it.
+I do this once when the puzzle loads. The resulting list answers a very plain question: exactly where is the player allowed to click? The same list is then reused to draw bridges, add island totals, check crossings, and solve the puzzle.
 
-That is useful because impossible interactions disappear early. The renderer does not need to wonder whether a line passes through an island. The click handler does not need to interpret where the player was vaguely pointing. It receives the ID of a corridor that is already known to be legal.
+The important bit is what never enters the list. In the three-island example, there is no left-to-right corridor, so the renderer cannot draw a bridge through the middle island and the click handler cannot accidentally create one. That impossible move is removed before play begins.
 
 ## One corridor, three states
 
@@ -203,7 +208,15 @@ The more reliable direction is backward:
 
 <HashiArticleDemo kind="generation" />
 
-First I place islands on the grid. From their visible corridors, I build a connected spanning network while refusing crossings. The island count does most of the visible work of separating the categories: 32 for the intro, then 72, 108, and 150 for the daily, weekly, and monthly boards.
+First I place islands on the grid. From their visible corridors, I build a connected spanning network while refusing crossings.
+
+### Density is the difficulty dial
+
+A large board is not automatically a difficult board. Stretch ten islands across twice as much space and the puzzle mostly becomes a longer walk between the same ten decisions. More islands create more corridors, more competing bridge totals, and more places where a local choice changes the rest of the network.
+
+So each category has an explicit island target. The 15×15 intro has 32 islands. Daily has 72, weekly 108, and monthly 150. The dimensions still grow, especially horizontally, but density is what stops the larger boards from becoming empty wallpaper.
+
+Those numbers are deliberately simple rather than scientific. The boards are random and luck remains part of the experience; the targets merely keep each category in the right neighborhood.
 
 Even the empty grid needs a rule. If a puzzle says it has 15 rows, there should be an island in row 1 and another in row 15. Otherwise it is really a 13-row puzzle wearing an oversized coat. The same applies to the first and last columns, so the random coordinate picker always keeps both edges and shuffles only the interior:
 
@@ -221,7 +234,7 @@ Those are official dimensions, but spacing is an editorial choice. Hashi's rules
   </ProseCode>
 </ProsePre>
 
-I start with a connected lattice whose coordinate lines are at least two cells apart, then remove positions in random order. A removal survives only if the remaining shape stays connected and every row and column band is still represented. That gives randomness some room without letting it put the entire archipelago behind one bus shelter.
+I start with a connected lattice whose coordinate lines are at least two cells apart, then remove positions in random order. A removal survives only if the remaining shape stays connected and every chosen lattice row and column is still represented. Literal grid rows may be empty; that is the one-cell moat doing its job. The invariant is that the occupied area has no accidental empty band at an edge or through the middle. That gives randomness some room without letting it put the entire archipelago behind one bus shelter.
 
 Once that hidden network exists, each clue is easy: add the bridge counts touching that island. The answer creates the question. Then I throw away the visible answer and keep the islands with their derived numbers.
 

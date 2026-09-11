@@ -19,7 +19,7 @@ const props = defineProps<{ kind: DemoKind }>()
 
 const captions: Record<DemoKind, string> = {
   visible:
-    'Only the nearest island in each direction gets a corridor. The faded island cannot skip over its neighbor.',
+    'The left island can reach the middle island. The faded island is hidden behind it, so there is no direct left-to-right bridge.',
   cycle: 'Try the corridor: one bridge, two bridges, then clear it.',
   crossing: 'The horizontal bridge is already active. Try adding the vertical one.',
   totals: 'Add bridges around the center 2. It recedes when satisfied and warns when overfilled.',
@@ -42,12 +42,10 @@ const puzzle = (id: string, width: number, height: number, islands: Island[]): H
 })
 
 const demos: Record<Exclude<DemoKind, 'uniqueness' | 'geometry'>, HashiPuzzle> = {
-  visible: puzzle('demo-visible', 7, 5, [
-    island('visible-left', 1, 2, 1),
-    island('visible-center', 3, 2, 4),
-    island('visible-blocked', 5, 2, 1),
-    island('visible-top', 3, 0, 1),
-    island('visible-bottom', 3, 4, 1),
+  visible: puzzle('demo-visible', 7, 3, [
+    island('visible-left', 1, 1, 1),
+    island('visible-center', 3, 1, 2),
+    island('visible-blocked', 5, 1, 1),
   ]),
   cycle: puzzle('demo-cycle', 6, 3, [island('cycle-a', 1, 1, 2), island('cycle-b', 4, 1, 2)]),
   crossing: puzzle('demo-crossing', 7, 5, [
@@ -122,9 +120,6 @@ const generatedSolution: BridgeCounts = {
 }
 const visibleCounts: BridgeCounts = {
   [corridorId('visible-left', 'visible-center')]: 1,
-  [corridorId('visible-center', 'visible-blocked')]: 1,
-  [corridorId('visible-center', 'visible-top')]: 1,
-  [corridorId('visible-center', 'visible-bottom')]: 1,
 }
 
 const displayCounts = computed<BridgeCounts>(() => {
@@ -212,7 +207,7 @@ function cycle(corridor: string) {
         @cycle="cycle"
       />
       <p v-if="kind === 'visible'" class="hashi-demo-note">
-        The nearer center island blocks the faded island behind it.
+        Looking right from the left island, the search stops at the middle island.
       </p>
       <p v-if="feedback" role="status" class="hashi-demo-status">{{ feedback }}</p>
       <button

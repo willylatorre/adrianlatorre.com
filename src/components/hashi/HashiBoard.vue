@@ -14,6 +14,8 @@ import type {
 const CELL_SIZE = 40
 const ISLAND_SIZE = 30
 const ISLAND_HALF = ISLAND_SIZE / 2
+const BOARD_INSET = 16
+const BOARD_MARGIN = ISLAND_HALF + BOARD_INSET
 
 const props = withDefaults(
   defineProps<{
@@ -41,9 +43,15 @@ const islandStates = computed(
       ]),
     ),
 )
-const boardWidth = computed(() => props.puzzle.width * CELL_SIZE)
-const boardHeight = computed(() => props.puzzle.height * CELL_SIZE)
-const viewBox = computed(() => `-20 -20 ${boardWidth.value} ${boardHeight.value}`)
+const boardWidth = computed(
+  () => (props.puzzle.width - 1) * CELL_SIZE + BOARD_MARGIN * 2,
+)
+const boardHeight = computed(
+  () => (props.puzzle.height - 1) * CELL_SIZE + BOARD_MARGIN * 2,
+)
+const viewBox = computed(
+  () => `${-BOARD_MARGIN} ${-BOARD_MARGIN} ${boardWidth.value} ${boardHeight.value}`,
+)
 
 function bridgeCount(corridor: Corridor): BridgeCount {
   return props.bridgeCounts[corridor.id] ?? 0

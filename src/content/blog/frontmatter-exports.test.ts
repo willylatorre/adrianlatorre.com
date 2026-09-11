@@ -49,6 +49,9 @@ describe('blog markdown frontmatter exports', () => {
 
     expect(source.default).toContain('house rule')
     expect(source.default).toContain('eight neighboring cells')
-    expect(source.default).toContain('island count')
+    expect(source.default).toContain('explicit island target')
+    expect(source.default).toContain('### Density is the difficulty dial')
+    expect(source.default).toContain('More islands create more corridors')
+    expect(source.default).not.toContain('## First, decide which bridges can exist')
   })
 })
