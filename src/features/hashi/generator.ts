@@ -49,10 +49,11 @@ export interface PuzzleGenerationOptions {
 type CategoryConfig = (typeof CATEGORY_CONFIG)[HashiCategory]
 type Random = () => number
 
-export const HASHI_GENERATOR_VERSION = 'v5'
+export const HASHI_GENERATOR_VERSION = 'v6'
 const DEFAULT_GENERATION_TIME_BUDGET_MS = 3_000
 const DOUBLE_BRIDGE_SHARE = 0.22
 const FALLBACK_SEED = 123_456
+const COVERAGE_RADIUS = 4
 
 export function generatePuzzle(
   category: HashiCategory,
@@ -83,9 +84,17 @@ function tryGeneratePuzzle(
   for (let attempt = 0; attempt < 120; attempt += 1) {
     if (shouldStop()) break
 
-    const islands = placeOrganicIslands(config, random, category === 'intro')
+    const placement = placeOrganicIslands(config, random, category === 'intro')
+    if (!placement) continue
+    const { islands, planarNetworkIds } = placement
     const corridors = getVisibleCorridors(islands)
-    const initialSolution = buildBalancedPlanarSolution(islands, corridors, config, random)
+    const initialSolution = buildBalancedPlanarSolution(
+      islands,
+      corridors,
+      config,
+      random,
+      planarNetworkIds,
+    )
     if (!initialSolution) continue
 
     const initialPuzzle = deriveClues(
@@ -120,68 +129,266 @@ interface GridCell {
 }
 
 interface GridCandidate extends GridCell {
+  boundaryGain: number
+  coverageGain: number
+  coordinateGain: number
+  lineUse: number
+  meshGain: number
   newlyForbiddenCells: number
+  replacedEdges: GridEdge[]
+  parents: GridCell[]
+  tieBreak: number
+}
+
+interface GridEdge {
+  a: GridCell
+  b: GridCell
+}
+
+interface IslandPlacement {
+  islands: Island[]
+  planarNetworkIds: Set<string>
 }
 
 function placeOrganicIslands(
   config: CategoryConfig,
   random: Random,
   requirePlanarVisibility = false,
-): Island[] {
-  for (let attempt = 0; attempt < 24; attempt += 1) {
-    const spineX = 2 + randomIndex(config.width - 4, random)
-    const spineY = 2 + randomIndex(config.height - 4, random)
-    const cells: GridCell[] = [
-      { x: spineX, y: 0 },
-      { x: spineX, y: config.height - 1 },
-      { x: 0, y: spineY },
-      { x: config.width - 1, y: spineY },
-      { x: spineX, y: spineY },
-    ]
-    const forbidden = new Set<string>()
-    for (const cell of cells) forbidNeighboringCells(cell, forbidden, config)
+): IslandPlacement | undefined {
+  const cells: GridCell[] = [
+    {
+      x: 2 + randomIndex(config.width - 4, random),
+      y: 2 + randomIndex(config.height - 4, random),
+    },
+  ]
+  const planarEdges: GridEdge[] = []
+  const forbidden = new Set<string>()
+  for (const cell of cells) forbidNeighboringCells(cell, forbidden, config)
 
-    while (cells.length < config.targetIslands) {
-      const usedXs = new Set(cells.map(({ x }) => x))
-      const usedYs = new Set(cells.map(({ y }) => y))
-      const candidates: GridCandidate[] = []
+  while (cells.length < config.targetIslands) {
+    const xUses = countCoordinateUses(cells, 'x')
+    const yUses = countCoordinateUses(cells, 'y')
+    const cellsByX = groupCellsByCoordinate(cells, 'x')
+    const cellsByY = groupCellsByCoordinate(cells, 'y')
+    const covered = collectCoveredCells(cells, config, COVERAGE_RADIUS)
+    const openBoundaries = findOpenBoundaries(cells, config)
+    const candidates: GridCandidate[] = []
 
-      for (let y = 0; y < config.height; y += 1) {
-        for (let x = 0; x < config.width; x += 1) {
-          if (forbidden.has(cellKey(x, y)) || (!usedXs.has(x) && !usedYs.has(y))) continue
-          const candidate = { x, y }
-          if (requirePlanarVisibility && !canAddWithoutVisibilityCrossings(cells, candidate)) {
-            continue
-          }
-          candidates.push({
-            ...candidate,
-            newlyForbiddenCells: countNewlyForbiddenCells(candidate, forbidden, config),
-          })
+    for (let y = 0; y < config.height; y += 1) {
+      for (let x = 0; x < config.width; x += 1) {
+        if (forbidden.has(cellKey(x, y)) || (!xUses.has(x) && !yUses.has(y))) continue
+        const candidate = { x, y }
+        if (requirePlanarVisibility && !canAddWithoutVisibilityCrossings(cells, candidate)) {
+          continue
         }
+        const replacedEdges = planarEdges.filter((edge) => cellBlocksEdge(candidate, edge))
+        const remainingEdges = planarEdges.filter((edge) => !replacedEdges.includes(edge))
+        const parents = getVisibleGridNeighbors(
+          cellsByY.get(y) ?? [],
+          cellsByX.get(x) ?? [],
+          candidate,
+        ).filter((parent) =>
+          remainingEdges.every((edge) => !gridEdgesCross({ a: candidate, b: parent }, edge)),
+        )
+        if (parents.length === 0) continue
+        candidates.push({
+          ...candidate,
+          boundaryGain: countNewBoundaries(candidate, openBoundaries, config),
+          coverageGain: countNewlyCoveredCells(candidate, covered, config, COVERAGE_RADIUS),
+          coordinateGain:
+            Number(xUses.size < Math.ceil(config.width * 0.75) && !xUses.has(x)) +
+            Number(yUses.size < Math.ceil(config.height * 0.75) && !yUses.has(y)),
+          lineUse: (xUses.get(x) ?? 0) + (yUses.get(y) ?? 0),
+          meshGain: parents.length - replacedEdges.length - 1,
+          newlyForbiddenCells: countNewlyForbiddenCells(candidate, forbidden, config),
+          replacedEdges,
+          parents,
+          tieBreak: random(),
+        })
       }
-
-      if (candidates.length === 0) break
-      const fewestNewlyForbidden = Math.min(
-        ...candidates.map(({ newlyForbiddenCells }) => newlyForbiddenCells),
-      )
-      const leastBlocking = candidates.filter(
-        ({ newlyForbiddenCells }) => newlyForbiddenCells === fewestNewlyForbidden,
-      )
-      const lineExpanding = leastBlocking.filter(({ x, y }) => !usedXs.has(x) || !usedYs.has(y))
-      const pool = lineExpanding.length > 0 ? lineExpanding : leastBlocking
-      const selected = pool[randomIndex(pool.length, random)]!
-      cells.push(selected)
-      forbidNeighboringCells(selected, forbidden, config)
     }
 
-    const islands = cells
-      .sort((left, right) => left.y - right.y || left.x - right.x)
-      .map(({ x, y }, index) => ({ id: `i${index}`, x, y, clue: 0 }))
-
-    if (isValidIslandPlacement(islands, config, requirePlanarVisibility)) return islands
+    if (candidates.length === 0) break
+    const selected = candidates.sort(
+      (left, right) => candidateScore(right) - candidateScore(left),
+    )[0]!
+    cells.push(selected)
+    for (const replaced of selected.replacedEdges) {
+      planarEdges.splice(planarEdges.indexOf(replaced), 1)
+    }
+    for (const parent of selected.parents) planarEdges.push({ a: selected, b: parent })
+    forbidNeighboringCells(selected, forbidden, config)
   }
 
-  return []
+  const islands = cells
+    .sort((left, right) => left.y - right.y || left.x - right.x)
+    .map(({ x, y }, index) => ({ id: `i${index}`, x, y, clue: 0 }))
+
+  if (
+    !isValidIslandPlacement(islands, config, requirePlanarVisibility) ||
+    planarEdges.length - islands.length + 1 < config.targetCycleEdges
+  ) {
+    return undefined
+  }
+
+  const islandIdByCell = new Map(islands.map((island) => [cellKey(island.x, island.y), island.id]))
+  const corridorByPair = new Map(
+    getVisibleCorridors(islands).map((corridor) => [
+      [corridor.a, corridor.b].sort().join('|'),
+      corridor.id,
+    ]),
+  )
+  const planarNetworkIds = new Set<string>()
+  for (const edge of planarEdges) {
+    const a = islandIdByCell.get(cellKey(edge.a.x, edge.a.y))!
+    const b = islandIdByCell.get(cellKey(edge.b.x, edge.b.y))!
+    const corridorId = corridorByPair.get([a, b].sort().join('|'))
+    if (!corridorId) break
+    planarNetworkIds.add(corridorId)
+  }
+  if (planarNetworkIds.size === planarEdges.length) return { islands, planarNetworkIds }
+
+  return undefined
+}
+
+function getVisibleGridNeighbors(
+  horizontal: GridCell[],
+  vertical: GridCell[],
+  candidate: GridCell,
+) {
+  return [
+    horizontal.filter(({ x }) => x < candidate.x).at(-1),
+    horizontal.find(({ x }) => x > candidate.x),
+    vertical.filter(({ y }) => y < candidate.y).at(-1),
+    vertical.find(({ y }) => y > candidate.y),
+  ].filter((cell): cell is GridCell => cell !== undefined)
+}
+
+function groupCellsByCoordinate(cells: GridCell[], axis: 'x' | 'y') {
+  const grouped = new Map<number, GridCell[]>()
+  const otherAxis = axis === 'x' ? 'y' : 'x'
+  for (const cell of cells) {
+    const group = grouped.get(cell[axis]) ?? []
+    group.push(cell)
+    grouped.set(cell[axis], group)
+  }
+  for (const group of grouped.values())
+    group.sort((left, right) => left[otherAxis] - right[otherAxis])
+  return grouped
+}
+
+function cellBlocksEdge(cell: GridCell, edge: GridEdge) {
+  if (edge.a.y === edge.b.y) {
+    return cell.y === edge.a.y && isStrictlyBetween(cell.x, edge.a.x, edge.b.x)
+  }
+  return cell.x === edge.a.x && isStrictlyBetween(cell.y, edge.a.y, edge.b.y)
+}
+
+function gridEdgesCross(first: GridEdge, second: GridEdge) {
+  const firstHorizontal = first.a.y === first.b.y
+  const secondHorizontal = second.a.y === second.b.y
+  if (firstHorizontal === secondHorizontal) return false
+
+  const horizontal = firstHorizontal ? first : second
+  const vertical = firstHorizontal ? second : first
+  return (
+    isStrictlyBetween(vertical.a.x, horizontal.a.x, horizontal.b.x) &&
+    isStrictlyBetween(horizontal.a.y, vertical.a.y, vertical.b.y)
+  )
+}
+
+function isStrictlyBetween(value: number, first: number, second: number) {
+  return value > Math.min(first, second) && value < Math.max(first, second)
+}
+
+function candidateScore(candidate: GridCandidate) {
+  return (
+    candidate.boundaryGain * 100_000 +
+    candidate.coverageGain * 100 +
+    candidate.coordinateGain * 250 -
+    candidate.lineUse * 30 -
+    candidate.newlyForbiddenCells * 5 +
+    candidate.meshGain * 220 +
+    candidate.tieBreak * 80
+  )
+}
+
+function countCoordinateUses(cells: GridCell[], axis: 'x' | 'y') {
+  const uses = new Map<number, number>()
+  for (const cell of cells) uses.set(cell[axis], (uses.get(cell[axis]) ?? 0) + 1)
+  return uses
+}
+
+interface OpenBoundaries {
+  top: boolean
+  right: boolean
+  bottom: boolean
+  left: boolean
+}
+
+function findOpenBoundaries(cells: GridCell[], config: CategoryConfig): OpenBoundaries {
+  return {
+    top: !cells.some(({ y }) => y === 0),
+    right: !cells.some(({ x }) => x === config.width - 1),
+    bottom: !cells.some(({ y }) => y === config.height - 1),
+    left: !cells.some(({ x }) => x === 0),
+  }
+}
+
+function countNewBoundaries(
+  candidate: GridCell,
+  openBoundaries: OpenBoundaries,
+  config: CategoryConfig,
+) {
+  return (
+    Number(openBoundaries.top && candidate.y === 0) +
+    Number(openBoundaries.right && candidate.x === config.width - 1) +
+    Number(openBoundaries.bottom && candidate.y === config.height - 1) +
+    Number(openBoundaries.left && candidate.x === 0)
+  )
+}
+
+function collectCoveredCells(cells: GridCell[], config: CategoryConfig, maximumDistance: number) {
+  const covered = new Set<string>()
+  for (const cell of cells) {
+    for (
+      let y = Math.max(0, cell.y - maximumDistance);
+      y <= Math.min(config.height - 1, cell.y + maximumDistance);
+      y += 1
+    ) {
+      for (
+        let x = Math.max(0, cell.x - maximumDistance);
+        x <= Math.min(config.width - 1, cell.x + maximumDistance);
+        x += 1
+      ) {
+        covered.add(cellKey(x, y))
+      }
+    }
+  }
+  return covered
+}
+
+function countNewlyCoveredCells(
+  cell: GridCell,
+  covered: Set<string>,
+  config: CategoryConfig,
+  maximumDistance: number,
+) {
+  let count = 0
+  for (
+    let y = Math.max(0, cell.y - maximumDistance);
+    y <= Math.min(config.height - 1, cell.y + maximumDistance);
+    y += 1
+  ) {
+    for (
+      let x = Math.max(0, cell.x - maximumDistance);
+      x <= Math.min(config.width - 1, cell.x + maximumDistance);
+      x += 1
+    ) {
+      if (!covered.has(cellKey(x, y))) count += 1
+    }
+  }
+  return count
 }
 
 function cellKey(x: number, y: number) {
@@ -240,6 +447,36 @@ export function hasMinimumIslandSpacing(islands: Island[]) {
   )
 }
 
+export function hasBroadCoordinateUse(
+  islands: Island[],
+  width: number,
+  height: number,
+  minimumShare = 0.75,
+) {
+  const occupiedXs = new Set(islands.map(({ x }) => x)).size
+  const occupiedYs = new Set(islands.map(({ y }) => y)).size
+
+  return occupiedXs / width >= minimumShare && occupiedYs / height >= minimumShare
+}
+
+export function hasLocalIslandCoverage(
+  islands: Island[],
+  width: number,
+  height: number,
+  maximumDistance = 4,
+) {
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const covered = islands.some(
+        (island) => Math.max(Math.abs(island.x - x), Math.abs(island.y - y)) <= maximumDistance,
+      )
+      if (!covered) return false
+    }
+  }
+
+  return true
+}
+
 function isValidIslandPlacement(
   islands: Island[],
   config: CategoryConfig,
@@ -262,14 +499,10 @@ function isValidIslandPlacement(
   if (!hasNoLargeEmptyBands(xs, config.width) || !hasNoLargeEmptyBands(ys, config.height)) {
     return false
   }
-  if (!hasConsecutiveCoordinateLines(xs) || !hasConsecutiveCoordinateLines(ys)) return false
+  if (!hasBroadCoordinateUse(islands, config.width, config.height)) return false
+  if (!hasLocalIslandCoverage(islands, config.width, config.height, COVERAGE_RADIUS)) return false
 
   return hasConnectedVisibilityGraph(islands)
-}
-
-function hasConsecutiveCoordinateLines(coordinates: number[]) {
-  const occupied = [...new Set(coordinates)].sort((left, right) => left - right)
-  return occupied.slice(1).some((coordinate, index) => coordinate - occupied[index]! === 1)
 }
 
 function hasNoLargeEmptyBands(coordinates: number[], size: number) {
@@ -309,15 +542,25 @@ function buildBalancedPlanarSolution(
   corridors: Corridor[],
   config: CategoryConfig,
   random: Random,
+  planarNetworkIds: Set<string>,
 ): BridgeCounts | undefined {
   const islandById = new Map(islands.map((island) => [island.id, island]))
+  const guaranteedNetwork = corridors.filter(({ id }) => planarNetworkIds.has(id))
+  if (guaranteedNetwork.length - islands.length + 1 < config.targetCycleEdges) return undefined
 
   for (let attempt = 0; attempt < 24; attempt += 1) {
-    const active = buildPlanarSpanningTree(islands, corridors, islandById, random)
+    const active = buildPlanarSpanningTree(islands, guaranteedNetwork, islandById, random)
     if (!active) continue
 
     const selectedIds = new Set(active.map(({ id }) => id))
-    for (const corridor of shuffled(corridors, random)) {
+    const cycleCandidates = [
+      ...shuffled(guaranteedNetwork, random),
+      ...shuffled(
+        corridors.filter(({ id }) => !planarNetworkIds.has(id)),
+        random,
+      ),
+    ]
+    for (const corridor of cycleCandidates) {
       if (active.length - islands.length + 1 >= config.targetCycleEdges) break
       if (selectedIds.has(corridor.id) || crossesAny(corridor, active, islandById)) continue
 

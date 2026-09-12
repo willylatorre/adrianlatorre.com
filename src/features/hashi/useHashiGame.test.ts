@@ -1,5 +1,6 @@
 import { effectScope } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { HASHI_GENERATOR_VERSION } from './generator'
 import { loadHashiState, saveHashiState, type HashiStorage } from './persistence'
 import { createHashiGame, useHashiGame } from './useHashiGame'
 import type { HashiCategory, HashiPuzzle } from './types'
@@ -274,7 +275,7 @@ describe('Hashi game state', () => {
     })
 
     expect(game.generating.value).toBe(true)
-    expect(game.puzzle.value.id).toMatch(/^hashi-v5-intro-/)
+    expect(game.puzzle.value.id).toMatch(new RegExp(`^hashi-${HASHI_GENERATOR_VERSION}-intro-`))
     expect(worker.requests).toMatchObject([{ category: 'intro', requestId: 1 }])
 
     game.selectCategory('daily')
@@ -284,7 +285,7 @@ describe('Hashi game state', () => {
 
     expect(game.preferredCategory.value).toBe('daily')
     expect(game.puzzle.value.id).toBe(pendingDailyId)
-    expect(pendingDailyId).toMatch(/^hashi-v5-daily-/)
+    expect(pendingDailyId).toMatch(new RegExp(`^hashi-${HASHI_GENERATOR_VERSION}-daily-`))
 
     worker.deliver(3, freshDailyPuzzle)
 

@@ -70,4 +70,14 @@ describe('blog markdown frontmatter exports', () => {
     expect(source.default).toContain('does not guarantee a complete deduction-only solve')
     expect(source.default).toContain('deduction waves')
   })
+
+  it('explains the Hashi generator spatial coverage correction', async () => {
+    const source = await import('./notes-from-building-hashi-one-rule-at-a-time.md?raw')
+
+    expect(source.default).toContain('two-dimensional')
+    expect(source.default).toContain('75%')
+    expect(source.default).toContain('four grid cells')
+    expect(source.default).toContain('rigid cross')
+    expect(source.default).toContain('tonivrbic/bridges-generator')
+  })
 })

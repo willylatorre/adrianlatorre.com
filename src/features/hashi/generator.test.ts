@@ -1,9 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cloneFallback } from './fallbacks'
-import { CATEGORY_CONFIG, countOpeningDeductions, generatePuzzle } from './generator'
+import {
+  CATEGORY_CONFIG,
+  countOpeningDeductions,
+  generatePuzzle,
+  hasBroadCoordinateUse,
+  hasLocalIslandCoverage,
+} from './generator'
 import { corridorsCross, countCorridorCrossings, getVisibleCorridors } from './geometry'
 import { evaluatePuzzle } from './rules'
-import type { HashiCategory, HashiPuzzle } from './types'
+import type { HashiCategory, HashiPuzzle, Island } from './types'
 
 const categories: HashiCategory[] = ['intro', 'daily', 'weekly', 'monthly']
 const expectedIslandCounts: Record<HashiCategory, number> = {
@@ -71,16 +77,6 @@ function expectNoNeighboringIslands(puzzle: HashiPuzzle) {
   }
 }
 
-function expectUsesConsecutiveCoordinateLines(puzzle: HashiPuzzle) {
-  for (const coordinates of [puzzle.islands.map(({ x }) => x), puzzle.islands.map(({ y }) => y)]) {
-    const occupied = [...new Set(coordinates)].sort((left, right) => left - right)
-
-    expect(occupied.slice(1).some((coordinate, index) => coordinate - occupied[index]! === 1)).toBe(
-      true,
-    )
-  }
-}
-
 function expectNoLargeEmptyBands(puzzle: HashiPuzzle) {
   for (const [coordinates, size] of [
     [puzzle.islands.map(({ x }) => x), puzzle.width],
@@ -101,6 +97,18 @@ afterEach(() => {
 })
 
 describe('Hashi puzzle generation', () => {
+  it('detects a two-dimensional hole that occupied coordinate projections miss', () => {
+    const perimeter = [
+      ...Array.from({ length: 11 }, (_, x) => ({ x, y: 0 })),
+      ...Array.from({ length: 11 }, (_, x) => ({ x, y: 10 })),
+      ...Array.from({ length: 9 }, (_, index) => ({ x: 0, y: index + 1 })),
+      ...Array.from({ length: 9 }, (_, index) => ({ x: 10, y: index + 1 })),
+    ].map<Island>(({ x, y }, index) => ({ id: `i${index}`, x, y, clue: 1 }))
+
+    expect(hasBroadCoordinateUse(perimeter, 11, 11)).toBe(true)
+    expect(hasLocalIslandCoverage(perimeter, 11, 11, 4)).toBe(false)
+  })
+
   it('counts only islands that force at least one opening bridge', () => {
     const constrainedLeaves: HashiPuzzle = {
       id: 'opening-capacity',
@@ -135,7 +143,7 @@ describe('Hashi puzzle generation', () => {
   })
 
   it.each(categories)('keeps representative %s layouts separated and distributed', (category) => {
-    for (let seed = 0; seed < 5; seed += 1) {
+    for (let seed = 0; seed < 10; seed += 1) {
       const { puzzle } = generatePuzzle(category, 910_000 + seed)
 
       expect(puzzle.id).not.toBe(`fallback-${category}`)
@@ -143,19 +151,10 @@ describe('Hashi puzzle generation', () => {
       expectIslandsTouchEveryBoundary(puzzle)
       expectNoNeighboringIslands(puzzle)
       expectNoLargeEmptyBands(puzzle)
+      expect(hasBroadCoordinateUse(puzzle.islands, puzzle.width, puzzle.height)).toBe(true)
+      expect(hasLocalIslandCoverage(puzzle.islands, puzzle.width, puzzle.height, 4)).toBe(true)
     }
   })
-
-  it.each(categories)(
-    'uses consecutive coordinate lines in representative %s layouts without neighboring islands',
-    (category) => {
-      const { puzzle } = generatePuzzle(category, 123456)
-
-      expect(puzzle.id).not.toBe(`fallback-${category}`)
-      expectUsesConsecutiveCoordinateLines(puzzle)
-      expectNoNeighboringIslands(puzzle)
-    },
-  )
 
   it('is deterministic for a supplied seed', () => {
     expect(generatePuzzle('intro', 42)).toEqual(generatePuzzle('intro', 42))

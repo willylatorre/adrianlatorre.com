@@ -49,12 +49,17 @@ for each island:
 
 puzzle = remove_the_solution_but_keep_the_numbers()`
 
-const boardBoundsSnippet = `positions = seed_one_island_on_each_boundary()
+const boardBoundsSnippet = `positions = [random_interior_island()]
+planned_network = []
 
 while positions.size < category.target:
     candidates = full_grid.filter(not_touching_an_island)
-    candidates = candidates.filter(aligned_with_the_network)
-    positions.add(least_blocking_random_candidate(candidates))
+    candidates = candidates.filter(visible_from_the_network)
+    candidate = best_coverage_candidate(candidates)
+
+    split_any_planned_bridge_under(candidate)
+    add_visible_non_crossing_edges(candidate)
+    positions.add(candidate)
 
 assert min(island.x) == 0
 assert max(island.x) == width - 1
@@ -66,7 +71,11 @@ const islandPlacementSnippet = `for each candidate position:
 
 assert island_count == category.target
 assert visible_corridor_graph_is_connected()
-assert occupied_rows_and_columns_have_no_large_gaps()`
+assert occupied_x_coordinates / width >= 75%
+assert occupied_y_coordinates / height >= 75%
+
+for each grid_cell:
+    assert distance_to_nearest_island <= 4`
 
 const clueMixSnippet = `candidate = build_connected_non_crossing_network()
 add_a_few_cycles(candidate)
@@ -242,7 +251,9 @@ Those numbers are deliberately simple rather than scientific. The boards are ran
 
 <HashiArticleDemo kind="density" />
 
-Even the empty grid needs a rule. If a puzzle says it has 15 rows, there should be an island in row 1 and another in row 15. Otherwise it is really a 13-row puzzle wearing an oversized coat. The same applies to the first and last columns, so the random coordinate picker begins with boundary anchors and grows inward:
+Even the empty grid needs a rule. If a puzzle says it has 15 rows, there should be an island in row 1 and another in row 15. Otherwise it is really a 13-row puzzle wearing an oversized coat. The same applies to the first and last columns.
+
+I begin with one random interior island and grow outward. Every candidate must be visible from an island already in the network, so the board develops as one connected frontier. Until the network reaches all four sides, candidates on a missing boundary get priority:
 
 <ProsePre language="text" :code="boardBoundsSnippet">
   <ProseCode class="language-text">
@@ -258,7 +269,17 @@ Those are official dimensions, but spacing is an editorial choice. Hashi's rules
   </ProseCode>
 </ProsePre>
 
-The first version applied that moat to the coordinate system itself, accidentally banning every other row and column. The corrected generator scans the full grid and applies spacing only between actual island pairs. Each new island must align with the growing visibility network, and candidates that leave the most room for future islands are preferred. Literal grid rows may still be empty; that is the one-cell moat doing its job. The invariant is that the occupied area has no accidental empty band at an edge or through the middle. That gives randomness some room without turning the archipelago into graph paper wearing graph paper.
+The first version applied that moat to the coordinate system itself, accidentally banning every other row and column. Scanning the full grid fixed that bug, but my next attempt still began from a rigid cross and preferred whichever candidate blocked the fewest future cells. The result passed its tests and then produced islands living in two very respectable districts with a desert between them.
+
+The tests were looking at each axis separately. A row counted as occupied even if its only island sat at the far left; a column counted as occupied even if its only island sat at the top. Both projections could look healthy while the middle of the actual, two-dimensional board was empty.
+
+So the spatial contract now asks two different questions. First, at least 75% of the x coordinates and 75% of the y coordinates must contain an island. That stops the generator from quietly using every other line. Second, every grid point must be within four grid cells of an island, measured in both dimensions. That catches the hole which two tidy one-dimensional lists could not see.
+
+Candidate scoring uses the same idea during growth. It prefers islands that cover previously lonely cells, introduce a needed row or column, and avoid overusing the same lines. A seeded random tie-break keeps equally useful choices from turning into a new wallpaper pattern.
+
+I borrowed one good instinct from [Toni Vrbic's small open-source generator](https://github.com/tonivrbic/bridges-generator): grow from the existing network instead of placing an entire constellation first and trying to connect it afterward. My version also remembers a non-crossing network as it grows. If a new island lands on one of those planned bridges, the long bridge becomes two shorter ones. The island is not blocking the road; it has become a new stop.
+
+Literal grid rows may still be empty; that is the one-cell moat doing its job. What the generator may not leave is a repeated coordinate pattern or a large unserved patch in the middle. Randomness still chooses the coastline, but it no longer gets to put the entire population in New York and Los Angeles.
 
 Once that hidden network exists, each clue is easy: add the bridge counts touching that island. The answer creates the question. Then I throw away the visible answer and keep the islands with their derived numbers.
 
