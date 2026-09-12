@@ -22,8 +22,9 @@ const props = withDefaults(
     puzzle: HashiPuzzle
     bridgeCounts: BridgeCounts
     interactive?: boolean
+    hintCorridorId?: string | null
   }>(),
-  { interactive: true },
+  { interactive: true, hintCorridorId: null },
 )
 
 const emit = defineEmits<{
@@ -83,7 +84,9 @@ function corridorLabel(corridor: Corridor) {
   const count = bridgeCount(corridor)
   const countLabel = count === 1 ? '1 bridge' : `${count} bridges`
 
-  return `Corridor between island ${first.clue} and island ${second.clue}, ${countLabel}`
+  const hintLabel = props.hintCorridorId === corridor.id ? ', current hint' : ''
+
+  return `Corridor between island ${first.clue} and island ${second.clue}, ${countLabel}${hintLabel}`
 }
 
 function islandLabel(island: Island) {
@@ -134,7 +137,10 @@ function islandLabel(island: Island) {
           v-for="corridor in corridors"
           :key="corridor.id"
           class="hashi-corridor"
-          :class="corridorStateClasses(corridor)"
+          :class="[
+            corridorStateClasses(corridor),
+            { 'is-hinted': hintCorridorId === corridor.id },
+          ]"
           :data-corridor="corridor.id"
         >
           <line
@@ -152,7 +158,10 @@ function islandLabel(island: Island) {
           v-for="corridor in corridors"
           :key="corridor.id"
           class="hashi-corridor-hit"
-          :class="{ 'is-readonly': !interactive }"
+          :class="{
+            'is-readonly': !interactive,
+            'is-hinted': hintCorridorId === corridor.id,
+          }"
           :data-corridor-hit="corridor.id"
           :role="interactive ? 'button' : undefined"
           :tabindex="interactive ? 0 : undefined"
@@ -170,6 +179,7 @@ function islandLabel(island: Island) {
           />
           <line
             class="hashi-focus"
+            :class="{ 'is-hinted': hintCorridorId === corridor.id }"
             v-bind="hitSegment(corridor)"
             stroke="transparent"
             stroke-width="3"
@@ -282,6 +292,16 @@ function islandLabel(island: Island) {
 
 .hashi-corridor-hit:focus-visible .hashi-focus {
   stroke-dasharray: 3 3;
+}
+
+.hashi-corridor-hit.is-hinted .hashi-focus {
+  stroke: color-mix(in oklch, var(--site-accent) 72%, var(--site-ink));
+  stroke-dasharray: 7 5;
+}
+
+.hashi-corridor.is-hinted .hashi-bridge {
+  color: color-mix(in oklch, var(--site-accent) 72%, var(--site-ink));
+  opacity: 1;
 }
 
 .hashi-bridge.is-satisfied {

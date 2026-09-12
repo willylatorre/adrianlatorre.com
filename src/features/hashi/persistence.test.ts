@@ -9,7 +9,7 @@ import {
 } from './persistence'
 
 const state: PersistedHashiState = {
-  version: 1,
+  version: 2,
   preferredCategory: 'daily',
   puzzle: {
     id: 'persisted',
@@ -23,6 +23,14 @@ const state: PersistedHashiState = {
   },
   bridgeCounts: { 'a:b': 1 },
   snapshot: { 'a:b': 0 },
+  hintsRemaining: 2,
+  activeHint: {
+    corridorId: 'a:b',
+    minimumCount: 2,
+    rule: 'only-route',
+    title: 'Only route',
+    explanation: 'This corridor needs one more bridge.',
+  },
   startedAt: 1_000,
   history: [{ corridorId: 'a:b', previous: 0 }],
   solvedAt: 1_500,
@@ -68,14 +76,34 @@ describe('Hashi persistence', () => {
     expect(
       parsePersistedHashiState(JSON.stringify({ ...state, snapshot: { 'unknown:corridor': 1 } })),
     ).toBeNull()
+    expect(
+      parsePersistedHashiState(JSON.stringify({ ...state, hintsRemaining: 4 })),
+    ).toBeNull()
+    expect(
+      parsePersistedHashiState(
+        JSON.stringify({
+          ...state,
+          activeHint: { ...state.activeHint, corridorId: 'unknown:corridor' },
+        }),
+      ),
+    ).toBeNull()
   })
 
-  it('loads older active runs without a saved position', () => {
-    const { snapshot: _snapshot, ...legacyState } = state
+  it('migrates version-one runs with three fresh hearts and no active hint', () => {
+    const {
+      snapshot: _snapshot,
+      hintsRemaining: _hintsRemaining,
+      activeHint: _activeHint,
+      ...currentState
+    } = state
+    const legacyState = { ...currentState, version: 1 }
 
     expect(parsePersistedHashiState(JSON.stringify(legacyState))).toEqual({
       ...legacyState,
+      version: 2,
       snapshot: null,
+      hintsRemaining: 3,
+      activeHint: null,
     })
   })
 

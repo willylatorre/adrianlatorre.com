@@ -96,6 +96,17 @@ for each incident edge:
 
 opening = any(forced_minimum > 0)`
 
+const hintSnippet = `result = find_forced_move(current_board)
+
+if result is a forced corridor:
+    spend_one_heart()
+    highlight(result.corridor)
+    explain(result.rule)
+else if result is a contradiction:
+    explain_the_problem_for_free()
+
+// The player still places the bridge.`
+
 const difficultyConfigSnippet = `daily:   { minimum_openings: 5,  cycles: 13, crossings: 4  }
 weekly:  { minimum_openings: 8,  cycles: 22, crossings: 8  }
 monthly: { minimum_openings: 12, cycles: 33, crossings: 12 }
@@ -327,11 +338,21 @@ This is useful for generation because it replaces a list of special cases with o
   </ProseCode>
 </ProsePre>
 
+The same calculation eventually became the hint system. Each puzzle gets three hearts. Spending one asks the current board for a forced corridor, highlights it, and explains whether the reason was capacity, a crossing, the only exit from a group, or a short contradiction. It deliberately does not draw the bridge. A useful hint should remove the blank stare, not the small satisfaction of making the move yourself.
+
+<ProsePre language="text" :code="hintSnippet">
+  <ProseCode class="language-text">
+{{ hintSnippet }}
+  </ProseCode>
+</ProsePre>
+
+The hint engine never looks at the network used to generate the puzzle. These random boards are allowed to have more than one answer, so “copy this edge from the hidden solution” could reject another perfectly valid route. Instead, every hint has to prove its move from the bridges currently on screen. If the player has overfilled an island or closed a stranded group, that warning is free. Charging a heart to announce a mistake felt less like help and more like a parking ticket.
+
 These are independent knobs. Island count controls scale and interaction density. Cycle count controls how many routes can look plausible. Potential crossings create deductions that close other corridors. The double-bridge share shapes the clue distribution. The opening floor controls how many honest first moves the board offers. Raising all of them together would not create a sophisticated puzzle; it would create a crowded puzzle with lots of obvious high numbers.
 
 Daily therefore needs five opening islands, weekly eight, and monthly twelve. The larger number does not make monthly easier: it is spread across 150 islands, alongside more cycles and crossing choices. It simply prevents a large random board from beginning with no sensible handle. Normal generation and timeout recovery now pass through the same checks, so an unlucky deadline still returns a full category-sized puzzle rather than three islands wearing a monthly-puzzle name tag.
 
-There is still an important limit. Counting good openings does not guarantee a complete deduction-only solve. It verifies the first footholds, not the whole climb. The next refinement would run a small deduction engine over each candidate and record deduction waves: capacity forces a bridge, that bridge closes a crossing corridor, the closure completes another island, and so on. A stalled set of unresolved corridors would then be measurable too. That trace could distinguish “many places to start” from “a chain that reaches the end,” and tune weekly or monthly boards by how deep the chain becomes before a contradiction check is needed.
+There is still an important limit. Counting good openings does not guarantee a complete deduction-only solve. The runtime hint engine can find the next provable move, but generation verifies only the first footholds, not the whole climb. The next refinement would run that engine repeatedly over each candidate and record deduction waves: capacity forces a bridge, that bridge closes a crossing corridor, the closure completes another island, and so on. A stalled set of unresolved corridors would then be measurable too. That trace could distinguish “many places to start” from “a chain that reaches the end,” and tune weekly or monthly boards by how deep the chain becomes before a contradiction check is needed.
 
 For now I keep that as the next step rather than pretending the random generator already proves it. Luck is still allowed in the room; it just no longer gets to arrange all the furniture.
 

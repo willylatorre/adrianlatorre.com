@@ -14,10 +14,16 @@ const props = withDefaults(
     category: HashiCategory
     bridgeCounts?: BridgeCounts
     canRestoreSnapshot?: boolean
+    hintsRemaining?: number
+    hasActiveHint?: boolean
+    hintUnavailable?: boolean
   }>(),
   {
     bridgeCounts: () => ({}),
     canRestoreSnapshot: false,
+    hintsRemaining: 3,
+    hasActiveHint: false,
+    hintUnavailable: false,
   },
 )
 
@@ -25,6 +31,7 @@ const emit = defineEmits<{
   'select-category': [category: HashiCategory]
   'save-snapshot': []
   'restore-snapshot': []
+  'request-hint': []
   reset: []
   'new-puzzle': []
 }>()
@@ -69,6 +76,26 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
     </nav>
 
     <div class="hashi-position-actions" aria-label="Puzzle actions">
+      <span
+        class="hashi-hint-hearts"
+        data-hint-hearts
+        :aria-label="`${hintsRemaining} ${hintsRemaining === 1 ? 'hint' : 'hints'} remaining`"
+      >
+        <span aria-hidden="true">
+          <span v-for="heart in 3" :key="heart">{{ heart <= hintsRemaining ? '♥' : '♡' }}</span>
+        </span>
+      </span>
+      <UButton
+        type="button"
+        data-action="hint"
+        icon="i-lucide-lightbulb"
+        label="Hint"
+        color="neutral"
+        variant="soft"
+        size="sm"
+        :disabled="hintUnavailable || (hintsRemaining === 0 && !hasActiveHint)"
+        @click="emit('request-hint')"
+      />
       <UButton
         type="button"
         data-action="save-snapshot"
@@ -140,7 +167,16 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
   gap: 4px;
 }
 
-@media (max-width: 700px) {
+.hashi-hint-hearts {
+  min-width: 3.4rem;
+  color: color-mix(in oklch, var(--site-accent) 72%, var(--site-ink));
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 960px) {
   .hashi-controls {
     align-items: stretch;
     flex-direction: column;
@@ -149,6 +185,7 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
 
   .hashi-position-actions {
     width: 100%;
+    flex-wrap: wrap;
   }
 }
 </style>

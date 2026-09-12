@@ -51,6 +51,7 @@ describe('HashiPage', () => {
     expect(wrapper.text()).toContain('Corner 3, edge 5, and middle 7')
     expect(wrapper.text()).toContain('A middle 6 facing a 1')
     expect(wrapper.text()).toContain('closed island segment')
+    expect(wrapper.text()).toContain('name the rule without placing the bridge')
     expect(wrapper.get('[data-hashi-techniques-source]').attributes('href')).toContain(
       'conceptispuzzles.com',
     )
@@ -62,6 +63,21 @@ describe('HashiPage', () => {
     expect(wrapper.find('[data-action="undo"]').exists()).toBe(false)
     expect(wrapper.get('[data-action="save-snapshot"]').text()).toContain('Save position')
     expect(wrapper.get('[data-action="restore-snapshot"]').text()).toContain('Restore position')
+  })
+
+  it('offers rule-based hints without placing the highlighted bridge', async () => {
+    const wrapper = mount(HashiPage, { global: { plugins: [router] } })
+
+    expect(wrapper.get('[data-hint-hearts]').attributes('aria-label')).toBe('3 hints remaining')
+    await wrapper.get('[data-action="hint"]').trigger('click')
+
+    expect(wrapper.get('[data-hashi-hint]').attributes('role')).toBe('status')
+    expect(wrapper.get('[data-hashi-hint]').text()).toMatch(
+      /Only route|Capacity rule|Crossing rule|Keep it connected|Contradiction check/,
+    )
+    const hinted = wrapper.get('.hashi-corridor-hit.is-hinted')
+    expect(hinted.attributes('aria-label')).toContain('0 bridges')
+    expect(wrapper.get('[data-hint-hearts]').attributes('aria-label')).toBe('2 hints remaining')
   })
 
   it('labels satisfied and overfilled board feedback without relying on color', () => {

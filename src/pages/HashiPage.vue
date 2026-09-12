@@ -92,12 +92,20 @@ watch(
       :category="game.preferredCategory.value"
       :bridge-counts="game.bridgeCounts.value"
       :can-restore-snapshot="game.canRestoreSnapshot.value"
+      :hints-remaining="game.hintsRemaining.value"
+      :has-active-hint="game.activeHint.value !== null"
+      :hint-unavailable="game.generating.value"
       @select-category="game.selectCategory"
       @save-snapshot="game.saveSnapshot"
       @restore-snapshot="game.restoreSnapshot"
+      @request-hint="game.requestHint"
       @reset="game.reset"
       @new-puzzle="game.newPuzzle"
     />
+    <p v-if="game.hintFeedback.value" class="hashi-hint-feedback" data-hashi-hint role="status">
+      <strong v-if="game.activeHint.value">{{ game.activeHint.value.title }}.</strong>
+      {{ game.hintFeedback.value }}
+    </p>
 
     <section data-section="board" class="hashi-board-section" aria-label="Hashi puzzle">
       <div class="hashi-meta">
@@ -120,6 +128,7 @@ watch(
         v-else
         :puzzle="game.puzzle.value"
         :bridge-counts="game.bridgeCounts.value"
+        :hint-corridor-id="game.activeHint.value?.corridorId"
         @cycle="game.cycleCorridor"
       />
       <aside class="hashi-legend" data-board-legend aria-label="Board feedback">
@@ -158,6 +167,7 @@ watch(
           <p class="hashi-rules-intro">
             Each corridor cycles 0 → 1 → 2 → 0. Satisfied islands recede; overfilled islands need a
             bridge removed. If every number matches but groups are stranded, keep connecting.
+            Hints name the rule without placing the bridge for you.
           </p>
           <ol>
             <li>Connect islands only horizontally or vertically.</li>
@@ -290,6 +300,23 @@ watch(
   width: 100%;
   max-width: none;
   margin-top: 1.35rem;
+}
+
+.hashi-hint-feedback {
+  max-width: 54rem;
+  margin: 0.85rem 0 0;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid color-mix(in oklch, var(--site-accent) 24%, var(--site-border));
+  border-radius: 0.55rem;
+  background: color-mix(in oklch, var(--site-accent) 5%, var(--site-bg));
+  color: var(--site-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.hashi-hint-feedback strong {
+  color: var(--site-ink);
+  font-weight: 700;
 }
 
 .hashi-meta {

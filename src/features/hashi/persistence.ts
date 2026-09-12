@@ -1,4 +1,5 @@
 import { corridorsCross, getVisibleCorridors } from './geometry'
+import { isHintMinimumCount, type HashiHint, type HashiHintRule } from './hints'
 import type { BridgeCount, BridgeCounts, HashiCategory, HashiPuzzle, Island } from './types'
 
 export const HASHI_STORAGE_KEY = 'adrianlatorre.hashi.v1'
@@ -10,11 +11,13 @@ export interface HashiStorage {
 }
 
 export interface PersistedHashiState {
-  version: 1
+  version: 2
   preferredCategory: HashiCategory
   puzzle: HashiPuzzle
   bridgeCounts: BridgeCounts
   snapshot?: BridgeCounts | null
+  hintsRemaining: number
+  activeHint: HashiHint | null
   startedAt: number
   /** Accepted only for backward compatibility with runs saved before snapshots replaced Undo. */
   history?: Array<{ corridorId: string; previous: BridgeCount }>
@@ -51,7 +54,13 @@ export function parsePersistedHashiState(raw: string | null): PersistedHashiStat
 
   try {
     const value: unknown = JSON.parse(raw)
-    if (!isRecord(value) || value.version !== 1 || !isCategory(value.preferredCategory)) return null
+    if (
+      !isRecord(value) ||
+      (value.version !== 1 && value.version !== 2) ||
+      !isCategory(value.preferredCategory)
+    ) {
+      return null
+    }
     if (!isPuzzle(value.puzzle) || !isBridgeCounts(value.bridgeCounts, value.puzzle)) return null
     if (hasCrossingBridgeCounts(value.puzzle, value.bridgeCounts)) return null
     if (
@@ -67,12 +76,20 @@ export function parsePersistedHashiState(raw: string | null): PersistedHashiStat
       return null
     }
 
+    const hintsRemaining = value.version === 1 ? 3 : value.hintsRemaining
+    const activeHint = value.version === 1 ? null : value.activeHint
+    if (!isHintCount(hintsRemaining) || !isHashiHint(activeHint, value.puzzle, value.bridgeCounts)) {
+      return null
+    }
+
     return {
-      version: 1,
+      version: 2,
       preferredCategory: value.preferredCategory,
       puzzle: value.puzzle,
       bridgeCounts: value.bridgeCounts,
       snapshot: value.snapshot ?? null,
+      hintsRemaining,
+      activeHint,
       startedAt: value.startedAt,
       history: value.history,
       solvedAt: value.solvedAt ?? null,
@@ -80,6 +97,43 @@ export function parsePersistedHashiState(raw: string | null): PersistedHashiStat
   } catch {
     return null
   }
+}
+
+function isHashiHint(
+  value: unknown,
+  puzzle: HashiPuzzle,
+  counts: BridgeCounts,
+): value is HashiHint | null {
+  if (value === null) return true
+  if (
+    !isRecord(value) ||
+    typeof value.corridorId !== 'string' ||
+    !isHintMinimumCount(value.minimumCount) ||
+    !isHintRule(value.rule) ||
+    typeof value.title !== 'string' ||
+    value.title.length === 0 ||
+    typeof value.explanation !== 'string' ||
+    value.explanation.length === 0
+  ) {
+    return false
+  }
+
+  const corridorIds = new Set(getVisibleCorridors(puzzle.islands).map(({ id }) => id))
+  return corridorIds.has(value.corridorId) && (counts[value.corridorId] ?? 0) < value.minimumCount
+}
+
+function isHintRule(value: unknown): value is HashiHintRule {
+  return (
+    value === 'only-route' ||
+    value === 'capacity' ||
+    value === 'crossing' ||
+    value === 'connectivity' ||
+    value === 'contradiction'
+  )
+}
+
+function isHintCount(value: unknown): value is number {
+  return Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 3
 }
 
 export function isCategory(value: unknown): value is HashiCategory {

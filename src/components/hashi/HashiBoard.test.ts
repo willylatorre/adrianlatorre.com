@@ -190,6 +190,18 @@ describe('HashiBoard', () => {
     expect(wrapper.get('[data-island="b"]').classes()).not.toContain('is-satisfied')
     expect(wrapper.get('.hashi-bridges .hashi-bridge').classes()).toContain('is-satisfied')
   })
+
+  it('highlights an empty hinted corridor without changing its bridge count', () => {
+    const wrapper = mount(HashiBoard, {
+      props: { puzzle, bridgeCounts: {}, hintCorridorId: 'a:b' },
+    })
+
+    const target = wrapper.get('[data-corridor-hit="a:b"]')
+    expect(target.classes()).toContain('is-hinted')
+    expect(target.attributes('aria-label')).toContain('current hint')
+    expect(target.get('.hashi-focus').classes()).toContain('is-hinted')
+    expect(wrapper.findAll('[data-corridor="a:b"] .hashi-bridge')).toHaveLength(0)
+  })
 })
 
 describe('HashiControls', () => {
@@ -209,6 +221,8 @@ describe('HashiControls', () => {
         category: 'intro',
         bridgeCounts: {},
         canRestoreSnapshot: false,
+        hintsRemaining: 3,
+        hasActiveHint: false,
         ...props,
       },
       global: { plugins: [router] },
@@ -260,5 +274,29 @@ describe('HashiControls', () => {
     expect(confirm).toHaveBeenCalledTimes(2)
     expect(active.emitted('reset')).toHaveLength(1)
     expect(active.emitted('new-puzzle')).toHaveLength(1)
+  })
+
+  it('shows three hint hearts and emits a hint request', async () => {
+    const wrapper = mountControls({ hintsRemaining: 2 })
+    const meter = wrapper.get('[data-hint-hearts]')
+
+    expect(meter.attributes('aria-label')).toBe('2 hints remaining')
+    expect(meter.text()).toBe('♥♥♡')
+    await wrapper.get('[data-action="hint"]').trigger('click')
+    expect(wrapper.emitted('request-hint')).toHaveLength(1)
+  })
+
+  it('allows reopening an active hint after all hearts are spent', () => {
+    const empty = mountControls({ hintsRemaining: 0 })
+    const reopenable = mountControls({ hintsRemaining: 0, hasActiveHint: true })
+
+    expect(empty.get('[data-action="hint"]').attributes('disabled')).toBeDefined()
+    expect(reopenable.get('[data-action="hint"]').attributes('disabled')).toBeUndefined()
+  })
+
+  it('disables hints while a replacement puzzle is still generating', () => {
+    const wrapper = mountControls({ hintUnavailable: true })
+
+    expect(wrapper.get('[data-action="hint"]').attributes('disabled')).toBeDefined()
   })
 })

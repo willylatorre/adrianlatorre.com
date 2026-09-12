@@ -3,6 +3,7 @@ import { generatePuzzle, HASHI_GENERATOR_VERSION } from './generator'
 import { cloneFallback } from './fallbacks'
 import type { GeneratePuzzleMessage, GeneratedPuzzleMessage } from './generator.worker'
 import { corridorsCross, getVisibleCorridors } from './geometry'
+import { findHashiHint, type HashiHint, type HashiHintSearchResult } from './hints'
 import {
   loadHashiState,
   saveHashiState,
@@ -51,12 +52,16 @@ export interface HashiGame {
   readonly bridgeCounts: BridgeCounts
   readonly snapshot: BridgeCounts | null
   readonly canRestoreSnapshot: boolean
+  readonly hintsRemaining: number
+  readonly activeHint: HashiHint | null
+  readonly hintFeedback: string | null
   readonly evaluation: PuzzleEvaluation
   readonly solvedAt: number | null
   readonly elapsedMs: number
   cycleCorridor(corridorId: string): CycleResult
   saveSnapshot(): void
   restoreSnapshot(): boolean
+  requestHint(): HashiHintSearchResult
   reset(): void
   newPuzzle(): void
   selectCategory(category: HashiCategory): void
@@ -73,6 +78,9 @@ export function createHashiGame(
   let preferredCategory = restored?.preferredCategory ?? puzzle.category
   let bridgeCounts = { ...restored?.bridgeCounts }
   let snapshot = restored?.snapshot ? { ...restored.snapshot } : null
+  let hintsRemaining = restored?.hintsRemaining ?? 3
+  let activeHint = restored?.activeHint ?? null
+  let hintFeedback = activeHint?.explanation ?? null
   let evaluation = evaluatePuzzle(puzzle, bridgeCounts)
   let startedAt = restored?.startedAt ?? now()
   let solvedAt = restored?.solvedAt ?? (evaluation.solved ? now() : null)
@@ -82,11 +90,13 @@ export function createHashiGame(
   const persist = () => {
     saveHashiState(
       {
-        version: 1,
+        version: 2,
         preferredCategory,
         puzzle,
         bridgeCounts,
         snapshot,
+        hintsRemaining,
+        activeHint,
         startedAt,
         solvedAt,
       },
@@ -108,6 +118,9 @@ export function createHashiGame(
     puzzle = nextPuzzle
     bridgeCounts = {}
     snapshot = null
+    hintsRemaining = 3
+    activeHint = null
+    hintFeedback = null
     startedAt = now()
     solvedAt = null
     evaluation = evaluatePuzzle(puzzle, bridgeCounts)
@@ -131,6 +144,15 @@ export function createHashiGame(
     get canRestoreSnapshot() {
       return snapshot !== null && !bridgeCountsEqual(bridgeCounts, snapshot)
     },
+    get hintsRemaining() {
+      return hintsRemaining
+    },
+    get activeHint() {
+      return activeHint
+    },
+    get hintFeedback() {
+      return hintFeedback
+    },
     get evaluation() {
       return evaluation
     },
@@ -151,6 +173,8 @@ export function createHashiGame(
       }
 
       bridgeCounts = { ...bridgeCounts, [corridorId]: next }
+      activeHint = null
+      hintFeedback = null
       evaluation = evaluatePuzzle(puzzle, bridgeCounts)
       if (evaluation.solved && solvedAt === null) solvedAt = now()
       changed()
@@ -163,14 +187,45 @@ export function createHashiGame(
     restoreSnapshot() {
       if (snapshot === null || bridgeCountsEqual(bridgeCounts, snapshot)) return false
       bridgeCounts = { ...snapshot }
+      activeHint = null
+      hintFeedback = null
       evaluation = evaluatePuzzle(puzzle, bridgeCounts)
       solvedAt = evaluation.solved ? (solvedAt ?? now()) : null
       changed()
       return true
     },
+    requestHint() {
+      if (activeHint) {
+        hintFeedback = activeHint.explanation
+        changed()
+        return { kind: 'hint', hint: activeHint }
+      }
+
+      const result = findHashiHint(puzzle, bridgeCounts)
+      if (result.kind === 'hint') {
+        if (hintsRemaining === 0) {
+          const unavailable = {
+            kind: 'none' as const,
+            message: 'No hints left for this puzzle.',
+          }
+          hintFeedback = unavailable.message
+          changed()
+          return unavailable
+        }
+        hintsRemaining -= 1
+        activeHint = result.hint
+        hintFeedback = result.hint.explanation
+      } else {
+        hintFeedback = result.message
+      }
+      changed()
+      return result
+    },
     reset() {
       bridgeCounts = {}
       snapshot = null
+      activeHint = null
+      hintFeedback = null
       startedAt = now()
       solvedAt = null
       evaluation = evaluatePuzzle(puzzle, bridgeCounts)
@@ -316,6 +371,9 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     bridgeCounts: value(() => game.bridgeCounts),
     snapshot: value(() => game.snapshot),
     canRestoreSnapshot: value(() => game.canRestoreSnapshot),
+    hintsRemaining: value(() => game.hintsRemaining),
+    activeHint: value(() => game.activeHint),
+    hintFeedback: value(() => game.hintFeedback),
     evaluation: value(() => game.evaluation),
     solvedAt: value(() => game.solvedAt),
     elapsedMs: computed(() => {
@@ -327,6 +385,7 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     cycleCorridor: game.cycleCorridor,
     saveSnapshot: game.saveSnapshot,
     restoreSnapshot: game.restoreSnapshot,
+    requestHint: game.requestHint,
     reset: game.reset,
     newPuzzle: () => {
       game.newPuzzle()
