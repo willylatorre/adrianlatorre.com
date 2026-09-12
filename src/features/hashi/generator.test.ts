@@ -72,6 +72,16 @@ function expectNoNeighboringIslands(puzzle: HashiPuzzle) {
   }
 }
 
+function expectUsesConsecutiveCoordinateLines(puzzle: HashiPuzzle) {
+  for (const coordinates of [puzzle.islands.map(({ x }) => x), puzzle.islands.map(({ y }) => y)]) {
+    const occupied = [...new Set(coordinates)].sort((left, right) => left - right)
+
+    expect(occupied.slice(1).some((coordinate, index) => coordinate - occupied[index]! === 1)).toBe(
+      true,
+    )
+  }
+}
+
 function expectNoLargeEmptyBands(puzzle: HashiPuzzle) {
   for (const [coordinates, size] of [
     [puzzle.islands.map(({ x }) => x), puzzle.width],
@@ -119,6 +129,17 @@ describe('Hashi puzzle generation', () => {
       expectNoLargeEmptyBands(puzzle)
     }
   })
+
+  it.each(categories)(
+    'uses consecutive coordinate lines in representative %s layouts without neighboring islands',
+    (category) => {
+      const { puzzle } = generatePuzzle(category, 123456)
+
+      expect(puzzle.id).not.toBe(`fallback-${category}`)
+      expectUsesConsecutiveCoordinateLines(puzzle)
+      expectNoNeighboringIslands(puzzle)
+    },
+  )
 
   it('is deterministic for a supplied seed', () => {
     expect(generatePuzzle('intro', 42)).toEqual(generatePuzzle('intro', 42))

@@ -63,7 +63,7 @@ export function generatePuzzle(
   for (let attempt = 0; attempt < 120; attempt += 1) {
     if (now() >= generationDeadline) break
 
-    const islands = placeSeparatedIslands(config, random, category === 'intro')
+    const islands = placeOrganicIslands(config, random, category === 'intro')
     const corridors = getVisibleCorridors(islands)
     const initialSolution = buildBalancedPlanarSolution(islands, corridors, config, random)
     if (!initialSolution) continue
@@ -96,51 +96,127 @@ function mulberry32(seed: number): Random {
   }
 }
 
-interface LatticeCell {
-  column: number
-  row: number
+interface GridCell {
   x: number
   y: number
 }
 
-function placeSeparatedIslands(
+interface GridCandidate extends GridCell {
+  newlyForbiddenCells: number
+}
+
+function placeOrganicIslands(
   config: CategoryConfig,
   random: Random,
   requirePlanarVisibility = false,
 ): Island[] {
-  const xs = chooseSeparatedCoordinates(config.width, random)
-  const ys = chooseSeparatedCoordinates(config.height, random)
-  let cells = xs.flatMap((x, column) =>
-    ys.map((y, row) => ({ column, row, x, y }) satisfies LatticeCell),
-  )
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    const spineX = 2 + randomIndex(config.width - 4, random)
+    const spineY = 2 + randomIndex(config.height - 4, random)
+    const cells: GridCell[] = [
+      { x: spineX, y: 0 },
+      { x: spineX, y: config.height - 1 },
+      { x: 0, y: spineY },
+      { x: config.width - 1, y: spineY },
+      { x: spineX, y: spineY },
+    ]
+    const forbidden = new Set<string>()
+    for (const cell of cells) forbidNeighboringCells(cell, forbidden, config)
 
-  while (cells.length > config.targetIslands) {
-    let removed = false
+    while (cells.length < config.targetIslands) {
+      const usedXs = new Set(cells.map(({ x }) => x))
+      const usedYs = new Set(cells.map(({ y }) => y))
+      const candidates: GridCandidate[] = []
 
-    for (const candidate of shuffled(cells, random)) {
-      if (cells.length <= config.targetIslands) break
-      const remaining = cells.filter((cell) => cell !== candidate)
-      if (!usesEveryLatticeLine(remaining, xs.length, ys.length)) continue
-      if (!isLatticeConnected(remaining)) continue
-      if (requirePlanarVisibility && !hasPlanarVisibilityGraph(remaining)) continue
+      for (let y = 0; y < config.height; y += 1) {
+        for (let x = 0; x < config.width; x += 1) {
+          if (forbidden.has(cellKey(x, y)) || (!usedXs.has(x) && !usedYs.has(y))) continue
+          const candidate = { x, y }
+          if (requirePlanarVisibility && !canAddWithoutVisibilityCrossings(cells, candidate)) {
+            continue
+          }
+          candidates.push({
+            ...candidate,
+            newlyForbiddenCells: countNewlyForbiddenCells(candidate, forbidden, config),
+          })
+        }
+      }
 
-      cells = remaining
-      removed = true
+      if (candidates.length === 0) break
+      const fewestNewlyForbidden = Math.min(
+        ...candidates.map(({ newlyForbiddenCells }) => newlyForbiddenCells),
+      )
+      const leastBlocking = candidates.filter(
+        ({ newlyForbiddenCells }) => newlyForbiddenCells === fewestNewlyForbidden,
+      )
+      const lineExpanding = leastBlocking.filter(({ x, y }) => !usedXs.has(x) || !usedYs.has(y))
+      const pool = lineExpanding.length > 0 ? lineExpanding : leastBlocking
+      const selected = pool[randomIndex(pool.length, random)]!
+      cells.push(selected)
+      forbidNeighboringCells(selected, forbidden, config)
     }
 
-    if (!removed) return []
+    const islands = cells
+      .sort((left, right) => left.y - right.y || left.x - right.x)
+      .map(({ x, y }, index) => ({ id: `i${index}`, x, y, clue: 0 }))
+
+    if (isValidIslandPlacement(islands, config, requirePlanarVisibility)) return islands
   }
 
-  const islands = cells
-    .sort((left, right) => left.y - right.y || left.x - right.x)
-    .map(({ x, y }, index) => ({ id: `i${index}`, x, y, clue: 0 }))
-
-  return hasMinimumIslandSpacing(islands) ? islands : []
+  return []
 }
 
-function hasPlanarVisibilityGraph(cells: LatticeCell[]) {
+function cellKey(x: number, y: number) {
+  return `${x},${y}`
+}
+
+function forbidNeighboringCells(cell: GridCell, forbidden: Set<string>, config: CategoryConfig) {
+  for (let y = Math.max(0, cell.y - 1); y <= Math.min(config.height - 1, cell.y + 1); y += 1) {
+    for (let x = Math.max(0, cell.x - 1); x <= Math.min(config.width - 1, cell.x + 1); x += 1) {
+      forbidden.add(cellKey(x, y))
+    }
+  }
+}
+
+function countNewlyForbiddenCells(cell: GridCell, forbidden: Set<string>, config: CategoryConfig) {
+  let count = 0
+  for (let y = Math.max(0, cell.y - 1); y <= Math.min(config.height - 1, cell.y + 1); y += 1) {
+    for (let x = Math.max(0, cell.x - 1); x <= Math.min(config.width - 1, cell.x + 1); x += 1) {
+      if (!forbidden.has(cellKey(x, y))) count += 1
+    }
+  }
+  return count
+}
+
+function hasPlanarVisibilityGraph(cells: GridCell[]) {
   const islands = cells.map(({ x, y }, index) => ({ id: `i${index}`, x, y, clue: 0 }))
   return countCorridorCrossings(islands) === 0
+}
+
+function canAddWithoutVisibilityCrossings(cells: GridCell[], candidate: GridCell) {
+  const islands = [...cells, candidate].map(({ x, y }, index) => ({
+    id: `i${index}`,
+    x,
+    y,
+    clue: 0,
+  }))
+  const candidateId = islands.at(-1)!.id
+  const islandById = new Map(islands.map((island) => [island.id, island]))
+  const corridors = getVisibleCorridors(islands)
+  const addedCorridors = corridors.filter(
+    (corridor) => corridor.a === candidateId || corridor.b === candidateId,
+  )
+
+  return addedCorridors.every((added) =>
+    corridors.every(
+      (other) =>
+        added === other ||
+        !corridorsCross(
+          { a: islandById.get(added.a)!, b: islandById.get(added.b)! },
+          { a: islandById.get(other.a)!, b: islandById.get(other.b)! },
+        ),
+    ),
+  )
 }
 
 export function hasMinimumIslandSpacing(islands: Island[]) {
@@ -151,39 +227,68 @@ export function hasMinimumIslandSpacing(islands: Island[]) {
   )
 }
 
-function usesEveryLatticeLine(cells: LatticeCell[], columnCount: number, rowCount: number) {
-  const columns = new Set(cells.map(({ column }) => column))
-  const rows = new Set(cells.map(({ row }) => row))
-  return columns.size === columnCount && rows.size === rowCount
-}
+function isValidIslandPlacement(
+  islands: Island[],
+  config: CategoryConfig,
+  requirePlanarVisibility: boolean,
+) {
+  if (islands.length !== config.targetIslands || !hasMinimumIslandSpacing(islands)) return false
+  if (requirePlanarVisibility && countCorridorCrossings(islands) !== 0) return false
 
-function isLatticeConnected(cells: LatticeCell[]) {
-  if (cells.length === 0) return false
-
-  const occupied = new Set(cells.map(({ column, row }) => `${column},${row}`))
-  const visited = new Set<string>()
-  const stack: Array<[number, number]> = [[cells[0]!.column, cells[0]!.row]]
-
-  while (stack.length > 0) {
-    const [column, row] = stack.pop()!
-    const key = `${column},${row}`
-    if (visited.has(key)) continue
-    visited.add(key)
-
-    for (const [neighborColumn, neighborRow] of [
-      [column - 1, row],
-      [column + 1, row],
-      [column, row - 1],
-      [column, row + 1],
-    ] as Array<[number, number]>) {
-      const neighborKey = `${neighborColumn},${neighborRow}`
-      if (occupied.has(neighborKey) && !visited.has(neighborKey)) {
-        stack.push([neighborColumn, neighborRow])
-      }
-    }
+  const xs = islands.map(({ x }) => x)
+  const ys = islands.map(({ y }) => y)
+  if (
+    Math.min(...xs) !== 0 ||
+    Math.max(...xs) !== config.width - 1 ||
+    Math.min(...ys) !== 0 ||
+    Math.max(...ys) !== config.height - 1
+  ) {
+    return false
   }
 
-  return visited.size === cells.length
+  if (!hasNoLargeEmptyBands(xs, config.width) || !hasNoLargeEmptyBands(ys, config.height)) {
+    return false
+  }
+  if (!hasConsecutiveCoordinateLines(xs) || !hasConsecutiveCoordinateLines(ys)) return false
+
+  return hasConnectedVisibilityGraph(islands)
+}
+
+function hasConsecutiveCoordinateLines(coordinates: number[]) {
+  const occupied = [...new Set(coordinates)].sort((left, right) => left - right)
+  return occupied.slice(1).some((coordinate, index) => coordinate - occupied[index]! === 1)
+}
+
+function hasNoLargeEmptyBands(coordinates: number[], size: number) {
+  const occupied = [...new Set(coordinates)].sort((left, right) => left - right)
+  return (
+    occupied[0] === 0 &&
+    occupied.at(-1) === size - 1 &&
+    occupied.slice(1).every((coordinate, index) => coordinate - occupied[index]! <= 3)
+  )
+}
+
+function hasConnectedVisibilityGraph(islands: Island[]) {
+  if (islands.length === 0) return false
+
+  const corridors = getVisibleCorridors(islands)
+  const neighbors = new Map(islands.map(({ id }) => [id, [] as string[]]))
+  for (const corridor of corridors) {
+    neighbors.get(corridor.a)!.push(corridor.b)
+    neighbors.get(corridor.b)!.push(corridor.a)
+  }
+  const visited = new Set<string>()
+  const stack = [islands[0]!.id]
+
+  while (stack.length > 0) {
+    const islandId = stack.pop()!
+    if (visited.has(islandId)) continue
+    visited.add(islandId)
+    for (const neighbor of neighbors.get(islandId)!)
+      if (!visited.has(neighbor)) stack.push(neighbor)
+  }
+
+  return visited.size === islands.length
 }
 
 function buildBalancedPlanarSolution(
@@ -425,29 +530,6 @@ function shuffled<T>(values: T[], random: Random) {
   }
 
   return result
-}
-
-function chooseSeparatedCoordinates(size: number, random: Random) {
-  const count = Math.ceil(size / 2)
-  const gaps = Array<number>(count - 1).fill(2)
-  let slack = size - 1 - gaps.length * 2
-
-  for (const index of shuffled(
-    gaps.map((_, index) => index),
-    random,
-  )) {
-    if (slack === 0) break
-    gaps[index]! += 1
-    slack -= 1
-  }
-
-  return gaps.reduce<number[]>(
-    (coordinates, gap) => {
-      coordinates.push(coordinates.at(-1)! + gap)
-      return coordinates
-    },
-    [0],
-  )
 }
 
 function randomIndex(length: number, random: Random) {
