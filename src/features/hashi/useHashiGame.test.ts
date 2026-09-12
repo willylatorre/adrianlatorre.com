@@ -274,15 +274,17 @@ describe('Hashi game state', () => {
     })
 
     expect(game.generating.value).toBe(true)
-    expect(game.puzzle.value.id).toBe('fallback-intro')
+    expect(game.puzzle.value.id).toMatch(/^hashi-v5-intro-/)
     expect(worker.requests).toMatchObject([{ category: 'intro', requestId: 1 }])
 
     game.selectCategory('daily')
     game.newPuzzle()
+    const pendingDailyId = game.puzzle.value.id
     worker.deliver(2, dailyPuzzle)
 
     expect(game.preferredCategory.value).toBe('daily')
-    expect(game.puzzle.value.id).toBe('fallback-daily')
+    expect(game.puzzle.value.id).toBe(pendingDailyId)
+    expect(pendingDailyId).toMatch(/^hashi-v5-daily-/)
 
     worker.deliver(3, freshDailyPuzzle)
 
@@ -320,11 +322,12 @@ describe('Hashi game state', () => {
       storage: null,
       workerFactory: () => worker,
     })
+    const pendingPuzzleId = game.puzzle.value.id
 
     game.cycleCorridor('i0:i1')
     worker.deliver(1, generatedPuzzle)
 
-    expect(game.puzzle.value.id).toBe('fallback-intro')
+    expect(game.puzzle.value.id).toBe(pendingPuzzleId)
     expect(game.bridgeCounts.value['i0:i1']).toBe(1)
   })
 
@@ -336,11 +339,12 @@ describe('Hashi game state', () => {
       storage: null,
       workerFactory: () => worker,
     })
+    const pendingPuzzleId = game.puzzle.value.id
 
     game.reset()
     worker.deliver(1, generatedPuzzle)
 
-    expect(game.puzzle.value.id).toBe('fallback-intro')
+    expect(game.puzzle.value.id).toBe(pendingPuzzleId)
     expect(game.bridgeCounts.value).toEqual({})
   })
 })

@@ -3,7 +3,6 @@ import { cloneFallback } from './fallbacks'
 import { CATEGORY_CONFIG, countOpeningDeductions, generatePuzzle } from './generator'
 import { corridorsCross, countCorridorCrossings, getVisibleCorridors } from './geometry'
 import { evaluatePuzzle } from './rules'
-import { countSolutions } from './solver'
 import type { HashiCategory, HashiPuzzle } from './types'
 
 const categories: HashiCategory[] = ['intro', 'daily', 'weekly', 'monthly']
@@ -212,23 +211,32 @@ describe('Hashi puzzle generation', () => {
   })
 
   it('returns the validated fallback when the overall generation budget is exhausted', () => {
-    expect(
-      generatePuzzle('monthly', 42, {
-        timeBudgetMs: 0,
-        now: () => 100,
-      }),
-    ).toEqual(cloneFallback('monthly'))
+    const generated = generatePuzzle('monthly', 42, {
+      timeBudgetMs: 0,
+      now: () => 100,
+    })
+
+    expect(generated).toEqual(cloneFallback('monthly'))
+    expect(generated.puzzle.islands).toHaveLength(CATEGORY_CONFIG.monthly.targetIslands)
+    expect(generated.puzzle.id).toMatch(/^hashi-/)
+    expect(evaluatePuzzle(generated.puzzle, generated.solution).solved).toBe(true)
   })
 
-  it.each(categories)('provides a valid unique %s fallback', (category) => {
+  it.each(categories)('provides a full valid %s fallback', (category) => {
     const fallback = cloneFallback(category)
 
     expect(evaluatePuzzle(fallback.puzzle, fallback.solution).solved).toBe(true)
-    expect(countSolutions(fallback.puzzle, 2)).toBe(1)
     expect(fallback.puzzle.width).toBe(CATEGORY_CONFIG[category].width)
     expect(fallback.puzzle.height).toBe(CATEGORY_CONFIG[category].height)
+    expect(fallback.puzzle.islands).toHaveLength(CATEGORY_CONFIG[category].targetIslands)
     expectIslandsTouchEveryBoundary(fallback.puzzle)
     expectNoNeighboringIslands(fallback.puzzle)
+    expectNoLargeEmptyBands(fallback.puzzle)
+    if (category !== 'intro') {
+      expect(countOpeningDeductions(fallback.puzzle)).toBeGreaterThanOrEqual(
+        CATEGORY_CONFIG[category].minimumOpeningDeductions,
+      )
+    }
   })
 
   it('returns a generated puzzle through the worker protocol', async () => {

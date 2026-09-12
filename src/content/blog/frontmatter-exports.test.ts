@@ -57,4 +57,17 @@ describe('blog markdown frontmatter exports', () => {
     expect(source.default).toContain('not required to have only one possible answer')
     expect(source.default).not.toContain('## First, decide which bridges can exist')
   })
+
+  it('explains how the Hashi difficulty controls evolved', async () => {
+    const source = await import('./notes-from-building-hashi-one-rule-at-a-time.md?raw')
+
+    expect(source.default).toContain('### From valid to interesting')
+    expect(source.default).toContain('forced_minimum =')
+    expect(source.default).toContain('daily:   { minimum_openings: 5')
+    expect(source.default).toContain('weekly:  { minimum_openings: 8')
+    expect(source.default).toContain('monthly: { minimum_openings: 12')
+    expect(source.default).toContain('independent knobs')
+    expect(source.default).toContain('does not guarantee a complete deduction-only solve')
+    expect(source.default).toContain('deduction waves')
+  })
 })

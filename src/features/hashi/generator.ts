@@ -1,4 +1,3 @@
-import { cloneFallback } from './fallbacks'
 import { corridorsCross, countCorridorCrossings, getVisibleCorridors } from './geometry'
 import type { BridgeCounts, Corridor, HashiCategory, HashiPuzzle, Island } from './types'
 
@@ -50,9 +49,10 @@ export interface PuzzleGenerationOptions {
 type CategoryConfig = (typeof CATEGORY_CONFIG)[HashiCategory]
 type Random = () => number
 
-export const HASHI_GENERATOR_VERSION = 'v4'
+export const HASHI_GENERATOR_VERSION = 'v5'
 const DEFAULT_GENERATION_TIME_BUDGET_MS = 3_000
 const DOUBLE_BRIDGE_SHARE = 0.22
+const FALLBACK_SEED = 123_456
 
 export function generatePuzzle(
   category: HashiCategory,
@@ -60,12 +60,28 @@ export function generatePuzzle(
   options: PuzzleGenerationOptions = {},
 ): GeneratedPuzzle {
   const random = mulberry32(seed)
-  const config = CATEGORY_CONFIG[category]
   const now = options.now ?? Date.now
   const generationDeadline = now() + (options.timeBudgetMs ?? DEFAULT_GENERATION_TIME_BUDGET_MS)
+  const generated = tryGeneratePuzzle(category, random, () => now() >= generationDeadline)
 
+  return generated ?? generateFallbackPuzzle(category)
+}
+
+/** Builds a deterministic, full-size puzzle when the normal time budget is exhausted. */
+export function generateFallbackPuzzle(category: HashiCategory): GeneratedPuzzle {
+  const generated = tryGeneratePuzzle(category, mulberry32(FALLBACK_SEED), () => false)
+  if (!generated) throw new Error(`Unable to build the ${category} Hashi fallback`)
+  return generated
+}
+
+function tryGeneratePuzzle(
+  category: HashiCategory,
+  random: Random,
+  shouldStop: () => boolean,
+): GeneratedPuzzle | undefined {
+  const config = CATEGORY_CONFIG[category]
   for (let attempt = 0; attempt < 120; attempt += 1) {
-    if (now() >= generationDeadline) break
+    if (shouldStop()) break
 
     const islands = placeOrganicIslands(config, random, category === 'intro')
     const corridors = getVisibleCorridors(islands)
@@ -84,8 +100,6 @@ export function generatePuzzle(
       }
     }
   }
-
-  return cloneFallback(category)
 }
 
 function mulberry32(seed: number): Random {

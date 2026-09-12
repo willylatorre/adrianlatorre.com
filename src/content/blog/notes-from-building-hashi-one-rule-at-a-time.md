@@ -79,6 +79,20 @@ reject if 6_and_7_take_over(numbers)
 reject if 8_is_not_rare(numbers)
 reject if there_are_too_few_obvious_opening_deductions(numbers)`
 
+const openingDeductionSnippet = `edge.maximum = min(2, island.number, neighbor.number)
+capacity = sum(incident_edges.maximum)
+
+for each incident edge:
+    forced_minimum = island.number - (capacity - edge.maximum)
+
+opening = any(forced_minimum > 0)`
+
+const difficultyConfigSnippet = `daily:   { minimum_openings: 5,  cycles: 13, crossings: 4  }
+weekly:  { minimum_openings: 8,  cycles: 22, crossings: 8  }
+monthly: { minimum_openings: 12, cycles: 33, crossings: 12 }
+
+double_bridge_share = 0.22`
+
 const svgSnippet = `center = grid_position * cell_size
 island_edge = island_size / 2
 
@@ -261,6 +275,44 @@ The fix was to make the shape and the number mix separate decisions. I start wit
 <HashiArticleDemo kind="mix" />
 
 The generator keeps a healthy presence of `1` through `5`, allows a smaller group of `6` and `7`, and treats `8` as seasoning rather than soup. Candidates with too few crossings, too few cycles, or too few obvious opening deductions are rejected too. Those openings are the familiar capacity rules: an `8` in the middle, a `6` on an edge, a `5` with only three directions, or any equivalent clue that uses all—or all but one—of its available bridge capacity. This does not scientifically prove that one board will feel harder than another, but it reliably avoids the two boring extremes: a sparse board with nothing to reason about and a carpet of high numbers.
+
+### From valid to interesting
+
+This took a few iterations because “has an answer” and “is enjoyable to solve” are annoyingly different requirements.
+
+The first generator stopped after validity. It produced a connected, non-crossing hidden network, turned its bridge totals into clues, and called it a day. That proves there is at least one answer. It says nothing about whether a human can find a first bridge without staring into the middle distance.
+
+The second version treated density as difficulty. More islands do create more interacting totals, but increasing the island count mostly changes the amount of puzzle. It does not automatically create a useful sequence of deductions. A huge board can still be a huge shrug.
+
+Next came topology. Added cycles make several routes look plausible, and empty corridors that cross other corridors let one confirmed bridge rule out another. Both are useful sources of tension. Too few and the hidden network reads like a tree; too many and every island appears to be negotiating with four neighbors at once. Cycle count and crossing count became separate limits rather than accidental side effects of placing more islands.
+
+Then the wall of `8`s happened. Increasing double bridges created impressive-looking numbers but made many decisions immediate: a middle `8` simply takes two bridges in every direction. The clue histogram therefore became another control. Low numbers provide small local constraints, middle numbers combine with their neighbors, and high numbers are strongest when they appear occasionally. A board can look terrifying and still be mechanically repetitive. Typography is not difficulty, despite what tax forms suggest.
+
+The latest rule checks whether the puzzle offers actual entry points. For an island, every visible corridor has a maximum of two bridges, sometimes reduced by a neighbor that can accept only one. Add those maxima to get the island's total available capacity. Then temporarily remove one corridor's capacity. Whatever part of the clue no longer fits anywhere else is forced onto that corridor:
+
+<ProsePre language="text" :code="openingDeductionSnippet">
+  <ProseCode class="language-text">
+{{ openingDeductionSnippet }}
+  </ProseCode>
+</ProsePre>
+
+That one formula contains several familiar Hashi techniques. A middle `8` forces two bridges in four directions. A middle `7` forces at least one in each. Edge `6` and corner `4` are the same full-capacity rule with fewer neighbors; edge `5` and corner `3` are one below full capacity. If a middle `6` faces one island marked `1`, its capacities are `1 + 2 + 2 + 2 = 7`, so each of the other three corridors must carry at least one bridge. A `1` or `2` with only one visible neighbor is the smallest version of exactly the same calculation.
+
+This is useful for generation because it replaces a list of special cases with one measurable property. I count how many islands force at least one corridor before the player has drawn anything, then reject boards below the category's floor:
+
+<ProsePre language="text" :code="difficultyConfigSnippet">
+  <ProseCode class="language-text">
+{{ difficultyConfigSnippet }}
+  </ProseCode>
+</ProsePre>
+
+These are independent knobs. Island count controls scale and interaction density. Cycle count controls how many routes can look plausible. Potential crossings create deductions that close other corridors. The double-bridge share shapes the clue distribution. The opening floor controls how many honest first moves the board offers. Raising all of them together would not create a sophisticated puzzle; it would create a crowded puzzle with lots of obvious high numbers.
+
+Daily therefore needs five opening islands, weekly eight, and monthly twelve. The larger number does not make monthly easier: it is spread across 150 islands, alongside more cycles and crossing choices. It simply prevents a large random board from beginning with no sensible handle. Normal generation and timeout recovery now pass through the same checks, so an unlucky deadline still returns a full category-sized puzzle rather than three islands wearing a monthly-puzzle name tag.
+
+There is still an important limit. Counting good openings does not guarantee a complete deduction-only solve. It verifies the first footholds, not the whole climb. The next refinement would run a small deduction engine over each candidate and record deduction waves: capacity forces a bridge, that bridge closes a crossing corridor, the closure completes another island, and so on. A stalled set of unresolved corridors would then be measurable too. That trace could distinguish “many places to start” from “a chain that reaches the end,” and tune weekly or monthly boards by how deep the chain becomes before a contradiction check is needed.
+
+For now I keep that as the next step rather than pretending the random generator already proves it. Luck is still allowed in the room; it just no longer gets to arrange all the furniture.
 
 The intro uses the same idea with fewer islands, no added cycles, and no demand for high clues. The daily, weekly, and monthly puzzles add more islands and loops. Every category is a random, connected, non-crossing construction with a known valid answer, but the puzzle is not required to have only one possible answer. That keeps generation quick and the boards varied; occasionally luck offers a shortcut. For this little game, I like that better than pretending every random board is a tournament artifact.
 
