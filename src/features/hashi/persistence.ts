@@ -16,7 +16,8 @@ export interface PersistedHashiState {
   bridgeCounts: BridgeCounts
   snapshot?: BridgeCounts | null
   startedAt: number
-  history: Array<{ corridorId: string; previous: BridgeCount }>
+  /** Accepted only for backward compatibility with runs saved before snapshots replaced Undo. */
+  history?: Array<{ corridorId: string; previous: BridgeCount }>
   solvedAt?: number | null
 }
 
@@ -154,6 +155,7 @@ function isHistory(
   value: unknown,
   puzzle: HashiPuzzle,
 ): value is Array<{ corridorId: string; previous: BridgeCount }> {
+  if (value === undefined) return true
   if (!Array.isArray(value)) return false
   const corridorIds = new Set(getVisibleCorridors(puzzle.islands).map(({ id }) => id))
   return value.every(

@@ -68,7 +68,7 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
       </div>
     </nav>
 
-    <div class="hashi-history-actions" aria-label="Puzzle actions">
+    <div class="hashi-position-actions" aria-label="Puzzle actions">
       <UButton
         type="button"
         data-action="save-snapshot"
@@ -128,14 +128,14 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
 }
 
 .hashi-category-tabs,
-.hashi-history-actions {
+.hashi-position-actions {
   display: flex;
   width: max-content;
   align-items: center;
   gap: 2px;
 }
 
-.hashi-history-actions {
+.hashi-position-actions {
   flex: none;
   gap: 4px;
 }
@@ -147,7 +147,7 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
     gap: 10px;
   }
 
-  .hashi-history-actions {
+  .hashi-position-actions {
     width: 100%;
   }
 }

@@ -207,8 +207,8 @@ describe('HashiControls', () => {
     mount(HashiControls, {
       props: {
         category: 'intro',
-        historyLength: 0,
         bridgeCounts: {},
+        canRestoreSnapshot: false,
         ...props,
       },
       global: { plugins: [router] },
@@ -226,11 +226,21 @@ describe('HashiControls', () => {
     expect(wrapper.emitted('select-category')).toEqual([['daily']])
   })
 
-  it('disables undo when history is empty', () => {
-    expect(mountControls().get('[data-action="undo"]').attributes('disabled')).toBeDefined()
+  it('saves positions and enables restore only when the saved position differs', async () => {
+    const wrapper = mountControls()
+    const save = wrapper.get('[data-action="save-snapshot"]')
+    const restore = wrapper.get('[data-action="restore-snapshot"]')
+
+    expect(restore.attributes('disabled')).toBeDefined()
+    await save.trigger('click')
+    expect(wrapper.emitted('save-snapshot')).toHaveLength(1)
+
+    const restorable = mountControls({ canRestoreSnapshot: true })
     expect(
-      mountControls({ historyLength: 1 }).get('[data-action="undo"]').attributes('disabled'),
+      restorable.get('[data-action="restore-snapshot"]').attributes('disabled'),
     ).toBeUndefined()
+    await restorable.get('[data-action="restore-snapshot"]').trigger('click')
+    expect(restorable.emitted('restore-snapshot')).toHaveLength(1)
   })
 
   it('confirms destructive actions only when nonzero bridges exist', async () => {

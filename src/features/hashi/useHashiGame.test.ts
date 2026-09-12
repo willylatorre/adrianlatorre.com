@@ -67,7 +67,7 @@ function createStorage(): HashiStorage {
 }
 
 describe('Hashi game state', () => {
-  it('cycles bridge counts and records undo history', () => {
+  it('cycles bridge counts', () => {
     const game = createHashiGame(fixedPuzzle, () => 1_000)
 
     game.cycleCorridor('a:b')
@@ -75,9 +75,6 @@ describe('Hashi game state', () => {
     game.cycleCorridor('a:b')
 
     expect(game.bridgeCounts['a:b']).toBe(0)
-    game.undo()
-    expect(game.bridgeCounts['a:b']).toBe(2)
-    expect(game.history).toHaveLength(2)
   })
 
   it('saves, replaces, and restores one bridge position', () => {
@@ -121,7 +118,6 @@ describe('Hashi game state', () => {
 
     expect(game.cycleCorridor('c:d')).toEqual({ changed: false, reason: 'crossing' })
     expect(game.bridgeCounts['c:d']).toBeUndefined()
-    expect(game.history).toHaveLength(1)
   })
 
   it('allows overfilled islands while keeping the puzzle incomplete', () => {
@@ -163,7 +159,7 @@ describe('Hashi game state', () => {
     vi.useRealTimers()
   })
 
-  it('persists history and restores the active run', () => {
+  it('persists and restores the active run', () => {
     const storage = createStorage()
     const game = createHashiGame(fixedPuzzle, () => 1_000, { storage })
 
@@ -172,7 +168,6 @@ describe('Hashi game state', () => {
     expect(loadHashiState(storage)).toMatchObject({
       puzzle: fixedPuzzle,
       bridgeCounts: { 'a:b': 1 },
-      history: [{ corridorId: 'a:b', previous: 0 }],
     })
   })
 
@@ -186,7 +181,6 @@ describe('Hashi game state', () => {
       bridgeCounts: {},
       snapshot: null,
       startedAt: 1_000,
-      history: [],
     })
   })
 
@@ -206,14 +200,15 @@ describe('Hashi game state', () => {
     expect(game.bridgeCounts.value).toEqual({})
   })
 
-  it('restores the persisted preferred category, puzzle, and history', () => {
+  it('restores and can apply a persisted saved position without restarting the timer', () => {
     const storage = createStorage()
     saveHashiState(
       {
         version: 1,
         preferredCategory: 'daily',
         puzzle: { ...fixedPuzzle, id: 'saved', category: 'daily' },
-        bridgeCounts: { 'a:b': 1 },
+        bridgeCounts: {},
+        snapshot: { 'a:b': 1 },
         startedAt: 500,
         history: [{ corridorId: 'a:b', previous: 0 }],
         solvedAt: null,
@@ -225,7 +220,12 @@ describe('Hashi game state', () => {
 
     expect(game.preferredCategory.value).toBe('daily')
     expect(game.puzzle.value.id).toBe('saved')
-    expect(game.history.value).toEqual([{ corridorId: 'a:b', previous: 0 }])
+    expect(game.snapshot.value).toEqual({ 'a:b': 1 })
+    expect(game.canRestoreSnapshot.value).toBe(true)
+    expect(game.elapsedMs.value).toBe(500)
+    expect(game.restoreSnapshot()).toBe(true)
+    expect(game.evaluation.value.solved).toBe(true)
+    expect(game.elapsedMs.value).toBe(500)
   })
 
   it('replaces a persisted puzzle from the previous generator while keeping its category', () => {
@@ -257,7 +257,6 @@ describe('Hashi game state', () => {
     expect(game.preferredCategory.value).toBe('monthly')
     expect(game.puzzle.value).toEqual(freshMonthlyPuzzle)
     expect(game.bridgeCounts.value).toEqual({})
-    expect(game.history.value).toEqual([])
   })
 
   it('keeps the latest worker puzzle when category changes race', () => {
@@ -343,23 +342,5 @@ describe('Hashi game state', () => {
 
     expect(game.puzzle.value.id).toBe('fallback-intro')
     expect(game.bridgeCounts.value).toEqual({})
-  })
-
-  it('keeps an undone fallback when its pending worker response arrives', () => {
-    const worker = new PuzzleWorkerDouble()
-    const generatedPuzzle = { ...fixedPuzzle, id: 'generated-after-undo' }
-    const game = useHashiGame({
-      now: () => 1_000,
-      storage: null,
-      workerFactory: () => worker,
-    })
-
-    game.cycleCorridor('i0:i1')
-    game.undo()
-    worker.deliver(1, generatedPuzzle)
-
-    expect(game.history.value).toEqual([])
-    expect(game.puzzle.value.id).toBe('fallback-intro')
-    expect(game.bridgeCounts.value['i0:i1']).toBe(0)
   })
 })

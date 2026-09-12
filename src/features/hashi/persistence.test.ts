@@ -103,4 +103,31 @@ describe('Hashi persistence', () => {
     expect(loadHashiState(storage)).toBeNull()
     expect(storage.getItem(HASHI_STORAGE_KEY)).toBeNull()
   })
+
+  it('drops a saved position whose bridges cross', () => {
+    const crossingPuzzle = {
+      id: 'crossing-snapshot',
+      category: 'intro' as const,
+      width: 5,
+      height: 5,
+      islands: [
+        { id: 'a', x: 0, y: 2, clue: 2 },
+        { id: 'b', x: 4, y: 2, clue: 2 },
+        { id: 'c', x: 2, y: 0, clue: 2 },
+        { id: 'd', x: 2, y: 4, clue: 2 },
+      ],
+    }
+
+    expect(
+      parsePersistedHashiState(
+        JSON.stringify({
+          ...state,
+          puzzle: crossingPuzzle,
+          bridgeCounts: {},
+          snapshot: { 'a:b': 1, 'c:d': 1 },
+          history: [],
+        }),
+      ),
+    ).toBeNull()
+  })
 })

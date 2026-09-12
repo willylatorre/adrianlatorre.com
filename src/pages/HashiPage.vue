@@ -217,7 +217,7 @@ watch(
     <UModal
       v-model:open="nicknameDialogOpen"
       :dismissible="true"
-      @update:open="(open) => !open && discardScore()"
+      @update:open="(open: boolean) => !open && discardScore()"
     >
       <template #content>
         <form class="hashi-nickname-dialog" @submit.prevent="submitScore">
