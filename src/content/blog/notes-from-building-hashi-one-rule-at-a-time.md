@@ -76,7 +76,8 @@ numbers = count_bridges_touching_each_island(candidate)
 
 reject if 1_to_5_are_too_rare(numbers)
 reject if 6_and_7_take_over(numbers)
-reject if 8_is_not_rare(numbers)`
+reject if 8_is_not_rare(numbers)
+reject if there_are_too_few_obvious_opening_deductions(numbers)`
 
 const svgSnippet = `center = grid_position * cell_size
 island_edge = island_size / 2
@@ -259,7 +260,7 @@ The fix was to make the shape and the number mix separate decisions. I start wit
 
 <HashiArticleDemo kind="mix" />
 
-The generator keeps a healthy presence of `1` through `5`, allows a smaller group of `6` and `7`, and treats `8` as seasoning rather than soup. Candidates with too few crossings or too few cycles are rejected too. This does not scientifically prove that one board will feel harder than another, but it reliably avoids the two boring extremes: a sparse board with nothing to reason about and a carpet of high numbers.
+The generator keeps a healthy presence of `1` through `5`, allows a smaller group of `6` and `7`, and treats `8` as seasoning rather than soup. Candidates with too few crossings, too few cycles, or too few obvious opening deductions are rejected too. Those openings are the familiar capacity rules: an `8` in the middle, a `6` on an edge, a `5` with only three directions, or any equivalent clue that uses all—or all but one—of its available bridge capacity. This does not scientifically prove that one board will feel harder than another, but it reliably avoids the two boring extremes: a sparse board with nothing to reason about and a carpet of high numbers.
 
 The intro uses the same idea with fewer islands, no added cycles, and no demand for high clues. The daily, weekly, and monthly puzzles add more islands and loops. Every category is a random, connected, non-crossing construction with a known valid answer, but the puzzle is not required to have only one possible answer. That keeps generation quick and the boards varied; occasionally luck offers a shortcut. For this little game, I like that better than pretending every random board is a tournament artifact.
 

@@ -9,6 +9,7 @@ export const CATEGORY_CONFIG = {
     targetIslands: 32,
     targetCycleEdges: 0,
     minimumCrossingPairs: 0,
+    minimumOpeningDeductions: 1,
   },
   daily: {
     width: 15,
@@ -16,6 +17,7 @@ export const CATEGORY_CONFIG = {
     targetIslands: 72,
     targetCycleEdges: 13,
     minimumCrossingPairs: 4,
+    minimumOpeningDeductions: 5,
   },
   weekly: {
     width: 18,
@@ -23,6 +25,7 @@ export const CATEGORY_CONFIG = {
     targetIslands: 108,
     targetCycleEdges: 22,
     minimumCrossingPairs: 8,
+    minimumOpeningDeductions: 8,
   },
   monthly: {
     width: 20,
@@ -30,6 +33,7 @@ export const CATEGORY_CONFIG = {
     targetIslands: 150,
     targetCycleEdges: 33,
     minimumCrossingPairs: 12,
+    minimumOpeningDeductions: 12,
   },
 } as const
 
@@ -472,6 +476,7 @@ function hasCategoryShape(
   }
 
   if (doubleShare < 0.15 || doubleShare > 0.3) return false
+  if (countOpeningDeductions(puzzle) < config.minimumOpeningDeductions) return false
   if (highClueShare < 0.04 || highClueShare > 0.25 || eightShare > 0.03) return false
   for (let clue = 1; clue <= 7; clue += 1) if (!(histogram.get(clue) ?? 0)) return false
   for (let clue = 1; clue <= 5; clue += 1) {
@@ -479,6 +484,33 @@ function hasCategoryShape(
   }
 
   return countCorridorCrossings(puzzle.islands, corridors) >= config.minimumCrossingPairs
+}
+
+/**
+ * Counts islands that expose a bridge immediately through the standard capacity rules:
+ * a lone neighbor or a clue close enough to the available capacity to force one edge.
+ */
+export function countOpeningDeductions(puzzle: HashiPuzzle) {
+  const islandById = new Map(puzzle.islands.map((island) => [island.id, island]))
+  const incident = new Map(puzzle.islands.map((island) => [island.id, [] as Corridor[]]))
+  for (const corridor of getVisibleCorridors(puzzle.islands)) {
+    incident.get(corridor.a)!.push(corridor)
+    incident.get(corridor.b)!.push(corridor)
+  }
+
+  return puzzle.islands.filter((island) => {
+    const corridors = incident.get(island.id)!
+    const edgeCapacities = corridors.map((corridor) => {
+      const neighborId = corridor.a === island.id ? corridor.b : corridor.a
+      return Math.min(2, island.clue, islandById.get(neighborId)!.clue)
+    })
+    const capacity = edgeCapacities.reduce((total, edgeCapacity) => total + edgeCapacity, 0)
+
+    return (
+      island.clue <= capacity &&
+      edgeCapacities.some((edgeCapacity) => island.clue - (capacity - edgeCapacity) > 0)
+    )
+  }).length
 }
 
 function deriveClues(

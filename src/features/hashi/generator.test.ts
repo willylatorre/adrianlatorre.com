@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cloneFallback } from './fallbacks'
-import { CATEGORY_CONFIG, generatePuzzle } from './generator'
+import { CATEGORY_CONFIG, countOpeningDeductions, generatePuzzle } from './generator'
 import { corridorsCross, countCorridorCrossings, getVisibleCorridors } from './geometry'
 import { evaluatePuzzle } from './rules'
 import { countSolutions } from './solver'
@@ -102,6 +102,23 @@ afterEach(() => {
 })
 
 describe('Hashi puzzle generation', () => {
+  it('counts only islands that force at least one opening bridge', () => {
+    const constrainedLeaves: HashiPuzzle = {
+      id: 'opening-capacity',
+      category: 'daily',
+      width: 5,
+      height: 5,
+      islands: [
+        { id: 'center', x: 2, y: 2, clue: 2 },
+        { id: 'top', x: 2, y: 0, clue: 1 },
+        { id: 'right', x: 4, y: 2, clue: 1 },
+        { id: 'bottom', x: 2, y: 4, clue: 1 },
+      ],
+    }
+
+    expect(countOpeningDeductions(constrainedLeaves)).toBe(3)
+  })
+
   it.each(categories)('generates a valid %s puzzle', (category) => {
     const generated = generatePuzzle(category, 123456)
 
@@ -183,6 +200,16 @@ describe('Hashi puzzle generation', () => {
       }
     },
   )
+
+  it.each(challengingCategories)('gives every %s puzzle several opening deductions', (category) => {
+    for (let seed = 0; seed < 3; seed += 1) {
+      const { puzzle } = generatePuzzle(category, 730_000 + seed)
+
+      expect(countOpeningDeductions(puzzle)).toBeGreaterThanOrEqual(
+        CATEGORY_CONFIG[category].minimumOpeningDeductions,
+      )
+    }
+  })
 
   it('returns the validated fallback when the overall generation budget is exhausted', () => {
     expect(
