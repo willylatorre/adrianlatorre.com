@@ -14,6 +14,7 @@ export interface PersistedHashiState {
   preferredCategory: HashiCategory
   puzzle: HashiPuzzle
   bridgeCounts: BridgeCounts
+  snapshot?: BridgeCounts | null
   startedAt: number
   history: Array<{ corridorId: string; previous: BridgeCount }>
   solvedAt?: number | null
@@ -32,10 +33,7 @@ export function loadHashiState(storage?: HashiStorage | null): PersistedHashiSta
   }
 }
 
-export function saveHashiState(
-  state: PersistedHashiState,
-  storage?: HashiStorage | null,
-): boolean {
+export function saveHashiState(state: PersistedHashiState, storage?: HashiStorage | null): boolean {
   const target = resolveStorage(storage)
   if (!target) return false
 
@@ -55,6 +53,14 @@ export function parsePersistedHashiState(raw: string | null): PersistedHashiStat
     if (!isRecord(value) || value.version !== 1 || !isCategory(value.preferredCategory)) return null
     if (!isPuzzle(value.puzzle) || !isBridgeCounts(value.bridgeCounts, value.puzzle)) return null
     if (hasCrossingBridgeCounts(value.puzzle, value.bridgeCounts)) return null
+    if (
+      value.snapshot !== undefined &&
+      value.snapshot !== null &&
+      (!isBridgeCounts(value.snapshot, value.puzzle) ||
+        hasCrossingBridgeCounts(value.puzzle, value.snapshot))
+    ) {
+      return null
+    }
     if (!isTimestamp(value.startedAt) || !isHistory(value.history, value.puzzle)) return null
     if (value.solvedAt !== undefined && value.solvedAt !== null && !isTimestamp(value.solvedAt)) {
       return null
@@ -65,6 +71,7 @@ export function parsePersistedHashiState(raw: string | null): PersistedHashiStat
       preferredCategory: value.preferredCategory,
       puzzle: value.puzzle,
       bridgeCounts: value.bridgeCounts,
+      snapshot: value.snapshot ?? null,
       startedAt: value.startedAt,
       history: value.history,
       solvedAt: value.solvedAt ?? null,
@@ -90,7 +97,11 @@ function resolveStorage(storage?: HashiStorage | null): HashiStorage | null {
 
 function isPuzzle(value: unknown): value is HashiPuzzle {
   if (!isRecord(value) || typeof value.id !== 'string' || !isCategory(value.category)) return false
-  if (!isPositiveInteger(value.width) || !isPositiveInteger(value.height) || !Array.isArray(value.islands)) {
+  if (
+    !isPositiveInteger(value.width) ||
+    !isPositiveInteger(value.height) ||
+    !Array.isArray(value.islands)
+  ) {
     return false
   }
 
@@ -128,12 +139,14 @@ function hasCrossingBridgeCounts(puzzle: HashiPuzzle, counts: BridgeCounts) {
   )
 
   return activeCorridors.some((corridor, index) =>
-    activeCorridors.slice(index + 1).some((other) =>
-      corridorsCross(
-        { a: islandById.get(corridor.a)!, b: islandById.get(corridor.b)! },
-        { a: islandById.get(other.a)!, b: islandById.get(other.b)! },
+    activeCorridors
+      .slice(index + 1)
+      .some((other) =>
+        corridorsCross(
+          { a: islandById.get(corridor.a)!, b: islandById.get(corridor.b)! },
+          { a: islandById.get(other.a)!, b: islandById.get(other.b)! },
+        ),
       ),
-    ),
   )
 }
 

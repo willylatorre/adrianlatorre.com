@@ -49,9 +49,12 @@ for each island:
 
 puzzle = remove_the_solution_but_keep_the_numbers()`
 
-const boardBoundsSnippet = `coordinates = start_at(first_edge)
-add random gaps of two or three cells
-finish_at(last_edge)
+const boardBoundsSnippet = `positions = seed_one_island_on_each_boundary()
+
+while positions.size < category.target:
+    candidates = full_grid.filter(not_touching_an_island)
+    candidates = candidates.filter(aligned_with_the_network)
+    positions.add(least_blocking_random_candidate(candidates))
 
 assert min(island.x) == 0
 assert max(island.x) == width - 1
@@ -62,7 +65,8 @@ const islandPlacementSnippet = `for each candidate position:
     reject if any of the eight neighboring cells has an island
 
 assert island_count == category.target
-assert every_chosen_lattice_row_and_column_is_used()`
+assert visible_corridor_graph_is_connected()
+assert occupied_rows_and_columns_have_no_large_gaps()`
 
 const clueMixSnippet = `candidate = build_connected_non_crossing_network()
 add_a_few_cycles(candidate)
@@ -127,7 +131,7 @@ Each corridor can hold zero, one, or two bridges. Clicking it should add the fir
 
 Modulo arithmetic does all the administrative work. No bridge becomes one, one becomes two, and two wraps back to zero. The current board state is just a map from corridor IDs to those counts.
 
-This runs on every corridor click or keyboard activation. Before changing the count, I save the previous value in a small history stack. Undo then has a wonderfully boring job: take the latest entry and put its old value back. Boring undo code is a luxury. It means the interesting mistakes can remain on the board where they belong.
+This runs on every corridor click or keyboard activation. Before trying a suspicious chain of bridges, the player can save the whole bridge map as a position. Restore simply swaps the current map for that saved copy. Saving again replaces it. One deliberate checkpoint is more useful here than walking backward through twenty individually sensible clicks.
 
 ## Stop crossings before they happen
 
@@ -223,7 +227,7 @@ Those numbers are deliberately simple rather than scientific. The boards are ran
 
 <HashiArticleDemo kind="density" />
 
-Even the empty grid needs a rule. If a puzzle says it has 15 rows, there should be an island in row 1 and another in row 15. Otherwise it is really a 13-row puzzle wearing an oversized coat. The same applies to the first and last columns, so the random coordinate picker always keeps both edges and shuffles only the interior:
+Even the empty grid needs a rule. If a puzzle says it has 15 rows, there should be an island in row 1 and another in row 15. Otherwise it is really a 13-row puzzle wearing an oversized coat. The same applies to the first and last columns, so the random coordinate picker begins with boundary anchors and grows inward:
 
 <ProsePre language="text" :code="boardBoundsSnippet">
   <ProseCode class="language-text">
@@ -239,7 +243,7 @@ Those are official dimensions, but spacing is an editorial choice. Hashi's rules
   </ProseCode>
 </ProsePre>
 
-I start with a connected lattice whose coordinate lines are at least two cells apart, then remove positions in random order. A removal survives only if the remaining shape stays connected and every chosen lattice row and column is still represented. Literal grid rows may be empty; that is the one-cell moat doing its job. The invariant is that the occupied area has no accidental empty band at an edge or through the middle. That gives randomness some room without letting it put the entire archipelago behind one bus shelter.
+The first version applied that moat to the coordinate system itself, accidentally banning every other row and column. The corrected generator scans the full grid and applies spacing only between actual island pairs. Each new island must align with the growing visibility network, and candidates that leave the most room for future islands are preferred. Literal grid rows may still be empty; that is the one-cell moat doing its job. The invariant is that the occupied area has no accidental empty band at an edge or through the middle. That gives randomness some room without turning the archipelago into graph paper wearing graph paper.
 
 Once that hidden network exists, each clue is easy: add the bridge counts touching that island. The answer creates the question. Then I throw away the visible answer and keep the islands with their derived numbers.
 
@@ -287,7 +291,7 @@ Once the rules and geometry were stable, the remaining interface choices became 
 
 The board comes first. Instructions, feedback, and build notes follow it rather than pushing the puzzle below a ceremonial landing page. Intro puzzles fit comfortably, while daily, weekly, and monthly boards grow downward into portrait shapes instead of turning the page into a railway timetable.
 
-Completed islands and their bridges lower their opacity so attention moves toward unfinished work. Overfilled islands stay stronger and warmer. Undo stores corridor changes, reset clears the current board, and local storage keeps the preferred category and active puzzle across refreshes.
+Completed islands and their bridges lower their opacity so attention moves toward unfinished work. Overfilled islands stay stronger and warmer. Save position records one deliberate checkpoint, reset clears the current board, and local storage keeps the preferred category, active puzzle, and checkpoint across refreshes.
 
 Large puzzles are generated in a Web Worker. While it works, the page shows a quiet loading frame instead of pretending that a tiny emergency puzzle is the real thing. If the worker is unavailable, the page generates a full puzzle directly. A late response still cannot erase someone's bridges. Computers are fast, but apparently they still need rules about interrupting people.
 

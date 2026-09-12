@@ -46,6 +46,22 @@ describe('HashiPage', () => {
     expect(wrapper.text()).toContain('Satisfied')
     expect(wrapper.text()).toContain('overfilled')
     expect(wrapper.text()).toContain('stranded')
+    expect(wrapper.text()).toContain('Useful deductions')
+    expect(wrapper.text()).toContain('Corner 4, edge 6, and middle 8')
+    expect(wrapper.text()).toContain('Corner 3, edge 5, and middle 7')
+    expect(wrapper.text()).toContain('A middle 6 facing a 1')
+    expect(wrapper.text()).toContain('closed island segment')
+    expect(wrapper.get('[data-hashi-techniques-source]').attributes('href')).toContain(
+      'conceptispuzzles.com',
+    )
+  })
+
+  it('offers a saved position instead of linear undo', () => {
+    const wrapper = mount(HashiPage, { global: { plugins: [router] } })
+
+    expect(wrapper.find('[data-action="undo"]').exists()).toBe(false)
+    expect(wrapper.get('[data-action="save-snapshot"]').text()).toContain('Save position')
+    expect(wrapper.get('[data-action="restore-snapshot"]').text()).toContain('Restore position')
   })
 
   it('labels satisfied and overfilled board feedback without relying on color', () => {

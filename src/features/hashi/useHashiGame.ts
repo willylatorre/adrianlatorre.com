@@ -49,11 +49,15 @@ export interface HashiGame {
   readonly puzzle: HashiPuzzle
   readonly preferredCategory: HashiCategory
   readonly bridgeCounts: BridgeCounts
+  readonly snapshot: BridgeCounts | null
+  readonly canRestoreSnapshot: boolean
   readonly history: ReadonlyArray<{ corridorId: string; previous: BridgeCount }>
   readonly evaluation: PuzzleEvaluation
   readonly solvedAt: number | null
   readonly elapsedMs: number
   cycleCorridor(corridorId: string): CycleResult
+  saveSnapshot(): void
+  restoreSnapshot(): boolean
   undo(): boolean
   reset(): void
   newPuzzle(): void
@@ -70,6 +74,7 @@ export function createHashiGame(
   let puzzle = restored?.puzzle ?? initialPuzzle
   let preferredCategory = restored?.preferredCategory ?? puzzle.category
   let bridgeCounts = { ...restored?.bridgeCounts }
+  let snapshot = restored?.snapshot ? { ...restored.snapshot } : null
   let history = [...(restored?.history ?? [])]
   let evaluation = evaluatePuzzle(puzzle, bridgeCounts)
   let startedAt = restored?.startedAt ?? now()
@@ -84,6 +89,7 @@ export function createHashiGame(
         preferredCategory,
         puzzle,
         bridgeCounts,
+        snapshot,
         startedAt,
         history,
         solvedAt,
@@ -105,6 +111,7 @@ export function createHashiGame(
   const replaceGeneratedPuzzle = (nextPuzzle: HashiPuzzle) => {
     puzzle = nextPuzzle
     bridgeCounts = {}
+    snapshot = null
     history = []
     startedAt = now()
     solvedAt = null
@@ -122,6 +129,12 @@ export function createHashiGame(
     },
     get bridgeCounts() {
       return bridgeCounts
+    },
+    get snapshot() {
+      return snapshot
+    },
+    get canRestoreSnapshot() {
+      return snapshot !== null && !bridgeCountsEqual(bridgeCounts, snapshot)
     },
     get history() {
       return history
@@ -152,6 +165,19 @@ export function createHashiGame(
       changed()
       return { changed: true }
     },
+    saveSnapshot() {
+      snapshot = { ...bridgeCounts }
+      changed()
+    },
+    restoreSnapshot() {
+      if (snapshot === null || bridgeCountsEqual(bridgeCounts, snapshot)) return false
+      bridgeCounts = { ...snapshot }
+      history = []
+      evaluation = evaluatePuzzle(puzzle, bridgeCounts)
+      solvedAt = evaluation.solved ? (solvedAt ?? now()) : null
+      changed()
+      return true
+    },
     undo() {
       const entry = history.at(-1)
       if (!entry) return false
@@ -165,6 +191,7 @@ export function createHashiGame(
     },
     reset() {
       bridgeCounts = {}
+      snapshot = null
       history = []
       startedAt = now()
       solvedAt = null
@@ -309,6 +336,8 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     puzzle: value(() => game.puzzle),
     preferredCategory: value(() => game.preferredCategory),
     bridgeCounts: value(() => game.bridgeCounts),
+    snapshot: value(() => game.snapshot),
+    canRestoreSnapshot: value(() => game.canRestoreSnapshot),
     history: value(() => game.history),
     evaluation: value(() => game.evaluation),
     solvedAt: value(() => game.solvedAt),
@@ -319,6 +348,8 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     }),
     generating,
     cycleCorridor: game.cycleCorridor,
+    saveSnapshot: game.saveSnapshot,
+    restoreSnapshot: game.restoreSnapshot,
     undo: game.undo,
     reset: game.reset,
     newPuzzle: () => {
@@ -330,6 +361,11 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
       requestPuzzle(category)
     },
   }
+}
+
+function bridgeCountsEqual(left: BridgeCounts, right: BridgeCounts) {
+  const corridorIds = new Set([...Object.keys(left), ...Object.keys(right)])
+  return [...corridorIds].every((id) => (left[id] ?? 0) === (right[id] ?? 0))
 }
 
 function defaultPuzzleGenerator(category: HashiCategory, seed: number): HashiPuzzle {

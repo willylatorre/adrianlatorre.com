@@ -90,10 +90,11 @@ watch(
 
     <HashiControls
       :category="game.preferredCategory.value"
-      :history-length="game.history.value.length"
       :bridge-counts="game.bridgeCounts.value"
+      :can-restore-snapshot="game.canRestoreSnapshot.value"
       @select-category="game.selectCategory"
-      @undo="game.undo"
+      @save-snapshot="game.saveSnapshot"
+      @restore-snapshot="game.restoreSnapshot"
       @reset="game.reset"
       @new-puzzle="game.newPuzzle"
     />
@@ -167,6 +168,30 @@ watch(
             <li>Match every island's number exactly.</li>
             <li>Keep every island in one connected network.</li>
           </ol>
+          <div class="hashi-techniques">
+            <h3>Useful deductions</h3>
+            <ul>
+              <li>A 1 or 2 with only one neighbor sends that many bridges to it.</li>
+              <li>Corner 4, edge 6, and middle 8 force two bridges in every direction.</li>
+              <li>Corner 3, edge 5, and middle 7 force at least one bridge in every direction.</li>
+              <li>
+                A middle 6 facing a 1 forces at least one bridge toward each of its other three
+                neighbors.
+              </li>
+              <li>
+                A forced bridge closes every route that would cross it, often starting a cascade.
+              </li>
+              <li>
+                Never complete a closed island segment—such as 1–1 or a doubled 2–2—before the whole
+                board is connected.
+              </li>
+            </ul>
+            <a
+              data-hashi-techniques-source
+              href="https://www.conceptispuzzles.com/index.aspx?uri=puzzle/hashi/techniques"
+              >See the illustrated Conceptis techniques</a
+            >
+          </div>
         </template>
       </UCollapsible>
     </section>
@@ -375,6 +400,33 @@ watch(
   color: var(--site-muted);
   font-size: 0.86rem;
   line-height: 1.55;
+}
+
+.hashi-techniques {
+  padding: 0 0 1.45rem;
+}
+
+.hashi-techniques h3 {
+  margin: 0 0 0.7rem;
+  font-size: 0.86rem;
+  font-weight: 680;
+}
+
+.hashi-techniques ul {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding-left: 1.35rem;
+  color: var(--site-muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.hashi-techniques a {
+  display: inline-block;
+  margin-top: 0.8rem;
+  color: var(--site-ink);
+  font-size: 0.8rem;
 }
 
 .hashi-rules-intro {

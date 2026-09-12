@@ -22,6 +22,7 @@ const state: PersistedHashiState = {
     ],
   },
   bridgeCounts: { 'a:b': 1 },
+  snapshot: { 'a:b': 0 },
   startedAt: 1_000,
   history: [{ corridorId: 'a:b', previous: 0 }],
   solvedAt: 1_500,
@@ -57,15 +58,25 @@ describe('Hashi persistence', () => {
 
   it('rejects invalid puzzle and bridge data', () => {
     expect(
-      parsePersistedHashiState(
-        JSON.stringify({ ...state, bridgeCounts: { 'a:b': 3 } }),
-      ),
+      parsePersistedHashiState(JSON.stringify({ ...state, bridgeCounts: { 'a:b': 3 } })),
     ).toBeNull()
     expect(
       parsePersistedHashiState(
         JSON.stringify({ ...state, puzzle: { ...state.puzzle, category: 'yearly' } }),
       ),
     ).toBeNull()
+    expect(
+      parsePersistedHashiState(JSON.stringify({ ...state, snapshot: { 'unknown:corridor': 1 } })),
+    ).toBeNull()
+  })
+
+  it('loads older active runs without a saved position', () => {
+    const { snapshot: _snapshot, ...legacyState } = state
+
+    expect(parsePersistedHashiState(JSON.stringify(legacyState))).toEqual({
+      ...legacyState,
+      snapshot: null,
+    })
   })
 
   it('drops persisted active bridge pairs that cross', () => {

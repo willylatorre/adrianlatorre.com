@@ -12,18 +12,19 @@ const categories: ReadonlyArray<{ value: HashiCategory; label: string }> = [
 const props = withDefaults(
   defineProps<{
     category: HashiCategory
-    historyLength?: number
     bridgeCounts?: BridgeCounts
+    canRestoreSnapshot?: boolean
   }>(),
   {
-    historyLength: 0,
     bridgeCounts: () => ({}),
+    canRestoreSnapshot: false,
   },
 )
 
 const emit = defineEmits<{
   'select-category': [category: HashiCategory]
-  undo: []
+  'save-snapshot': []
+  'restore-snapshot': []
   reset: []
   'new-puzzle': []
 }>()
@@ -32,10 +33,6 @@ const hasBridges = computed(() => Object.values(props.bridgeCounts).some((count)
 
 function selectCategory(category: HashiCategory) {
   if (category !== props.category) emit('select-category', category)
-}
-
-function undo() {
-  if (props.historyLength > 0) emit('undo')
 }
 
 function destructiveAction(action: 'reset' | 'new-puzzle') {
@@ -74,14 +71,24 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
     <div class="hashi-history-actions" aria-label="Puzzle actions">
       <UButton
         type="button"
-        data-action="undo"
-        icon="i-lucide-undo-2"
-        label="Undo"
+        data-action="save-snapshot"
+        icon="i-lucide-save"
+        label="Save position"
         color="neutral"
         variant="ghost"
         size="sm"
-        :disabled="historyLength === 0"
-        @click="undo"
+        @click="emit('save-snapshot')"
+      />
+      <UButton
+        type="button"
+        data-action="restore-snapshot"
+        icon="i-lucide-history"
+        label="Restore position"
+        color="neutral"
+        variant="ghost"
+        size="sm"
+        :disabled="!canRestoreSnapshot"
+        @click="emit('restore-snapshot')"
       />
       <UButton
         type="button"

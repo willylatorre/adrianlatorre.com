@@ -188,11 +188,6 @@ function countNewlyForbiddenCells(cell: GridCell, forbidden: Set<string>, config
   return count
 }
 
-function hasPlanarVisibilityGraph(cells: GridCell[]) {
-  const islands = cells.map(({ x, y }, index) => ({ id: `i${index}`, x, y, clue: 0 }))
-  return countCorridorCrossings(islands) === 0
-}
-
 function canAddWithoutVisibilityCrossings(cells: GridCell[], candidate: GridCell) {
   const islands = [...cells, candidate].map(({ x, y }, index) => ({
     id: `i${index}`,

@@ -80,6 +80,40 @@ describe('Hashi game state', () => {
     expect(game.history).toHaveLength(2)
   })
 
+  it('saves, replaces, and restores one bridge position', () => {
+    const game = createHashiGame(fixedPuzzle, () => 1_000)
+
+    game.cycleCorridor('a:b')
+    game.saveSnapshot()
+    expect(game.snapshot).toEqual({ 'a:b': 1 })
+
+    game.cycleCorridor('a:b')
+    expect(game.canRestoreSnapshot).toBe(true)
+    expect(game.restoreSnapshot()).toBe(true)
+    expect(game.bridgeCounts).toEqual({ 'a:b': 1 })
+    expect(game.canRestoreSnapshot).toBe(false)
+
+    game.cycleCorridor('a:b')
+    game.saveSnapshot()
+    expect(game.snapshot).toEqual({ 'a:b': 2 })
+  })
+
+  it('persists a saved position and clears it for reset and replacement puzzles', () => {
+    const storage = createStorage()
+    const game = createHashiGame(fixedPuzzle, () => 1_000, { storage })
+
+    game.cycleCorridor('a:b')
+    game.saveSnapshot()
+    expect(loadHashiState(storage)?.snapshot).toEqual({ 'a:b': 1 })
+
+    game.reset()
+    expect(game.snapshot).toBeNull()
+    game.cycleCorridor('a:b')
+    game.saveSnapshot()
+    game.newPuzzle()
+    expect(game.snapshot).toBeNull()
+  })
+
   it('refuses a bridge that crosses an active bridge', () => {
     const game = createHashiGame(crossingPuzzle, () => 1_000)
 
@@ -150,6 +184,7 @@ describe('Hashi game state', () => {
       preferredCategory: 'intro',
       puzzle: fixedPuzzle,
       bridgeCounts: {},
+      snapshot: null,
       startedAt: 1_000,
       history: [],
     })
