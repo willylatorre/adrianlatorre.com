@@ -15,6 +15,10 @@ type DemoKind =
   | 'density'
   | 'mix'
   | 'geometry'
+  | 'layout'
+  | 'diagonal'
+  | 'reasoning'
+  | 'trace'
 
 const props = defineProps<{ kind: DemoKind }>()
 
@@ -32,6 +36,14 @@ const captions: Record<DemoKind, string> = {
   mix: 'A useful random board has plenty of 1–5 clues, fewer 6s and 7s, and only the occasional 8.',
   geometry:
     'The visible bridge stops at each island edge; its transparent interaction stroke is deliberately wider.',
+  layout:
+    'Both boards contain twelve islands. The first repeats its columns; the second uses the same amount of puzzle in a staggered arrangement.',
+  diagonal:
+    'Diagonal neighbours do not share a possible bridge. Orthogonal neighbours leave no visible gap for one.',
+  reasoning:
+    'More islands make a puzzle longer. The rules needed to make progress are what make it easier or harder.',
+  trace:
+    'This is the kind of solve trace the generator records: a sequence of provable moves, not a claim that a clue distribution is difficulty.',
 }
 
 const island = (id: string, x: number, y: number, clue: number): Island => ({ id, x, y, clue })
@@ -103,7 +115,63 @@ const demos: Record<Exclude<DemoKind, 'geometry'>, HashiPuzzle> = {
     island('mix-o', 4, 6, 4),
     island('mix-p', 6, 6, 2),
   ]),
+  layout: puzzle('demo-layout', 7, 7, [
+    island('layout-a', 0, 0, 2),
+    island('layout-b', 2, 0, 3),
+    island('layout-c', 4, 0, 2),
+    island('layout-d', 6, 0, 3),
+    island('layout-e', 0, 3, 3),
+    island('layout-f', 2, 3, 4),
+    island('layout-g', 4, 3, 3),
+    island('layout-h', 6, 3, 4),
+    island('layout-i', 0, 6, 2),
+    island('layout-j', 2, 6, 3),
+    island('layout-k', 4, 6, 2),
+    island('layout-l', 6, 6, 3),
+  ]),
+  diagonal: puzzle('demo-diagonal', 7, 5, [
+    island('diagonal-a', 1, 1, 2),
+    island('diagonal-b', 2, 2, 3),
+    island('diagonal-c', 4, 1, 2),
+    island('diagonal-d', 5, 2, 3),
+  ]),
+  reasoning: puzzle('demo-reasoning', 7, 5, [
+    island('reasoning-a', 0, 2, 2),
+    island('reasoning-b', 2, 2, 4),
+    island('reasoning-c', 4, 2, 3),
+    island('reasoning-d', 6, 2, 1),
+    island('reasoning-e', 2, 0, 2),
+    island('reasoning-f', 4, 4, 2),
+  ]),
+  trace: puzzle('demo-trace', 7, 5, [
+    island('trace-a', 1, 2, 2),
+    island('trace-b', 3, 0, 2),
+    island('trace-c', 5, 2, 3),
+    island('trace-d', 3, 4, 2),
+  ]),
 }
+
+const staggeredLayout = puzzle('demo-layout-staggered', 7, 7, [
+  island('staggered-a', 0, 0, 2),
+  island('staggered-b', 3, 0, 3),
+  island('staggered-c', 6, 0, 2),
+  island('staggered-d', 1, 1, 3),
+  island('staggered-e', 4, 1, 4),
+  island('staggered-f', 6, 1, 3),
+  island('staggered-g', 0, 3, 2),
+  island('staggered-h', 3, 3, 4),
+  island('staggered-i', 6, 3, 2),
+  island('staggered-j', 1, 5, 3),
+  island('staggered-k', 4, 5, 2),
+  island('staggered-l', 3, 6, 3),
+])
+
+const orthogonalCrowding = puzzle('demo-orthogonal-crowding', 7, 5, [
+  island('orthogonal-a', 1, 1, 2),
+  island('orthogonal-b', 2, 1, 2),
+  island('orthogonal-c', 4, 1, 2),
+  island('orthogonal-d', 5, 1, 2),
+])
 
 const geometryPuzzle = puzzle('demo-geometry', 6, 3, [
   island('geometry-a', 1, 1, 1),
@@ -188,7 +256,45 @@ function cycle(corridor: string) {
     </div>
 
     <div v-else class="hashi-demo-board" :class="`is-${kind}`">
+      <div v-if="kind === 'layout'" class="hashi-demo-comparison">
+        <section>
+          <p class="hashi-demo-label">Rails</p>
+          <HashiBoard :puzzle="activePuzzle" :bridge-counts="{}" :interactive="false" />
+        </section>
+        <section>
+          <p class="hashi-demo-label">Staggered</p>
+          <HashiBoard :puzzle="staggeredLayout" :bridge-counts="{}" :interactive="false" />
+        </section>
+        <p class="hashi-demo-summary">Same island count: 12</p>
+      </div>
+      <div v-else-if="kind === 'diagonal'" class="hashi-demo-comparison">
+        <section>
+          <p class="hashi-demo-label">Diagonal is allowed</p>
+          <HashiBoard :puzzle="activePuzzle" :bridge-counts="{}" :interactive="false" />
+        </section>
+        <section>
+          <p class="hashi-demo-label">Orthogonal touching is not</p>
+          <HashiBoard :puzzle="orthogonalCrowding" :bridge-counts="{}" :interactive="false" />
+        </section>
+      </div>
+      <div v-else-if="kind === 'reasoning'" class="hashi-demo-reasoning">
+        <HashiBoard :puzzle="activePuzzle" :bridge-counts="{}" :interactive="false" />
+        <div>
+          <p class="hashi-demo-label">Shorter does not mean easier</p>
+          <p><strong>Longer board:</strong> Direct capacity can keep forcing bridges.</p>
+          <p><strong>Smaller board — Contradiction:</strong> the first useful move can be an assumption that fails.</p>
+        </div>
+      </div>
+      <div v-else-if="kind === 'trace'" class="hashi-demo-trace">
+        <HashiBoard :puzzle="activePuzzle" :bridge-counts="{}" :interactive="false" />
+        <ol>
+          <li><strong>Capacity:</strong> the other routes cannot hold enough.</li>
+          <li><strong>Crossing:</strong> that bridge closes the perpendicular route.</li>
+          <li><strong>Contradiction:</strong> leaving this corridor empty strands the remainder.</li>
+        </ol>
+      </div>
       <HashiBoard
+        v-else
         :puzzle="activePuzzle"
         :bridge-counts="displayCounts"
         :interactive="kind === 'cycle' || kind === 'crossing' || kind === 'totals'"
@@ -233,6 +339,65 @@ function cycle(corridor: string) {
 
 .hashi-demo-board {
   min-width: 0;
+}
+
+.hashi-demo-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.hashi-demo-comparison section,
+.hashi-demo-reasoning,
+.hashi-demo-trace {
+  min-width: 0;
+}
+
+.hashi-demo-label,
+.hashi-demo-summary {
+  margin: 0 0 0.45rem;
+  color: var(--site-ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.hashi-demo-summary {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--site-muted);
+  font-weight: 500;
+}
+
+.hashi-demo-reasoning,
+.hashi-demo-trace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(11rem, 0.8fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+.hashi-demo-reasoning p,
+.hashi-demo-trace ol {
+  margin: 0.55rem 0 0;
+  color: var(--site-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.hashi-demo-trace ol {
+  padding-left: 1.25rem;
+}
+
+.hashi-demo-trace li + li {
+  margin-top: 0.45rem;
+}
+
+@media (max-width: 34rem) {
+  .hashi-demo-comparison,
+  .hashi-demo-reasoning,
+  .hashi-demo-trace {
+    grid-template-columns: 1fr;
+  }
 }
 
 :deep(.hashi-board-scroll) {

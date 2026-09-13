@@ -4,6 +4,10 @@ date: 2026-09-13
 description: The tests passed, the bridges connected, and the puzzles still felt wrong. A second round of building Hashi, this time with a less cooperative definition of working.
 ---
 
+<script setup>
+import HashiArticleDemo from '@/components/hashi/HashiArticleDemo.vue'
+</script>
+
 In [the first Hashi article](/blog/notes-from-building-hashi-one-rule-at-a-time), I built a game one rule at a time. Islands could see their neighbors. Bridges could not cross. Numbers had to match. Everything had to belong to one connected network.
 
 It worked.
@@ -15,6 +19,8 @@ Ours looked as though the islands had been allocated plots by a very organized c
 The bridges were legal. The numbers added up. The generator had passed its tests.
 
 I would still rather have played the other puzzle.
+
+<HashiArticleDemo kind="layout" />
 
 ## The tests were answering the questions I had asked
 
@@ -47,6 +53,8 @@ My rule had removed exactly the positions that could make the board feel less re
 There is probably a general lesson in trying to tune your way around something you have explicitly forbidden.
 
 The new placement rule still leaves space between islands on the same row or column. Diagonal neighbors are allowed. The larger boards also have more islands for their area: the monthly board now has 280 islands on a 30×30 grid, roughly nine per row on average. Individual rows vary. They are allowed to have different plans for the afternoon.
+
+<HashiArticleDemo kind="diagonal" />
 
 That density helps, but the important change is where those islands are allowed to go.
 
@@ -84,6 +92,8 @@ The clue histogram was particularly seductive. It gave me numbers I could adjust
 
 I removed those distribution targets. Keeping them would have meant continuing to optimize an answer sheet's appearance while claiming to measure the experience of finding it.
 
+<HashiArticleDemo kind="reasoning" />
+
 ## Let the generator try to play
 
 The hint system provided a better starting point.
@@ -101,6 +111,8 @@ It also immediately embarrassed the category labels. One small Intro sample need
 Intro now has to finish through direct capacity, only-route, and crossing deductions. Daily can require connectivity or contradiction reasoning. Weekly and Monthly require a higher proportion of contradiction steps in the recorded solve. The proportion matters: doubling the length of an easy sequence should not promote it to hard.
 
 Weekly and Monthly deliberately share the same reasoning tier. Monthly has more puzzle to work through. I do not want its larger dimensions quietly doing a second job as evidence of greater sophistication.
+
+<HashiArticleDemo kind="trace" />
 
 ## A known answer was another low bar
 

@@ -14,6 +14,10 @@ const kinds = [
   'density',
   'mix',
   'geometry',
+  'layout',
+  'diagonal',
+  'reasoning',
+  'trace',
 ] as const
 
 describe('HashiArticleDemo', () => {
@@ -61,5 +65,38 @@ describe('HashiArticleDemo', () => {
 
     expect(wrapper.findAll('.hashi-bridge').length).toBeGreaterThan(0)
     expect(wrapper.findAll('.hashi-island-number').map((node) => node.text())).toEqual(clues)
+  })
+
+  it('labels the layout comparison as the same amount of puzzle', () => {
+    const wrapper = mount(HashiArticleDemo, { props: { kind: 'layout' } })
+
+    expect(wrapper.text()).toContain('Same island count')
+    expect(wrapper.text()).toContain('Rails')
+    expect(wrapper.text()).toContain('Staggered')
+  })
+
+  it('shows that diagonal islands are allowed without allowing orthogonal crowding', () => {
+    const wrapper = mount(HashiArticleDemo, { props: { kind: 'diagonal' } })
+
+    expect(wrapper.text()).toContain('Diagonal is allowed')
+    expect(wrapper.text()).toContain('Orthogonal touching is not')
+  })
+
+  it('contrasts direct capacity with a contradiction deduction', () => {
+    const wrapper = mount(HashiArticleDemo, { props: { kind: 'reasoning' } })
+
+    expect(wrapper.text()).toContain('Shorter does not mean easier')
+    expect(wrapper.text()).toContain('Direct capacity')
+    expect(wrapper.text()).toContain('Contradiction')
+  })
+
+  it('renders the ordered deduction trace', () => {
+    const wrapper = mount(HashiArticleDemo, { props: { kind: 'trace' } })
+
+    expect(wrapper.findAll('li').map((item) => item.text())).toEqual([
+      expect.stringContaining('Capacity'),
+      expect.stringContaining('Crossing'),
+      expect.stringContaining('Contradiction'),
+    ])
   })
 })

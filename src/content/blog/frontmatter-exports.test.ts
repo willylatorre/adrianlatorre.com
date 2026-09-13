@@ -51,4 +51,12 @@ describe('blog markdown frontmatter exports', () => {
     expect(mod.date).toMatch(/^2026-09-13/)
     expect(mod.description).toBeTruthy()
   })
+
+  it('uses concrete Hashi examples in the reality-check follow-up', async () => {
+    const source = await import('./notes-from-a-hashi-game-that-technically-worked.md?raw')
+    const kinds = ['layout', 'diagonal', 'reasoning', 'trace']
+
+    expect(source.default.match(/<HashiArticleDemo/g)).toHaveLength(4)
+    for (const kind of kinds) expect(source.default).toContain(`kind="${kind}"`)
+  })
 })
