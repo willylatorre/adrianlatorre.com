@@ -2,7 +2,7 @@ import { computed, getCurrentScope, onScopeDispose, ref } from 'vue'
 import { generatePuzzle, HASHI_GENERATOR_VERSION } from './generator'
 import { cloneFallback } from './fallbacks'
 import type { GeneratePuzzleMessage, GeneratedPuzzleMessage } from './generator.worker'
-import { corridorsCross, getVisibleCorridors } from './geometry'
+import { getVisibleCorridors, wouldCrossActiveBridge } from './geometry'
 import { findHashiHint, type HashiHint, type HashiHintSearchResult } from './hints'
 import {
   loadHashiState,
@@ -168,7 +168,7 @@ export function createHashiGame(
 
       const previous = bridgeCounts[corridorId] ?? 0
       const next = ((previous + 1) % 3) as BridgeCount
-      if (next > 0 && wouldCross(corridor, puzzle, bridgeCounts)) {
+      if (next > 0 && wouldCrossActiveBridge(corridor, puzzle, bridgeCounts)) {
         return { changed: false, reason: 'crossing' }
       }
 
@@ -416,18 +416,4 @@ function createBrowserPuzzleWorker(): HashiPuzzleWorker | null {
   return new Worker(new URL('./generator.worker.ts', import.meta.url), {
     type: 'module',
   }) as unknown as HashiPuzzleWorker
-}
-
-function wouldCross(candidate: Corridor, puzzle: HashiPuzzle, counts: BridgeCounts) {
-  const islandById = new Map(puzzle.islands.map((island) => [island.id, island]))
-
-  return getVisibleCorridors(puzzle.islands).some(
-    (active) =>
-      active.id !== candidate.id &&
-      (counts[active.id] ?? 0) > 0 &&
-      corridorsCross(
-        { a: islandById.get(candidate.a)!, b: islandById.get(candidate.b)! },
-        { a: islandById.get(active.a)!, b: islandById.get(active.b)! },
-      ),
-  )
 }

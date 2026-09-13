@@ -125,6 +125,24 @@ export function countCorridorCrossings(
   return count
 }
 
+export function wouldCrossActiveBridge(
+  candidate: Corridor,
+  puzzle: HashiPuzzle,
+  counts: Record<string, number>,
+) {
+  const islandById = new Map(puzzle.islands.map((island) => [island.id, island]))
+
+  return getVisibleCorridors(puzzle.islands).some(
+    (active) =>
+      active.id !== candidate.id &&
+      (counts[active.id] ?? 0) > 0 &&
+      corridorsCross(
+        { a: islandById.get(candidate.a)!, b: islandById.get(candidate.b)! },
+        { a: islandById.get(active.a)!, b: islandById.get(active.b)! },
+      ),
+  )
+}
+
 function isStrictlyBetween(value: number, endpointA: number, endpointB: number) {
   return value > Math.min(endpointA, endpointB) && value < Math.max(endpointA, endpointB)
 }

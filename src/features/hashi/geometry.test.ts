@@ -4,6 +4,7 @@ import {
   corridorsCross,
   countCorridorCrossings,
   getVisibleCorridors,
+  wouldCrossActiveBridge,
 } from './geometry'
 import type { HashiPuzzle } from './types'
 
@@ -77,5 +78,25 @@ describe('Hashi geometry', () => {
     ]
 
     expect(countCorridorCrossings(islands)).toBe(1)
+  })
+
+  it('finds active bridges that block a crossing corridor', () => {
+    const crossingPuzzle: HashiPuzzle = {
+      id: 'crossing',
+      category: 'intro',
+      width: 5,
+      height: 5,
+      islands: [
+        { id: 'left', x: 0, y: 2, clue: 1 },
+        { id: 'right', x: 4, y: 2, clue: 1 },
+        { id: 'top', x: 2, y: 0, clue: 1 },
+        { id: 'bottom', x: 2, y: 4, clue: 1 },
+      ],
+    }
+    const corridors = getVisibleCorridors(crossingPuzzle.islands)
+    const vertical = corridors.find((corridor) => corridor.id === 'bottom:top')!
+
+    expect(wouldCrossActiveBridge(vertical, crossingPuzzle, { 'left:right': 1 })).toBe(true)
+    expect(wouldCrossActiveBridge(vertical, crossingPuzzle, {})).toBe(false)
   })
 })

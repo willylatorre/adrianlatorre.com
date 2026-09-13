@@ -12,6 +12,7 @@ const nicknameDialogOpen = ref(false)
 const nickname = ref('')
 const pendingScore = ref<{ durationMs: number; puzzleFingerprint: string } | null>(null)
 const submittedFingerprints = new Set<string>()
+const boardZoom = ref<number | null>(null)
 
 const categoryLabels = {
   intro: 'Intro puzzle',
@@ -67,6 +68,12 @@ function discardScore() {
   nicknameDialogOpen.value = false
 }
 
+function zoomBoard(direction: 'in' | 'out') {
+  const current = boardZoom.value ?? 1
+  const next = current + (direction === 'in' ? 0.1 : -0.1)
+  boardZoom.value = Math.round(Math.min(1.6, Math.max(0.6, next)) * 10) / 10
+}
+
 onMounted(loadLeaderboard)
 watch(() => game.preferredCategory.value, loadLeaderboard)
 watch(
@@ -95,10 +102,14 @@ watch(
       :hints-remaining="game.hintsRemaining.value"
       :has-active-hint="game.activeHint.value !== null"
       :hint-unavailable="game.generating.value"
+      :board-zoom="boardZoom"
       @select-category="game.selectCategory"
       @save-snapshot="game.saveSnapshot"
       @restore-snapshot="game.restoreSnapshot"
       @request-hint="game.requestHint"
+      @zoom-out="zoomBoard('out')"
+      @zoom-fit="boardZoom = null"
+      @zoom-in="zoomBoard('in')"
       @reset="game.reset"
       @new-puzzle="game.newPuzzle"
     />
@@ -129,6 +140,7 @@ watch(
         :puzzle="game.puzzle.value"
         :bridge-counts="game.bridgeCounts.value"
         :hint-corridor-id="game.activeHint.value?.corridorId"
+        :zoom="boardZoom ?? 1"
         @cycle="game.cycleCorridor"
       />
       <aside class="hashi-legend" data-board-legend aria-label="Board feedback">

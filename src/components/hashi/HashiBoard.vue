@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { bridgeSegments, getVisibleCorridors } from '../../features/hashi/geometry'
+import {
+  bridgeSegments,
+  getVisibleCorridors,
+  wouldCrossActiveBridge,
+} from '../../features/hashi/geometry'
 import { getIslandState, getIslandTotal } from '../../features/hashi/rules'
 import type {
   BridgeCount,
@@ -23,8 +27,9 @@ const props = withDefaults(
     bridgeCounts: BridgeCounts
     interactive?: boolean
     hintCorridorId?: string | null
+    zoom?: number
   }>(),
-  { interactive: true, hintCorridorId: null },
+  { interactive: true, hintCorridorId: null, zoom: 1 },
 )
 
 const emit = defineEmits<{
@@ -53,6 +58,7 @@ const boardHeight = computed(
 const viewBox = computed(
   () => `${-BOARD_MARGIN} ${-BOARD_MARGIN} ${boardWidth.value} ${boardHeight.value}`,
 )
+const zoomPercent = computed(() => Math.round(props.zoom * 100))
 
 function bridgeCount(corridor: Corridor): BridgeCount {
   return props.bridgeCounts[corridor.id] ?? 0
@@ -76,6 +82,10 @@ function corridorStateClasses(corridor: Corridor) {
     'is-satisfied': states.includes('satisfied'),
     'is-overfilled': states.includes('overfilled'),
   }
+}
+
+function isBlockedByCrossing(corridor: Corridor) {
+  return bridgeCount(corridor) === 0 && wouldCrossActiveBridge(corridor, props.puzzle, props.bridgeCounts)
 }
 
 function corridorLabel(corridor: Corridor) {
@@ -110,6 +120,7 @@ function islandLabel(island: Island) {
       :viewBox="viewBox"
       :width="boardWidth"
       :height="boardHeight"
+      :style="{ width: `${zoomPercent}%`, height: 'auto' }"
       role="group"
       aria-label="Hashi puzzle board"
     >
@@ -161,6 +172,7 @@ function islandLabel(island: Island) {
           :class="{
             'is-readonly': !interactive,
             'is-hinted': hintCorridorId === corridor.id,
+            'is-blocked': isBlockedByCrossing(corridor),
           }"
           :data-corridor-hit="corridor.id"
           :role="interactive ? 'button' : undefined"
@@ -285,8 +297,8 @@ function islandLabel(island: Island) {
   cursor: default;
 }
 
-.hashi-corridor-hit:hover .hashi-focus,
-.hashi-corridor-hit:focus-visible .hashi-focus {
+.hashi-corridor-hit:not(.is-blocked):hover .hashi-focus,
+.hashi-corridor-hit:not(.is-blocked):focus-visible .hashi-focus {
   stroke: color-mix(in oklch, var(--site-accent) 22%, transparent);
 }
 
@@ -306,7 +318,7 @@ function islandLabel(island: Island) {
 
 .hashi-bridge.is-satisfied {
   color: color-mix(in oklch, var(--site-accent) 42%, transparent);
-  opacity: 0.46;
+  opacity: 0.62;
 }
 
 .hashi-bridge.is-overfilled {

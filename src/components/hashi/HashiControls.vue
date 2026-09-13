@@ -17,6 +17,7 @@ const props = withDefaults(
     hintsRemaining?: number
     hasActiveHint?: boolean
     hintUnavailable?: boolean
+    boardZoom?: number | null
   }>(),
   {
     bridgeCounts: () => ({}),
@@ -24,6 +25,7 @@ const props = withDefaults(
     hintsRemaining: 3,
     hasActiveHint: false,
     hintUnavailable: false,
+    boardZoom: null,
   },
 )
 
@@ -32,11 +34,17 @@ const emit = defineEmits<{
   'save-snapshot': []
   'restore-snapshot': []
   'request-hint': []
+  'zoom-out': []
+  'zoom-fit': []
+  'zoom-in': []
   reset: []
   'new-puzzle': []
 }>()
 
 const hasBridges = computed(() => Object.values(props.bridgeCounts).some((count) => count > 0))
+const boardZoomLabel = computed(() =>
+  props.boardZoom === null ? 'Board zoom: fit' : `Board zoom: ${Math.round(props.boardZoom * 100)}%`,
+)
 
 function selectCategory(category: HashiCategory) {
   if (category !== props.category) emit('select-category', category)
@@ -76,6 +84,41 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
     </nav>
 
     <div class="hashi-position-actions" aria-label="Puzzle actions">
+      <div class="hashi-zoom-controls" aria-label="Board zoom">
+        <span data-board-zoom class="hashi-zoom-label" aria-live="polite" :aria-label="boardZoomLabel">
+          {{ boardZoom === null ? 'Fit' : `${Math.round(boardZoom * 100)}%` }}
+        </span>
+        <UButton
+          type="button"
+          data-action="zoom-out"
+          icon="i-lucide-minus"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          aria-label="Zoom out"
+          @click="emit('zoom-out')"
+        />
+        <UButton
+          type="button"
+          data-action="zoom-fit"
+          icon="i-lucide-scan-line"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          aria-label="Fit board to view"
+          @click="emit('zoom-fit')"
+        />
+        <UButton
+          type="button"
+          data-action="zoom-in"
+          icon="i-lucide-plus"
+          color="neutral"
+          variant="ghost"
+          size="sm"
+          aria-label="Zoom in"
+          @click="emit('zoom-in')"
+        />
+      </div>
       <span
         class="hashi-hint-hearts"
         data-hint-hearts
@@ -155,7 +198,8 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
 }
 
 .hashi-category-tabs,
-.hashi-position-actions {
+.hashi-position-actions,
+.hashi-zoom-controls {
   display: flex;
   width: max-content;
   align-items: center;
@@ -165,6 +209,20 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
 .hashi-position-actions {
   flex: none;
   gap: 4px;
+}
+
+.hashi-zoom-controls {
+  gap: 1px;
+  padding-right: 0.35rem;
+  border-right: 1px solid var(--site-border);
+}
+
+.hashi-zoom-label {
+  min-width: 2.9rem;
+  color: var(--site-muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 .hashi-hint-hearts {

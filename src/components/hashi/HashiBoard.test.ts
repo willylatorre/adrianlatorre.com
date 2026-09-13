@@ -202,6 +202,27 @@ describe('HashiBoard', () => {
     expect(target.get('.hashi-focus').classes()).toContain('is-hinted')
     expect(wrapper.findAll('[data-corridor="a:b"] .hashi-bridge')).toHaveLength(0)
   })
+
+  it('does not project a corridor that would cross an active bridge', () => {
+    const crossingPuzzle: HashiPuzzle = {
+      id: 'crossing-preview',
+      category: 'intro',
+      width: 5,
+      height: 5,
+      islands: [
+        { id: 'left', x: 0, y: 2, clue: 1 },
+        { id: 'right', x: 4, y: 2, clue: 1 },
+        { id: 'top', x: 2, y: 0, clue: 1 },
+        { id: 'bottom', x: 2, y: 4, clue: 1 },
+      ],
+    }
+    const wrapper = mount(HashiBoard, {
+      props: { puzzle: crossingPuzzle, bridgeCounts: { 'left:right': 1 } },
+    })
+
+    expect(wrapper.get('[data-corridor-hit="bottom:top"]').classes()).toContain('is-blocked')
+    expect(wrapper.get('[data-corridor-hit="left:right"]').classes()).not.toContain('is-blocked')
+  })
 })
 
 describe('HashiControls', () => {
@@ -238,6 +259,19 @@ describe('HashiControls', () => {
 
     await tabs[1]?.trigger('click')
     expect(wrapper.emitted('select-category')).toEqual([['daily']])
+  })
+
+  it('offers zoom out, fit, and zoom in actions for the board', async () => {
+    const wrapper = mountControls()
+
+    await wrapper.get('[data-action="zoom-out"]').trigger('click')
+    await wrapper.get('[data-action="zoom-fit"]').trigger('click')
+    await wrapper.get('[data-action="zoom-in"]').trigger('click')
+
+    expect(wrapper.emitted('zoom-out')).toEqual([[]])
+    expect(wrapper.emitted('zoom-fit')).toEqual([[]])
+    expect(wrapper.emitted('zoom-in')).toEqual([[]])
+    expect(wrapper.get('[data-board-zoom]').attributes('aria-label')).toBe('Board zoom: fit')
   })
 
   it('saves positions and enables restore only when the saved position differs', async () => {

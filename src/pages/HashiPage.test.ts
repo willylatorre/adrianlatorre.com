@@ -65,6 +65,22 @@ describe('HashiPage', () => {
     expect(wrapper.get('[data-action="restore-snapshot"]').text()).toContain('Restore position')
   })
 
+  it('fits the board by default and changes its canvas size when zooming', async () => {
+    const wrapper = mount(HashiPage, { global: { plugins: [router] } })
+    const board = wrapper.get('.hashi-board')
+
+    expect(board.attributes('style')).toContain('width: 100%;')
+    expect(wrapper.get('[data-board-zoom]').text()).toBe('Fit')
+
+    await wrapper.get('[data-action="zoom-in"]').trigger('click')
+
+    expect(wrapper.get('.hashi-board').attributes('style')).toContain('width: 110%;')
+    expect(wrapper.get('[data-board-zoom]').text()).toBe('110%')
+
+    await wrapper.get('[data-action="zoom-fit"]').trigger('click')
+    expect(wrapper.get('.hashi-board').attributes('style')).toContain('width: 100%;')
+  })
+
   it('offers rule-based hints without placing the highlighted bridge', async () => {
     const wrapper = mount(HashiPage, { global: { plugins: [router] } })
 
