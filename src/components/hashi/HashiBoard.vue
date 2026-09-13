@@ -85,7 +85,7 @@ function corridorStateClasses(corridor: Corridor) {
 }
 
 function isBlockedByCrossing(corridor: Corridor) {
-  return bridgeCount(corridor) === 0 && wouldCrossActiveBridge(corridor, props.puzzle, props.bridgeCounts)
+  return wouldCrossActiveBridge(corridor, props.puzzle, props.bridgeCounts)
 }
 
 function corridorLabel(corridor: Corridor) {
@@ -190,6 +190,7 @@ function islandLabel(island: Island) {
             :pointer-events="interactive ? 'stroke' : 'none'"
           />
           <line
+            v-if="!isBlockedByCrossing(corridor)"
             class="hashi-focus"
             :class="{ 'is-hinted': hintCorridorId === corridor.id }"
             v-bind="hitSegment(corridor)"

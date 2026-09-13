@@ -221,6 +221,9 @@ describe('HashiBoard', () => {
     })
 
     expect(wrapper.get('[data-corridor-hit="bottom:top"]').classes()).toContain('is-blocked')
+    expect(
+      wrapper.get('[data-corridor-hit="bottom:top"]').find('.hashi-focus').exists(),
+    ).toBe(false)
     expect(wrapper.get('[data-corridor-hit="left:right"]').classes()).not.toContain('is-blocked')
   })
 })
