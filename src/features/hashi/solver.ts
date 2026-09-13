@@ -1,6 +1,5 @@
 import { corridorsCross, getVisibleCorridors } from './geometry'
-import { evaluatePuzzle } from './rules'
-import type { BridgeCount, BridgeCounts, Corridor, HashiPuzzle } from './types'
+import type { BridgeCounts, Corridor, HashiPuzzle } from './types'
 
 interface SolverCorridor extends Corridor {
   aIndex: number
@@ -8,15 +7,10 @@ interface SolverCorridor extends Corridor {
   crossingIndexes: number[]
 }
 
-const VALUES: BridgeCount[] = [0, 1, 2]
-
-export function countSolutions(puzzle: HashiPuzzle, limit = 2): number {
-  return countSolutionsWithDeadline(puzzle, limit).count
-}
-
 export interface SolutionSearchDeadline {
   deadline: number
   now: () => number
+  nodeLimit?: number
 }
 
 export interface SolutionCountResult {
@@ -24,76 +18,143 @@ export interface SolutionCountResult {
   timedOut: boolean
 }
 
+export function countSolutions(puzzle: HashiPuzzle, limit = 2): number {
+  return countSolutionsWithDeadline(puzzle, limit).count
+}
+
 export function countSolutionsWithDeadline(
   puzzle: HashiPuzzle,
   limit = 2,
   deadline?: SolutionSearchDeadline,
 ): SolutionCountResult {
-  if (limit <= 0 || puzzle.islands.length === 0) return { count: 0, timedOut: false }
+  const result = findSolutions(puzzle, limit, deadline)
+  return { count: result.solutions.length, timedOut: result.timedOut }
+}
 
-  const corridors = prepareCorridors(puzzle)
-  const clues = puzzle.islands.map(({ clue }) => clue)
-  const sums = new Int16Array(puzzle.islands.length)
-  const remaining = new Int16Array(puzzle.islands.length)
-  const assignments = new Int8Array(corridors.length).fill(-1)
-  const counts: BridgeCounts = {}
-  let solutions = 0
+/** Interval propagation plus search. A timed-out search never proves uniqueness. */
+export function findSolutions(
+  puzzle: HashiPuzzle,
+  limit = 2,
+  deadline?: SolutionSearchDeadline,
+  preferred?: BridgeCounts,
+): { solutions: BridgeCounts[]; timedOut: boolean } {
+  const solutions: BridgeCounts[] = []
   let timedOut = false
+  let nodes = 0
+  if (limit <= 0 || !puzzle.islands.length) return { solutions, timedOut }
+  const corridors = prepareCorridors(puzzle)
+  const incident = puzzle.islands.map(() => [] as number[])
+  for (const [index, edge] of corridors.entries()) {
+    incident[edge.aIndex]!.push(index)
+    incident[edge.bIndex]!.push(index)
+  }
+  const clues = puzzle.islands.map((i) => i.clue)
+  if (clues.some((clue) => !Number.isInteger(clue) || clue < 1 || clue > 8))
+    return { solutions, timedOut }
 
-  for (const corridor of corridors) {
-    remaining[corridor.aIndex] += 1
-    remaining[corridor.bIndex] += 1
+  function expired() {
+    if (deadline && deadline.now() >= deadline.deadline) timedOut = true
+    return timedOut
   }
 
-  if (
-    puzzle.islands.some((_, index) => clues[index]! < 0 || clues[index]! > remaining[index]! * 2)
-  ) {
-    return { count: 0, timedOut: false }
-  }
-
-  function search(assignedCount: number) {
-    if (timedOut || solutions >= limit) return
-    if (deadline && deadline.now() >= deadline.deadline) {
-      timedOut = true
-      return
-    }
-    if (assignedCount === corridors.length) {
-      if (evaluatePuzzle(puzzle, counts).solved) solutions += 1
-      return
-    }
-
-    const choice = chooseCorridor(corridors, assignments, sums, remaining, clues)
-    if (!choice) return
-
-    const { corridorIndex, allowedValues } = choice
-    const corridor = corridors[corridorIndex]!
-    assignments[corridorIndex] = 0
-    remaining[corridor.aIndex] -= 1
-    remaining[corridor.bIndex] -= 1
-
-    for (const value of allowedValues) {
-      assignments[corridorIndex] = value
-      counts[corridor.id] = value
-      sums[corridor.aIndex] += value
-      sums[corridor.bIndex] += value
-
-      if (!hasClosedComponent(puzzle.islands.length, corridors, assignments, sums, clues)) {
-        search(assignedCount + 1)
+  function propagate(low: Int8Array, high: Int8Array): boolean {
+    let changed = true
+    while (changed) {
+      if (expired()) return false
+      changed = false
+      for (let island = 0; island < clues.length; island++) {
+        const edges = incident[island]!
+        let min = 0,
+          max = 0
+        for (const e of edges) {
+          min += low[e]!
+          max += high[e]!
+        }
+        const clue = clues[island]!
+        if (min > clue || max < clue) return false
+        for (const e of edges) {
+          const nextLow = Math.max(low[e]!, clue - max + high[e]!)
+          const nextHigh = Math.min(high[e]!, clue - min + low[e]!)
+          if (nextLow > nextHigh) return false
+          if (nextLow !== low[e] || nextHigh !== high[e]) changed = true
+          low[e] = nextLow
+          high[e] = nextHigh
+        }
       }
-
-      sums[corridor.aIndex] -= value
-      sums[corridor.bIndex] -= value
-      if (timedOut || solutions >= limit) break
+      for (let e = 0; e < corridors.length; e++) {
+        if (!low[e]) continue
+        for (const cross of corridors[e]!.crossingIndexes) {
+          if (low[cross]! > 0) return false
+          if (high[cross]! > 0) {
+            high[cross] = 0
+            changed = true
+          }
+        }
+      }
+      // Every island must remain reachable. A cut edge of the possible graph
+      // must carry a bridge, even when neither endpoint's clue forces it yet.
+      const discovery = new Int32Array(clues.length).fill(-1)
+      const reachable = new Int32Array(clues.length)
+      let time = 0
+      function visit(node: number, parentEdge: number) {
+        discovery[node] = reachable[node] = time++
+        for (const e of incident[node]!) {
+          if (!high[e] || e === parentEdge) continue
+          const edge = corridors[e]!
+          const other = edge.aIndex === node ? edge.bIndex : edge.aIndex
+          if (discovery[other] === -1) {
+            visit(other, e)
+            reachable[node] = Math.min(reachable[node]!, reachable[other]!)
+            if (reachable[other]! > discovery[node]! && low[e] === 0) {
+              low[e] = 1
+              changed = true
+            }
+          } else reachable[node] = Math.min(reachable[node]!, discovery[other]!)
+        }
+      }
+      visit(0, -1)
+      if (time !== clues.length) return false
     }
-
-    remaining[corridor.aIndex] += 1
-    remaining[corridor.bIndex] += 1
-    assignments[corridorIndex] = -1
-    delete counts[corridor.id]
+    return true
   }
 
-  search(0)
-  return { count: solutions, timedOut }
+  function search(low: Int8Array, high: Int8Array) {
+    if (deadline?.nodeLimit !== undefined && ++nodes > deadline.nodeLimit) timedOut = true
+    if (solutions.length >= limit || expired() || !propagate(low, high)) return
+    let choice = -1
+    let best = -Infinity
+    for (let e = 0; e < corridors.length; e++) {
+      const range = high[e]! - low[e]!
+      if (!range) continue
+      const edge = corridors[e]!
+      const score =
+        -range * 100 + edge.crossingIndexes.length + clues[edge.aIndex]! + clues[edge.bIndex]!
+      if (score > best) {
+        best = score
+        choice = e
+      }
+    }
+    if (choice < 0) {
+      solutions.push(
+        Object.fromEntries(corridors.map((edge, e) => [edge.id, low[e]])) as BridgeCounts,
+      )
+      return
+    }
+    const values = [0, 1, 2].filter((value) => value >= low[choice]! && value <= high[choice]!)
+    const preferredValue = preferred?.[corridors[choice]!.id]
+    if (preferredValue !== undefined)
+      values.sort((a, b) => Number(b === preferredValue) - Number(a === preferredValue))
+    for (const value of values) {
+      const nextLow = low.slice(),
+        nextHigh = high.slice()
+      nextLow[choice] = nextHigh[choice] = value
+      search(nextLow, nextHigh)
+      if (timedOut || solutions.length >= limit) break
+    }
+  }
+
+  search(new Int8Array(corridors.length), new Int8Array(corridors.length).fill(2))
+  return { solutions, timedOut }
 }
 
 function prepareCorridors(puzzle: HashiPuzzle): SolverCorridor[] {
@@ -123,96 +184,4 @@ function prepareCorridors(puzzle: HashiPuzzle): SolverCorridor[] {
   }
 
   return corridors
-}
-
-function chooseCorridor(
-  corridors: SolverCorridor[],
-  assignments: Int8Array,
-  sums: Int16Array,
-  remaining: Int16Array,
-  clues: number[],
-) {
-  let best:
-    | { corridorIndex: number; allowedValues: BridgeCount[]; endpointCapacity: number }
-    | undefined
-
-  for (let index = 0; index < corridors.length; index += 1) {
-    if (assignments[index] !== -1) continue
-
-    const corridor = corridors[index]!
-    const aNeeded = clues[corridor.aIndex]! - sums[corridor.aIndex]!
-    const bNeeded = clues[corridor.bIndex]! - sums[corridor.bIndex]!
-    const crossingIsActive = corridor.crossingIndexes.some(
-      (crossingIndex) => assignments[crossingIndex]! > 0,
-    )
-    const lower = Math.max(
-      0,
-      aNeeded - 2 * (remaining[corridor.aIndex]! - 1),
-      bNeeded - 2 * (remaining[corridor.bIndex]! - 1),
-    )
-    const upper = crossingIsActive ? 0 : Math.min(2, aNeeded, bNeeded)
-    const allowedValues = VALUES.filter((value) => value >= lower && value <= upper)
-
-    if (allowedValues.length === 0) return undefined
-
-    const endpointCapacity = Math.min(aNeeded, bNeeded)
-    if (
-      !best ||
-      allowedValues.length < best.allowedValues.length ||
-      (allowedValues.length === best.allowedValues.length &&
-        endpointCapacity < best.endpointCapacity)
-    ) {
-      best = { corridorIndex: index, allowedValues, endpointCapacity }
-      if (allowedValues.length === 1 && endpointCapacity === 0) break
-    }
-  }
-
-  return best
-}
-
-function hasClosedComponent(
-  islandCount: number,
-  corridors: SolverCorridor[],
-  assignments: Int8Array,
-  sums: Int16Array,
-  clues: number[],
-) {
-  const visited = new Uint8Array(islandCount)
-
-  for (let start = 0; start < islandCount; start += 1) {
-    if (visited[start]) continue
-
-    const stack = [start]
-    const component: number[] = []
-    visited[start] = 1
-
-    while (stack.length) {
-      const islandIndex = stack.pop()!
-      component.push(islandIndex)
-
-      for (let corridorIndex = 0; corridorIndex < corridors.length; corridorIndex += 1) {
-        if (!(assignments[corridorIndex]! > 0)) continue
-        const corridor = corridors[corridorIndex]!
-        const neighbor =
-          corridor.aIndex === islandIndex
-            ? corridor.bIndex
-            : corridor.bIndex === islandIndex
-              ? corridor.aIndex
-              : -1
-        if (neighbor >= 0 && !visited[neighbor]) {
-          visited[neighbor] = 1
-          stack.push(neighbor)
-        }
-      }
-    }
-
-    if (
-      component.length < islandCount &&
-      component.every((islandIndex) => sums[islandIndex] === clues[islandIndex])
-    ) {
-      return true
-    }
-  }
-
-  return false
 }

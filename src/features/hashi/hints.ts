@@ -1,8 +1,12 @@
 import { corridorsCross, getVisibleCorridors } from './geometry'
-import { evaluatePuzzle, getIslandTotal } from './rules'
 import type { BridgeCounts, Corridor, HashiPuzzle, Island } from './types'
 
-export type HashiHintRule = 'only-route' | 'capacity' | 'crossing' | 'connectivity' | 'contradiction'
+export type HashiHintRule =
+  | 'only-route'
+  | 'capacity'
+  | 'crossing'
+  | 'connectivity'
+  | 'contradiction'
 
 export interface HashiHint {
   corridorId: string
@@ -23,6 +27,7 @@ interface HintContext {
   corridors: Corridor[]
   islandById: Map<string, Island>
   totals: Map<string, number>
+  topology: HintTopology
 }
 
 interface Bounds {
@@ -30,19 +35,76 @@ interface Bounds {
   upper: number[]
 }
 
-export function findHashiHint(puzzle: HashiPuzzle, counts: BridgeCounts): HashiHintSearchResult {
+interface HintTopology {
+  corridors: Corridor[]
+  incident: Map<string, Corridor[]>
+  crossings: Map<string, Corridor[]>
+  incidentIndexes: number[][]
+  crossingIndexes: number[][]
+}
+
+const topologyCache = new WeakMap<HashiPuzzle, HintTopology>()
+
+function getTopology(puzzle: HashiPuzzle): HintTopology {
+  const cached = topologyCache.get(puzzle)
+  if (cached) return cached
   const corridors = getVisibleCorridors(puzzle.islands)
+  const islands = new Map(puzzle.islands.map((i) => [i.id, i]))
+  const incident = new Map(puzzle.islands.map((i) => [i.id, [] as Corridor[]]))
+  const crossings = new Map(corridors.map((e) => [e.id, [] as Corridor[]]))
+  const crossingIndexes = corridors.map(() => [] as number[])
+  for (const [index, edge] of corridors.entries()) {
+    incident.get(edge.a)!.push(edge)
+    incident.get(edge.b)!.push(edge)
+    for (let otherIndex = index + 1; otherIndex < corridors.length; otherIndex++) {
+      const other = corridors[otherIndex]!
+      if (
+        !corridorsCross(
+          { a: islands.get(edge.a)!, b: islands.get(edge.b)! },
+          { a: islands.get(other.a)!, b: islands.get(other.b)! },
+        )
+      )
+        continue
+      crossings.get(edge.id)!.push(other)
+      crossings.get(other.id)!.push(edge)
+      crossingIndexes[index]!.push(otherIndex)
+      crossingIndexes[otherIndex]!.push(index)
+    }
+  }
+  const indexes = new Map(corridors.map((e, i) => [e.id, i]))
+  const topology = {
+    corridors,
+    incident,
+    crossings,
+    crossingIndexes,
+    incidentIndexes: puzzle.islands.map((i) => incident.get(i.id)!.map((e) => indexes.get(e.id)!)),
+  }
+  topologyCache.set(puzzle, topology)
+  return topology
+}
+
+export function findHashiHint(puzzle: HashiPuzzle, counts: BridgeCounts): HashiHintSearchResult {
+  const topology = getTopology(puzzle)
+  const corridors = topology.corridors
   const context: HintContext = {
     puzzle,
+    topology,
     counts,
     corridors,
     islandById: new Map(puzzle.islands.map((island) => [island.id, island])),
-    totals: new Map(
-      puzzle.islands.map((island) => [island.id, getIslandTotal(island.id, corridors, counts)]),
-    ),
+    totals: new Map(puzzle.islands.map((island) => [island.id, 0])),
   }
 
-  if (evaluatePuzzle(puzzle, counts).solved) {
+  for (const edge of corridors) {
+    const count = counts[edge.id] ?? 0
+    context.totals.set(edge.a, context.totals.get(edge.a)! + count)
+    context.totals.set(edge.b, context.totals.get(edge.b)! + count)
+  }
+  if (
+    puzzle.islands.every((island) => context.totals.get(island.id) === island.clue) &&
+    activeComponents(context).length === 1 &&
+    !hasActiveCrossing(context)
+  ) {
     return { kind: 'none', message: 'This puzzle is already complete.' }
   }
 
@@ -95,8 +157,7 @@ function findInvalidState(context: HintContext): HashiHintSearchResult | undefin
     (component) =>
       component.size < context.puzzle.islands.length &&
       ([...component].every(
-        (islandId) =>
-          context.totals.get(islandId) === context.islandById.get(islandId)!.clue,
+        (islandId) => context.totals.get(islandId) === context.islandById.get(islandId)!.clue,
       ) ||
         !context.corridors.some(
           (corridor) =>
@@ -119,9 +180,7 @@ function findCapacityHint(context: HintContext): HashiHintSearchResult | undefin
     const remaining = island.clue - context.totals.get(island.id)!
     if (remaining <= 0) continue
 
-    const incident = context.corridors.filter(
-      (corridor) => corridor.a === island.id || corridor.b === island.id,
-    )
+    const incident = incidentCorridors(island.id, context)
     const capacities = incident.map((corridor) => maximumIncrement(corridor, context))
     const usableCount = capacities.filter((capacity) => capacity > 0).length
     const totalCapacity = capacities.reduce((sum, capacity) => sum + capacity, 0)
@@ -138,11 +197,7 @@ function findCapacityHint(context: HintContext): HashiHintSearchResult | undefin
           crossesActiveCorridor(candidate, context) &&
           intrinsicMaximumIncrement(candidate, context) > 0,
       )
-      const rule = crossingClosedRoute
-        ? 'crossing'
-        : usableCount === 1
-          ? 'only-route'
-          : 'capacity'
+      const rule = crossingClosedRoute ? 'crossing' : usableCount === 1 ? 'only-route' : 'capacity'
       const title =
         rule === 'crossing'
           ? 'Crossing rule'
@@ -154,8 +209,8 @@ function findCapacityHint(context: HintContext): HashiHintSearchResult | undefin
         rule === 'crossing'
           ? `An existing bridge closes another route from island ${island.clue}, so this corridor must reach ${minimumCount}.`
           : rule === 'only-route'
-          ? `Island ${island.clue} has only one usable route, so this corridor needs ${forcedIncrease} more ${bridgeWord}.`
-          : `Island ${island.clue} still needs ${remaining}. Its other routes cannot hold enough, so this corridor must reach ${minimumCount}.`
+            ? `Island ${island.clue} has only one usable route, so this corridor needs ${forcedIncrease} more ${bridgeWord}.`
+            : `Island ${island.clue} still needs ${remaining}. Its other routes cannot hold enough, so this corridor must reach ${minimumCount}.`
 
       return {
         kind: 'hint',
@@ -240,38 +295,19 @@ function intrinsicMaximumIncrement(corridor: Corridor, context: HintContext) {
 }
 
 function crossesActiveCorridor(candidate: Corridor, context: HintContext) {
-  const candidateLine = {
-    a: context.islandById.get(candidate.a)!,
-    b: context.islandById.get(candidate.b)!,
-  }
-
-  return context.corridors.some(
-    (corridor) =>
-      corridor.id !== candidate.id &&
-      (context.counts[corridor.id] ?? 0) > 0 &&
-      corridorsCross(candidateLine, {
-        a: context.islandById.get(corridor.a)!,
-        b: context.islandById.get(corridor.b)!,
-      }),
-  )
+  return context.topology.crossings
+    .get(candidate.id)!
+    .some((edge) => (context.counts[edge.id] ?? 0) > 0)
 }
 
 function hasActiveCrossing(context: HintContext) {
-  const active = context.corridors.filter((corridor) => (context.counts[corridor.id] ?? 0) > 0)
-  return active.some((first, index) =>
-    active.slice(index + 1).some((second) =>
-      corridorsCross(
-        { a: context.islandById.get(first.a)!, b: context.islandById.get(first.b)! },
-        { a: context.islandById.get(second.a)!, b: context.islandById.get(second.b)! },
-      ),
-    ),
+  return context.corridors.some(
+    (edge) => (context.counts[edge.id] ?? 0) > 0 && crossesActiveCorridor(edge, context),
   )
 }
 
 function incidentCorridors(islandId: string, context: HintContext) {
-  return context.corridors.filter(
-    (corridor) => corridor.a === islandId || corridor.b === islandId,
-  )
+  return context.topology.incident.get(islandId)!
 }
 
 function activeComponents(context: HintContext) {
@@ -316,22 +352,9 @@ function propagationFindsContradiction(context: HintContext, bounds: Bounds) {
   while (changed) {
     changed = false
 
-    for (const [index, corridor] of context.corridors.entries()) {
-      if (bounds.lower[index]! === 0) continue
-      const line = {
-        a: context.islandById.get(corridor.a)!,
-        b: context.islandById.get(corridor.b)!,
-      }
-      for (const [otherIndex, other] of context.corridors.entries()) {
-        if (
-          index === otherIndex ||
-          !corridorsCross(line, {
-            a: context.islandById.get(other.a)!,
-            b: context.islandById.get(other.b)!,
-          })
-        ) {
-          continue
-        }
+    for (let index = 0; index < context.corridors.length; index++) {
+      if (bounds.lower[index] === 0) continue
+      for (const otherIndex of context.topology.crossingIndexes[index]!) {
         if (bounds.lower[otherIndex]! > 0) return true
         if (bounds.upper[otherIndex] !== 0) {
           bounds.upper[otherIndex] = 0
@@ -340,12 +363,8 @@ function propagationFindsContradiction(context: HintContext, bounds: Bounds) {
       }
     }
 
-    for (const island of context.puzzle.islands) {
-      const indexes = context.corridors
-        .map((corridor, index) =>
-          corridor.a === island.id || corridor.b === island.id ? index : -1,
-        )
-        .filter((index) => index >= 0)
+    for (const [islandIndex, island] of context.puzzle.islands.entries()) {
+      const indexes = context.topology.incidentIndexes[islandIndex]!
       const lowerTotal = indexes.reduce((sum, index) => sum + bounds.lower[index]!, 0)
       const upperTotal = indexes.reduce((sum, index) => sum + bounds.upper[index]!, 0)
       if (lowerTotal > island.clue || upperTotal < island.clue) return true

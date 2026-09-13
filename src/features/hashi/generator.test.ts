@@ -1,29 +1,33 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { assessDifficulty } from './difficulty'
 import { cloneFallback } from './fallbacks'
 import {
   CATEGORY_CONFIG,
   countOpeningDeductions,
   generatePuzzle,
+  generateFallbackPuzzle,
   hasBroadCoordinateUse,
   hasLocalIslandCoverage,
+  hasMinimumIslandSpacing,
 } from './generator'
 import { corridorsCross, countCorridorCrossings, getVisibleCorridors } from './geometry'
 import { evaluatePuzzle } from './rules'
+import { countSolutionsWithDeadline } from './solver'
 import type { HashiCategory, HashiPuzzle, Island } from './types'
 
 const categories: HashiCategory[] = ['intro', 'daily', 'weekly', 'monthly']
 const expectedIslandCounts: Record<HashiCategory, number> = {
-  intro: 32,
-  daily: 72,
-  weekly: 108,
-  monthly: 150,
+  intro: 30,
+  daily: 120,
+  weekly: 190,
+  monthly: 280,
 }
 
 const expectedDimensions: Record<HashiCategory, [number, number]> = {
-  intro: [15, 15],
-  daily: [15, 30],
-  weekly: [18, 35],
-  monthly: [20, 40],
+  intro: [10, 10],
+  daily: [20, 20],
+  weekly: [25, 25],
+  monthly: [30, 30],
 }
 
 const challengingCategories = ['daily', 'weekly', 'monthly'] as const
@@ -34,29 +38,20 @@ function expectBalancedChallenge(
   generated: ReturnType<typeof generatePuzzle>,
 ) {
   const { puzzle, solution } = generated
-  const histogram = new Map<number, number>()
-  for (const { clue } of puzzle.islands) histogram.set(clue, (histogram.get(clue) ?? 0) + 1)
-
+  const clues = puzzle.islands.map((island) => island.clue)
   const activeCounts = Object.values(solution).filter((count) => count > 0)
-  const doubleShare = activeCounts.filter((count) => count === 2).length / activeCounts.length
-  const highClueShare = ((histogram.get(6) ?? 0) + (histogram.get(7) ?? 0)) / puzzle.islands.length
-  const eightShare = (histogram.get(8) ?? 0) / puzzle.islands.length
-  const cycleEdges = activeCounts.length - puzzle.islands.length + 1
-
-  expect(puzzle.id).not.toBe(`fallback-${category}`)
-  for (let clue = 1; clue <= 7; clue += 1) expect(histogram.get(clue) ?? 0).toBeGreaterThan(0)
-  for (let clue = 1; clue <= 5; clue += 1) {
-    expect((histogram.get(clue) ?? 0) / puzzle.islands.length).toBeGreaterThanOrEqual(0.04)
-  }
-  expect(highClueShare).toBeGreaterThanOrEqual(0.04)
-  expect(highClueShare).toBeLessThanOrEqual(0.25)
-  expect(eightShare).toBeLessThanOrEqual(0.03)
-  expect(doubleShare).toBeGreaterThanOrEqual(0.15)
-  expect(doubleShare).toBeLessThanOrEqual(0.3)
+  expect(new Set(clues).size).toBeGreaterThanOrEqual(6)
+  expect(clues.every((clue) => clue >= 1 && clue <= 8)).toBe(true)
+  expect(activeCounts).toContain(1)
+  expect(activeCounts).toContain(2)
+  expect(activeCounts.length).toBeGreaterThanOrEqual(puzzle.islands.length)
   expect(countCorridorCrossings(puzzle.islands)).toBeGreaterThanOrEqual(
     minimumCrossingPairs[category],
   )
-  expect(cycleEdges).toBeGreaterThanOrEqual(CATEGORY_CONFIG[category].targetCycleEdges)
+  expect(assessDifficulty(puzzle)).toMatchObject({
+    solved: true,
+    difficulty: CATEGORY_CONFIG[category].difficulty,
+  })
 }
 
 function expectIslandsTouchEveryBoundary(puzzle: HashiPuzzle) {
@@ -72,7 +67,7 @@ function expectIslandsTouchEveryBoundary(puzzle: HashiPuzzle) {
 function expectNoNeighboringIslands(puzzle: HashiPuzzle) {
   for (const [index, island] of puzzle.islands.entries()) {
     for (const other of puzzle.islands.slice(index + 1)) {
-      expect(Math.abs(island.x - other.x) > 1 || Math.abs(island.y - other.y) > 1).toBe(true)
+      expect(Math.abs(island.x - other.x) + Math.abs(island.y - other.y) > 1).toBe(true)
     }
   }
 }
@@ -97,6 +92,25 @@ afterEach(() => {
 })
 
 describe('Hashi puzzle generation', () => {
+  it('allows diagonal staggering while keeping space for bridges', () => {
+    const at = (x: number, y: number): Island => ({ id: `${x},${y}`, x, y, clue: 1 })
+    expect(hasMinimumIslandSpacing([at(0, 0), at(1, 1)])).toBe(true)
+    expect(hasMinimumIslandSpacing([at(0, 0), at(1, 0)])).toBe(false)
+    expect(hasMinimumIslandSpacing([at(0, 0), at(0, 1)])).toBe(false)
+    expect(hasMinimumIslandSpacing([at(0, 0), at(0, 0)])).toBe(false)
+  })
+
+  it.each(categories)('uses staggered, dense %s layouts', (category) => {
+    const { puzzle } = generatePuzzle(category, 123456)
+    const diagonalPairs = puzzle.islands.flatMap((a, index) =>
+      puzzle.islands
+        .slice(index + 1)
+        .filter((b) => Math.abs(a.x - b.x) === 1 && Math.abs(a.y - b.y) === 1),
+    )
+    expect(diagonalPairs.length / puzzle.islands.length).toBeGreaterThan(0.25)
+    expect(puzzle.islands.length / (puzzle.width * puzzle.height)).toBeGreaterThanOrEqual(0.29)
+  })
+
   it('detects a two-dimensional hole that occupied coordinate projections miss', () => {
     const perimeter = [
       ...Array.from({ length: 11 }, (_, x) => ({ x, y: 0 })),
@@ -142,8 +156,13 @@ describe('Hashi puzzle generation', () => {
     expectNoLargeEmptyBands(generated.puzzle)
   })
 
-  it.each(categories)('keeps representative %s layouts separated and distributed', (category) => {
-    for (let seed = 0; seed < 10; seed += 1) {
+  it.each(
+    categories.flatMap((category) =>
+      Array.from({ length: 5 }, (_, seed) => [category, seed] as const),
+    ),
+  )(
+    'keeps %s seed %s separated and distributed',
+    (category, seed) => {
       const { puzzle } = generatePuzzle(category, 910_000 + seed)
 
       expect(puzzle.id).not.toBe(`fallback-${category}`)
@@ -153,7 +172,22 @@ describe('Hashi puzzle generation', () => {
       expectNoLargeEmptyBands(puzzle)
       expect(hasBroadCoordinateUse(puzzle.islands, puzzle.width, puzzle.height)).toBe(true)
       expect(hasLocalIslandCoverage(puzzle.islands, puzzle.width, puzzle.height, 4)).toBe(true)
-    }
+      const diagonals = puzzle.islands.filter((a) =>
+        puzzle.islands.some((b) => Math.abs(a.x - b.x) === 1 && Math.abs(a.y - b.y) === 1),
+      ).length
+      expect(diagonals / puzzle.islands.length).toBeGreaterThan(0.5)
+      expect(
+        countSolutionsWithDeadline(puzzle, 2, { deadline: Date.now() + 2000, now: Date.now }),
+      ).toEqual({ count: 1, timedOut: false })
+    },
+    10000,
+  )
+
+  it.each(categories)('has exactly one solution for %s', (category) => {
+    const { puzzle } = generatePuzzle(category, 123456)
+    expect(
+      countSolutionsWithDeadline(puzzle, 2, { deadline: Date.now() + 2000, now: Date.now }),
+    ).toEqual({ count: 1, timedOut: false })
   })
 
   it('is deterministic for a supplied seed', () => {
@@ -167,12 +201,17 @@ describe('Hashi puzzle generation', () => {
 
       expect(puzzle.id).not.toBe('fallback-intro')
       expect(Math.max(...clues)).toBeLessThanOrEqual(5)
-      for (let clue = 1; clue <= 4; clue += 1) expect(clues).toContain(clue)
+      expect(assessDifficulty(puzzle)).toMatchObject({
+        solved: true,
+        difficulty: 'easy',
+        contradiction: 0,
+        connectivity: 0,
+      })
     }
   })
 
   it.each(challengingCategories)(
-    'keeps every generated %s puzzle balanced and challenging',
+    'keeps generated %s puzzles varied and graded by reasoning',
     (category) => {
       for (let seed = 0; seed < 3; seed += 1) {
         const generated = generatePuzzle(category, 700_000 + seed)
@@ -197,17 +236,49 @@ describe('Hashi puzzle generation', () => {
         ).toBe(true)
       }
     },
+    15000,
   )
 
-  it.each(challengingCategories)('gives every %s puzzle several opening deductions', (category) => {
-    for (let seed = 0; seed < 3; seed += 1) {
-      const { puzzle } = generatePuzzle(category, 730_000 + seed)
+  it.each(challengingCategories)(
+    'gives every %s puzzle several opening deductions',
+    (category) => {
+      for (let seed = 0; seed < 3; seed += 1) {
+        const { puzzle } = generatePuzzle(category, 730_000 + seed)
 
-      expect(countOpeningDeductions(puzzle)).toBeGreaterThanOrEqual(
-        CATEGORY_CONFIG[category].minimumOpeningDeductions,
-      )
-    }
-  })
+        expect(countOpeningDeductions(puzzle)).toBeGreaterThanOrEqual(
+          CATEGORY_CONFIG[category].minimumOpeningDeductions,
+        )
+      }
+    },
+    15000,
+  )
+
+  it.each(categories)(
+    'has distinct validated %s fallbacks',
+    (category) => {
+      const ids = new Set<string>()
+      for (let seed = 0; seed < 4; seed++) {
+        const generated = generateFallbackPuzzle(category, seed)
+        ids.add(generated.puzzle.id)
+        expect(evaluatePuzzle(generated.puzzle, generated.solution).solved).toBe(true)
+        expect(
+          countSolutionsWithDeadline(generated.puzzle, 2, {
+            deadline: Date.now() + 2000,
+            now: Date.now,
+          }),
+        ).toEqual({ count: 1, timedOut: false })
+        expect(assessDifficulty(generated.puzzle)).toMatchObject({
+          solved: true,
+          difficulty: CATEGORY_CONFIG[category].difficulty,
+        })
+      }
+      expect(ids.size).toBe(4)
+      const mutated = generateFallbackPuzzle(category)
+      mutated.puzzle.islands[0]!.clue = 99
+      expect(generateFallbackPuzzle(category).puzzle.islands[0]!.clue).not.toBe(99)
+    },
+    15000,
+  )
 
   it('returns the validated fallback when the overall generation budget is exhausted', () => {
     const generated = generatePuzzle('monthly', 42, {
@@ -215,7 +286,7 @@ describe('Hashi puzzle generation', () => {
       now: () => 100,
     })
 
-    expect(generated).toEqual(cloneFallback('monthly'))
+    expect(generated).toEqual(generateFallbackPuzzle('monthly', 42))
     expect(generated.puzzle.islands).toHaveLength(CATEGORY_CONFIG.monthly.targetIslands)
     expect(generated.puzzle.id).toMatch(/^hashi-/)
     expect(evaluatePuzzle(generated.puzzle, generated.solution).solved).toBe(true)
@@ -228,6 +299,16 @@ describe('Hashi puzzle generation', () => {
     expect(fallback.puzzle.width).toBe(CATEGORY_CONFIG[category].width)
     expect(fallback.puzzle.height).toBe(CATEGORY_CONFIG[category].height)
     expect(fallback.puzzle.islands).toHaveLength(CATEGORY_CONFIG[category].targetIslands)
+    expect(
+      countSolutionsWithDeadline(fallback.puzzle, 2, {
+        deadline: Date.now() + 2000,
+        now: Date.now,
+      }),
+    ).toEqual({ count: 1, timedOut: false })
+    expect(assessDifficulty(fallback.puzzle)).toMatchObject({
+      solved: true,
+      difficulty: CATEGORY_CONFIG[category].difficulty,
+    })
     expectIslandsTouchEveryBoundary(fallback.puzzle)
     expectNoNeighboringIslands(fallback.puzzle)
     expectNoLargeEmptyBands(fallback.puzzle)

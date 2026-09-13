@@ -49,70 +49,6 @@ for each island:
 
 puzzle = remove_the_solution_but_keep_the_numbers()`
 
-const boardBoundsSnippet = `positions = [random_interior_island()]
-planned_network = []
-
-while positions.size < category.target:
-    candidates = full_grid.filter(not_touching_an_island)
-    candidates = candidates.filter(visible_from_the_network)
-    candidate = best_coverage_candidate(candidates)
-
-    split_any_planned_bridge_under(candidate)
-    add_visible_non_crossing_edges(candidate)
-    positions.add(candidate)
-
-assert min(island.x) == 0
-assert max(island.x) == width - 1
-assert min(island.y) == 0
-assert max(island.y) == height - 1`
-
-const islandPlacementSnippet = `for each candidate position:
-    reject if any of the eight neighboring cells has an island
-
-assert island_count == category.target
-assert visible_corridor_graph_is_connected()
-assert occupied_x_coordinates / width >= 75%
-assert occupied_y_coordinates / height >= 75%
-
-for each grid_cell:
-    assert distance_to_nearest_island <= 4`
-
-const clueMixSnippet = `candidate = build_connected_non_crossing_network()
-add_a_few_cycles(candidate)
-make_about_one_in_five_bridges_double(candidate)
-
-numbers = count_bridges_touching_each_island(candidate)
-
-reject if 1_to_5_are_too_rare(numbers)
-reject if 6_and_7_take_over(numbers)
-reject if 8_is_not_rare(numbers)
-reject if there_are_too_few_obvious_opening_deductions(numbers)`
-
-const openingDeductionSnippet = `edge.maximum = min(2, island.number, neighbor.number)
-capacity = sum(incident_edges.maximum)
-
-for each incident edge:
-    forced_minimum = island.number - (capacity - edge.maximum)
-
-opening = any(forced_minimum > 0)`
-
-const hintSnippet = `result = find_forced_move(current_board)
-
-if result is a forced corridor:
-    spend_one_heart()
-    highlight(result.corridor)
-    explain(result.rule)
-else if result is a contradiction:
-    explain_the_problem_for_free()
-
-// The player still places the bridge.`
-
-const difficultyConfigSnippet = `daily:   { minimum_openings: 5,  cycles: 13, crossings: 4  }
-weekly:  { minimum_openings: 8,  cycles: 22, crossings: 8  }
-monthly: { minimum_openings: 12, cycles: 33, crossings: 12 }
-
-double_bridge_share = 0.22`
-
 const svgSnippet = `center = grid_position * cell_size
 island_edge = island_size / 2
 
@@ -252,111 +188,9 @@ The more reliable direction is backward:
 
 First I place islands on the grid. From their visible corridors, I build a connected spanning network while refusing crossings.
 
-### Density is the difficulty dial
-
-A large board is not automatically a difficult board. Stretch ten islands across twice as much space and the puzzle mostly becomes a longer walk between the same ten decisions. More islands create more corridors, more competing bridge totals, and more places where a local choice changes the rest of the network.
-
-So each category has an explicit island target. The 15×15 intro has 32 islands. Daily is 15×30 with 72 islands, weekly is 18×35 with 108, and monthly is 20×40 with 150. The larger boards grow vertically, while density stops them from becoming empty wallpaper.
-
-Those numbers are deliberately simple rather than scientific. The boards are random and luck remains part of the experience; the targets merely keep each category in the right neighborhood.
-
-<HashiArticleDemo kind="density" />
-
-Even the empty grid needs a rule. If a puzzle says it has 15 rows, there should be an island in row 1 and another in row 15. Otherwise it is really a 13-row puzzle wearing an oversized coat. The same applies to the first and last columns.
-
-I begin with one random interior island and grow outward. Every candidate must be visible from an island already in the network, so the board develops as one connected frontier. Until the network reaches all four sides, candidates on a missing boundary get priority:
-
-<ProsePre language="text" :code="boardBoundsSnippet">
-  <ProseCode class="language-text">
-{{ boardBoundsSnippet }}
-  </ProseCode>
-</ProsePre>
-
-Those are official dimensions, but spacing is an editorial choice. Hashi's rules do not forbid neighboring islands. This generator does: as a house rule, every island gets a one-cell moat, covering all eight neighboring cells. It prevents bridge stubs, crowded numbers, and the peculiar waterfront development where twelve islands all move into the same column.
-
-<ProsePre language="text" :code="islandPlacementSnippet">
-  <ProseCode class="language-text">
-{{ islandPlacementSnippet }}
-  </ProseCode>
-</ProsePre>
-
-The first version applied that moat to the coordinate system itself, accidentally banning every other row and column. Scanning the full grid fixed that bug, but my next attempt still began from a rigid cross and preferred whichever candidate blocked the fewest future cells. The result passed its tests and then produced islands living in two very respectable districts with a desert between them.
-
-The tests were looking at each axis separately. A row counted as occupied even if its only island sat at the far left; a column counted as occupied even if its only island sat at the top. Both projections could look healthy while the middle of the actual, two-dimensional board was empty.
-
-So the spatial contract now asks two different questions. First, at least 75% of the x coordinates and 75% of the y coordinates must contain an island. That stops the generator from quietly using every other line. Second, every grid point must be within four grid cells of an island, measured in both dimensions. That catches the hole which two tidy one-dimensional lists could not see.
-
-Candidate scoring uses the same idea during growth. It prefers islands that cover previously lonely cells, introduce a needed row or column, and avoid overusing the same lines. A seeded random tie-break keeps equally useful choices from turning into a new wallpaper pattern.
-
-I borrowed one good instinct from [Toni Vrbic's small open-source generator](https://github.com/tonivrbic/bridges-generator): grow from the existing network instead of placing an entire constellation first and trying to connect it afterward. My version also remembers a non-crossing network as it grows. If a new island lands on one of those planned bridges, the long bridge becomes two shorter ones. The island is not blocking the road; it has become a new stop.
-
-Literal grid rows may still be empty; that is the one-cell moat doing its job. What the generator may not leave is a repeated coordinate pattern or a large unserved patch in the middle. Randomness still chooses the coastline, but it no longer gets to put the entire population in New York and Los Angeles.
-
 Once that hidden network exists, each clue is easy: add the bridge counts touching that island. The answer creates the question. Then I throw away the visible answer and keep the islands with their derived numbers.
 
-The first version made nearly every bridge double. It was valid, but the resulting board was a wall of `6`, `7`, and `8` islands. Technically Hashi; spiritually a tax form.
-
-The fix was to make the shape and the number mix separate decisions. I start with a spanning tree so every island belongs to one network. Then I add a controlled number of non-crossing edges to create loops and alternative-looking routes. About one bridge in five becomes double. Only after that do I derive the clues and inspect their distribution:
-
-<ProsePre language="text" :code="clueMixSnippet">
-  <ProseCode class="language-text">
-{{ clueMixSnippet }}
-  </ProseCode>
-</ProsePre>
-
-<HashiArticleDemo kind="mix" />
-
-The generator keeps a healthy presence of `1` through `5`, allows a smaller group of `6` and `7`, and treats `8` as seasoning rather than soup. Candidates with too few crossings, too few cycles, or too few obvious opening deductions are rejected too. Those openings are the familiar capacity rules: an `8` in the middle, a `6` on an edge, a `5` with only three directions, or any equivalent clue that uses all—or all but one—of its available bridge capacity. This does not scientifically prove that one board will feel harder than another, but it reliably avoids the two boring extremes: a sparse board with nothing to reason about and a carpet of high numbers.
-
-### From valid to interesting
-
-This took a few iterations because “has an answer” and “is enjoyable to solve” are annoyingly different requirements.
-
-The first generator stopped after validity. It produced a connected, non-crossing hidden network, turned its bridge totals into clues, and called it a day. That proves there is at least one answer. It says nothing about whether a human can find a first bridge without staring into the middle distance.
-
-The second version treated density as difficulty. More islands do create more interacting totals, but increasing the island count mostly changes the amount of puzzle. It does not automatically create a useful sequence of deductions. A huge board can still be a huge shrug.
-
-Next came topology. Added cycles make several routes look plausible, and empty corridors that cross other corridors let one confirmed bridge rule out another. Both are useful sources of tension. Too few and the hidden network reads like a tree; too many and every island appears to be negotiating with four neighbors at once. Cycle count and crossing count became separate limits rather than accidental side effects of placing more islands.
-
-Then the wall of `8`s happened. Increasing double bridges created impressive-looking numbers but made many decisions immediate: a middle `8` simply takes two bridges in every direction. The clue histogram therefore became another control. Low numbers provide small local constraints, middle numbers combine with their neighbors, and high numbers are strongest when they appear occasionally. A board can look terrifying and still be mechanically repetitive. Typography is not difficulty, despite what tax forms suggest.
-
-The latest rule checks whether the puzzle offers actual entry points. For an island, every visible corridor has a maximum of two bridges, sometimes reduced by a neighbor that can accept only one. Add those maxima to get the island's total available capacity. Then temporarily remove one corridor's capacity. Whatever part of the clue no longer fits anywhere else is forced onto that corridor:
-
-<ProsePre language="text" :code="openingDeductionSnippet">
-  <ProseCode class="language-text">
-{{ openingDeductionSnippet }}
-  </ProseCode>
-</ProsePre>
-
-That one formula contains several familiar Hashi techniques. A middle `8` forces two bridges in four directions. A middle `7` forces at least one in each. Edge `6` and corner `4` are the same full-capacity rule with fewer neighbors; edge `5` and corner `3` are one below full capacity. If a middle `6` faces one island marked `1`, its capacities are `1 + 2 + 2 + 2 = 7`, so each of the other three corridors must carry at least one bridge. A `1` or `2` with only one visible neighbor is the smallest version of exactly the same calculation.
-
-This is useful for generation because it replaces a list of special cases with one measurable property. I count how many islands force at least one corridor before the player has drawn anything, then reject boards below the category's floor:
-
-<ProsePre language="text" :code="difficultyConfigSnippet">
-  <ProseCode class="language-text">
-{{ difficultyConfigSnippet }}
-  </ProseCode>
-</ProsePre>
-
-The same calculation eventually became the hint system. Each puzzle gets three hearts. Spending one asks the current board for a forced corridor, highlights it, and explains whether the reason was capacity, a crossing, the only exit from a group, or a short contradiction. It deliberately does not draw the bridge. A useful hint should remove the blank stare, not the small satisfaction of making the move yourself.
-
-<ProsePre language="text" :code="hintSnippet">
-  <ProseCode class="language-text">
-{{ hintSnippet }}
-  </ProseCode>
-</ProsePre>
-
-The hint engine never looks at the network used to generate the puzzle. These random boards are allowed to have more than one answer, so “copy this edge from the hidden solution” could reject another perfectly valid route. Instead, every hint has to prove its move from the bridges currently on screen. If the player has overfilled an island or closed a stranded group, that warning is free. Charging a heart to announce a mistake felt less like help and more like a parking ticket.
-
-These are independent knobs. Island count controls scale and interaction density. Cycle count controls how many routes can look plausible. Potential crossings create deductions that close other corridors. The double-bridge share shapes the clue distribution. The opening floor controls how many honest first moves the board offers. Raising all of them together would not create a sophisticated puzzle; it would create a crowded puzzle with lots of obvious high numbers.
-
-Daily therefore needs five opening islands, weekly eight, and monthly twelve. The larger number does not make monthly easier: it is spread across 150 islands, alongside more cycles and crossing choices. It simply prevents a large random board from beginning with no sensible handle. Normal generation and timeout recovery now pass through the same checks, so an unlucky deadline still returns a full category-sized puzzle rather than three islands wearing a monthly-puzzle name tag.
-
-There is still an important limit. Counting good openings does not guarantee a complete deduction-only solve. The runtime hint engine can find the next provable move, but generation verifies only the first footholds, not the whole climb. The next refinement would run that engine repeatedly over each candidate and record deduction waves: capacity forces a bridge, that bridge closes a crossing corridor, the closure completes another island, and so on. A stalled set of unresolved corridors would then be measurable too. That trace could distinguish “many places to start” from “a chain that reaches the end,” and tune weekly or monthly boards by how deep the chain becomes before a contradiction check is needed.
-
-For now I keep that as the next step rather than pretending the random generator already proves it. Luck is still allowed in the room; it just no longer gets to arrange all the furniture.
-
-The intro uses the same idea with fewer islands, no added cycles, and no demand for high clues. The daily, weekly, and monthly puzzles add more islands and loops. Every category is a random, connected, non-crossing construction with a known valid answer, but the puzzle is not required to have only one possible answer. That keeps generation quick and the boards varied; occasionally luck offers a shortcut. For this little game, I like that better than pretending every random board is a tournament artifact.
+This proves there is at least one valid answer. It does not prove that the answer is unique, that the board feels natural, or that finding the answer is enjoyable. The first version stopped at that lower bar. I came back to the difference in [a follow-up about a Hashi game that technically worked](/blog/notes-from-a-hashi-game-that-technically-worked).
 
 ## One coordinate system for everything
 
@@ -384,7 +218,7 @@ SVG also gives every corridor a second line that the player never sees: a wide t
 
 Once the rules and geometry were stable, the remaining interface choices became much smaller.
 
-The board comes first. Instructions, feedback, and build notes follow it rather than pushing the puzzle below a ceremonial landing page. Intro puzzles fit comfortably, while daily, weekly, and monthly boards grow downward into portrait shapes instead of turning the page into a railway timetable.
+The board comes first. Instructions, feedback, and build notes follow it rather than pushing the puzzle below a ceremonial landing page. Intro puzzles fit comfortably, while the larger boards scroll to leave enough room for the islands and their click targets.
 
 Completed islands and their bridges lower their opacity so attention moves toward unfinished work. Overfilled islands stay stronger and warmer. Save position records one deliberate checkpoint, reset clears the current board, and local storage keeps the preferred category, active puzzle, and checkpoint across refreshes.
 
@@ -392,6 +226,6 @@ Large puzzles are generated in a Web Worker. While it works, the page shows a qu
 
 That is the whole machine: discover legal corridors, cycle bridge counts, reject crossings, count locally, verify connectivity globally, generate from a hidden answer, and draw every part from one set of coordinates.
 
-[Try the puzzle](/hashi).
+[Try the puzzle](/hashi), or [read what happened when I compared it with one I actually enjoyed playing](/blog/notes-from-a-hashi-game-that-technically-worked).
 
 Have fun.

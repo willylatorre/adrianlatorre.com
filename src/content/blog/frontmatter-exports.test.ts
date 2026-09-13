@@ -36,48 +36,19 @@ describe('blog markdown frontmatter exports', () => {
       'totals',
       'connectivity',
       'generation',
-      'density',
-      'mix',
       'geometry',
     ]
 
-    expect(source.default.match(/<HashiArticleDemo/g)).toHaveLength(9)
+    expect(source.default.match(/<HashiArticleDemo/g)).toHaveLength(7)
     for (const kind of kinds) expect(source.default).toContain(`kind="${kind}"`)
   })
 
-  it('explains the Hashi generator house rules', async () => {
-    const source = await import('./notes-from-building-hashi-one-rule-at-a-time.md?raw')
+  it('exports the Hashi follow-up metadata', async () => {
+    const mod = await import('./notes-from-a-hashi-game-that-technically-worked.md')
 
-    expect(source.default).toContain('house rule')
-    expect(source.default).toContain('eight neighboring cells')
-    expect(source.default).toContain('explicit island target')
-    expect(source.default).toContain('### Density is the difficulty dial')
-    expect(source.default).toContain('More islands create more corridors')
-    expect(source.default).toContain('treats `8` as seasoning rather than soup')
-    expect(source.default).toContain('not required to have only one possible answer')
-    expect(source.default).not.toContain('## First, decide which bridges can exist')
-  })
-
-  it('explains how the Hashi difficulty controls evolved', async () => {
-    const source = await import('./notes-from-building-hashi-one-rule-at-a-time.md?raw')
-
-    expect(source.default).toContain('### From valid to interesting')
-    expect(source.default).toContain('forced_minimum =')
-    expect(source.default).toContain('daily:   { minimum_openings: 5')
-    expect(source.default).toContain('weekly:  { minimum_openings: 8')
-    expect(source.default).toContain('monthly: { minimum_openings: 12')
-    expect(source.default).toContain('independent knobs')
-    expect(source.default).toContain('does not guarantee a complete deduction-only solve')
-    expect(source.default).toContain('deduction waves')
-  })
-
-  it('explains the Hashi generator spatial coverage correction', async () => {
-    const source = await import('./notes-from-building-hashi-one-rule-at-a-time.md?raw')
-
-    expect(source.default).toContain('two-dimensional')
-    expect(source.default).toContain('75%')
-    expect(source.default).toContain('four grid cells')
-    expect(source.default).toContain('rigid cross')
-    expect(source.default).toContain('tonivrbic/bridges-generator')
+    expect(mod.default).toBeTruthy()
+    expect(mod.title).toBe('Notes From A Hashi Game That Technically Worked')
+    expect(mod.date).toMatch(/^2026-09-13/)
+    expect(mod.description).toBeTruthy()
   })
 })
