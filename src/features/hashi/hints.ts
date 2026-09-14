@@ -1,4 +1,4 @@
-import { corridorsCross, getVisibleCorridors } from './geometry'
+import { getPuzzleTopology, type PuzzleTopology } from './geometry'
 import type { BridgeCounts, Corridor, HashiPuzzle, Island } from './types'
 
 export type HashiHintRule =
@@ -27,7 +27,7 @@ interface HintContext {
   corridors: Corridor[]
   islandById: Map<string, Island>
   totals: Map<string, number>
-  topology: HintTopology
+  topology: PuzzleTopology
 }
 
 interface Bounds {
@@ -35,63 +35,15 @@ interface Bounds {
   upper: number[]
 }
 
-interface HintTopology {
-  corridors: Corridor[]
-  incident: Map<string, Corridor[]>
-  crossings: Map<string, Corridor[]>
-  incidentIndexes: number[][]
-  crossingIndexes: number[][]
-}
-
-const topologyCache = new WeakMap<HashiPuzzle, HintTopology>()
-
-function getTopology(puzzle: HashiPuzzle): HintTopology {
-  const cached = topologyCache.get(puzzle)
-  if (cached) return cached
-  const corridors = getVisibleCorridors(puzzle.islands)
-  const islands = new Map(puzzle.islands.map((i) => [i.id, i]))
-  const incident = new Map(puzzle.islands.map((i) => [i.id, [] as Corridor[]]))
-  const crossings = new Map(corridors.map((e) => [e.id, [] as Corridor[]]))
-  const crossingIndexes = corridors.map(() => [] as number[])
-  for (const [index, edge] of corridors.entries()) {
-    incident.get(edge.a)!.push(edge)
-    incident.get(edge.b)!.push(edge)
-    for (let otherIndex = index + 1; otherIndex < corridors.length; otherIndex++) {
-      const other = corridors[otherIndex]!
-      if (
-        !corridorsCross(
-          { a: islands.get(edge.a)!, b: islands.get(edge.b)! },
-          { a: islands.get(other.a)!, b: islands.get(other.b)! },
-        )
-      )
-        continue
-      crossings.get(edge.id)!.push(other)
-      crossings.get(other.id)!.push(edge)
-      crossingIndexes[index]!.push(otherIndex)
-      crossingIndexes[otherIndex]!.push(index)
-    }
-  }
-  const indexes = new Map(corridors.map((e, i) => [e.id, i]))
-  const topology = {
-    corridors,
-    incident,
-    crossings,
-    crossingIndexes,
-    incidentIndexes: puzzle.islands.map((i) => incident.get(i.id)!.map((e) => indexes.get(e.id)!)),
-  }
-  topologyCache.set(puzzle, topology)
-  return topology
-}
-
 export function findHashiHint(puzzle: HashiPuzzle, counts: BridgeCounts): HashiHintSearchResult {
-  const topology = getTopology(puzzle)
+  const topology = getPuzzleTopology(puzzle)
   const corridors = topology.corridors
   const context: HintContext = {
-    puzzle,
+    puzzle: { ...puzzle, islands: topology.islands },
     topology,
     counts,
     corridors,
-    islandById: new Map(puzzle.islands.map((island) => [island.id, island])),
+    islandById: topology.islandById,
     totals: new Map(puzzle.islands.map((island) => [island.id, 0])),
   }
 

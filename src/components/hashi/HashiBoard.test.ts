@@ -203,7 +203,7 @@ describe('HashiBoard', () => {
     expect(wrapper.findAll('[data-corridor="a:b"] .hashi-bridge')).toHaveLength(0)
   })
 
-  it('does not project a corridor that would cross an active bridge', () => {
+  it('updates blocked projections when bridges are added and removed', async () => {
     const crossingPuzzle: HashiPuzzle = {
       id: 'crossing-preview',
       category: 'intro',
@@ -221,10 +221,17 @@ describe('HashiBoard', () => {
     })
 
     expect(wrapper.get('[data-corridor-hit="bottom:top"]').classes()).toContain('is-blocked')
-    expect(
-      wrapper.get('[data-corridor-hit="bottom:top"]').find('.hashi-focus').exists(),
-    ).toBe(false)
+    expect(wrapper.get('[data-corridor-hit="bottom:top"]').find('.hashi-focus').exists()).toBe(
+      false,
+    )
     expect(wrapper.get('[data-corridor-hit="left:right"]').classes()).not.toContain('is-blocked')
+    await wrapper.setProps({ bridgeCounts: {} })
+    expect(wrapper.get('[data-corridor-hit="bottom:top"]').find('.hashi-focus').exists()).toBe(true)
+    await wrapper.setProps({ bridgeCounts: { 'bottom:top': 2 } })
+    expect(wrapper.get('[data-corridor-hit="left:right"]').find('.hashi-focus').exists()).toBe(
+      false,
+    )
+    expect(wrapper.get('[data-corridor-hit="bottom:top"]').find('.hashi-focus').exists()).toBe(true)
   })
 })
 

@@ -1,4 +1,4 @@
-import { corridorsCross, getVisibleCorridors } from './geometry'
+import { getPuzzleTopology } from './geometry'
 import type { BridgeCounts, Corridor, HashiPuzzle } from './types'
 
 interface SolverCorridor extends Corridor {
@@ -48,7 +48,7 @@ export function findSolutions(
     incident[edge.aIndex]!.push(index)
     incident[edge.bIndex]!.push(index)
   }
-  const clues = puzzle.islands.map((i) => i.clue)
+  const clues = getPuzzleTopology(puzzle).islands.map((i) => i.clue)
   if (clues.some((clue) => !Number.isInteger(clue) || clue < 1 || clue > 8))
     return { solutions, timedOut }
 
@@ -158,30 +158,11 @@ export function findSolutions(
 }
 
 function prepareCorridors(puzzle: HashiPuzzle): SolverCorridor[] {
-  const islandIndexes = new Map(puzzle.islands.map(({ id }, index) => [id, index]))
-  const islands = new Map(puzzle.islands.map((island) => [island.id, island]))
-  const corridors = getVisibleCorridors(puzzle.islands).map((corridor) => ({
+  const { islandIndexes, corridors, crossingIndexes } = getPuzzleTopology(puzzle)
+  return corridors.map((corridor, index) => ({
     ...corridor,
     aIndex: islandIndexes.get(corridor.a)!,
     bIndex: islandIndexes.get(corridor.b)!,
-    crossingIndexes: [] as number[],
+    crossingIndexes: crossingIndexes[index]!,
   }))
-
-  for (let firstIndex = 0; firstIndex < corridors.length; firstIndex += 1) {
-    const first = corridors[firstIndex]!
-    for (let secondIndex = firstIndex + 1; secondIndex < corridors.length; secondIndex += 1) {
-      const second = corridors[secondIndex]!
-      if (
-        corridorsCross(
-          { a: islands.get(first.a)!, b: islands.get(first.b)! },
-          { a: islands.get(second.a)!, b: islands.get(second.b)! },
-        )
-      ) {
-        first.crossingIndexes.push(secondIndex)
-        second.crossingIndexes.push(firstIndex)
-      }
-    }
-  }
-
-  return corridors
 }

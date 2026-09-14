@@ -1,6 +1,6 @@
 # Hashi generation
 
-The v7 generator separates placement, a valid bridge network, uniqueness, and reasoning difficulty. Existing game/worker interfaces are unchanged; the version prefix invalidates generated boards from older algorithms.
+The v8 generator separates placement, a valid bridge network, uniqueness, and reasoning difficulty. The version prefix invalidates generated boards from older algorithms. `generatePuzzle` returns `source: 'generated' | 'fallback'` alongside the puzzle and answer, so callers and tests can distinguish fresh generation from reserve selection.
 
 ## Layout
 
@@ -30,13 +30,21 @@ A supplied answer only orders search branches; it does not prove uniqueness or b
 - **Hard:** contradiction steps are at least 1.5% of hint steps.
 - **Unrated:** logical solve stalls or grading exceeds its budget. Rejected.
 
-These are initial reproducible heuristics, not empirically calibrated human ratings. They measure the weakest available rule along one deterministic solve order and normalize advanced-rule frequency for length. They do not yet measure deduction chain depth, visual search burden, or the number of alternative easy moves. Thresholds should be calibrated against player solves and a curated puzzle corpus before claiming expert-level grading. Weekly and Monthly intentionally share a reasoning tier; Monthly is longer, not automatically harder.
+These are initial reproducible heuristics, not empirically calibrated human ratings. Islands are scanned in geometric row-major order; corridors are ordered by their endpoints' geometric ranks. Renaming IDs or reordering the input array therefore does not change the solve trace. The grade follows one deterministic solve order and normalizes advanced-rule frequency for length. It does not yet measure deduction chain depth, visual search burden, or the number of alternative easy moves. Rotations/reflections may still change the scan order. Thresholds should be calibrated against player solves and a curated puzzle corpus before claiming expert-level grading. Weekly and Monthly intentionally share a reasoning tier; Monthly is longer, not automatically harder.
+
+## Shared topology and interaction
+
+An immutable puzzle has one cached topology: ordered islands, visible corridors, incident edges, and crossing adjacency. Rendering, rule evaluation, hints, and the exact solver reuse it. Exact propagation and explanatory hint propagation remain separate. Replace the puzzle object when changing its geometry or clues; do not mutate a cached puzzle in place.
+
+Board totals, island states, and blocked routes are computed once per position change. Hover is CSS-only and uses these flags; it performs no graph evaluation. Geometry and bridge segments keep the same coordinate system at every zoom level.
 
 ## Budgets and fallbacks
 
 Online generation has a cooperative three-second budget, checked during placement, exact search, and between logical deductions. A single deduction or graph operation can finish slightly after the deadline. Normal seeded generation is deterministic when it completes; reaching the wall-clock deadline can select a fallback instead.
 
-There are four distinct, prevalidated puzzles per category. The seed selects one on exhaustion, and callers receive a deep clone. Fallback selection performs no generation or solving. This keeps the game usable on slower devices without returning ambiguous or misgraded puzzles, though repeated timeouts can repeat one of these four boards.
+There are eight distinct, prevalidated puzzles per category. The seed selects one on exhaustion, and callers receive a deep clone. Fallback selection performs no generation or solving. Unavailable or failed workers also use this immediate reserve instead of running generation on the UI thread. Repeated timeouts can still repeat one of these eight boards.
+
+If a player changes the pending position (for example, Reset or Save position), the latest worker completion clears the loading state without replacing that position. Responses from older requests cannot clear loading for a newer request.
 
 Regenerate fixtures after changing the algorithm, sizes, or difficulty rules:
 
@@ -54,4 +62,6 @@ npm run type-check
 npm run build
 ```
 
-Regression coverage includes diagonal spacing, density, seed variety, full geometry coverage, unique solutions, reasoning tiers independent of solve length, deadline fallback behavior, clone isolation, and all stored fixtures. Hints cache immutable puzzle topology to make complete logical traces affordable.
+Regression coverage includes diagonal spacing, density, fresh seed variety with explicit provenance, full geometry coverage, unique solutions, reasoning tiers independent of solve length and IDs, deadline fallback behavior, worker recovery, clone isolation, and all stored fixtures. Fresh-generation tests use a fixed clock to avoid accepting a fixture merely because CI was slow; default wall-clock fallback behavior is tested separately.
+
+An independent small-board oracle enumerates bridge assignments without production geometry or propagation. It compares exact counts for possible and impossible clue vectors, and checks that hints hold in every compatible completion of sampled partial positions.

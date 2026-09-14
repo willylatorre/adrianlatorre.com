@@ -10,6 +10,71 @@ interface CorridorLine {
   b: Point
 }
 
+export interface PuzzleTopology {
+  islands: Island[]
+  islandById: Map<string, Island>
+  islandIndexes: Map<string, number>
+  corridors: Corridor[]
+  incident: Map<string, Corridor[]>
+  crossings: Map<string, Corridor[]>
+  incidentIndexes: number[][]
+  crossingIndexes: number[][]
+}
+
+const topologyCache = new WeakMap<HashiPuzzle, PuzzleTopology>()
+
+/** Puzzles are immutable; bridge counts are deliberately not part of this cache. */
+export function getPuzzleTopology(puzzle: HashiPuzzle): PuzzleTopology {
+  const cached = topologyCache.get(puzzle)
+  if (cached) return cached
+  const islands = [...puzzle.islands].sort((a, b) => a.y - b.y || a.x - b.x)
+  const islandById = new Map(islands.map((island) => [island.id, island]))
+  const islandIndexes = new Map(islands.map((island, index) => [island.id, index]))
+  const endpoints = (edge: Corridor) =>
+    [islandIndexes.get(edge.a)!, islandIndexes.get(edge.b)!].sort((a, b) => a - b)
+  const corridors = getVisibleCorridors(islands).sort((a, b) => {
+    const [a0, a1] = endpoints(a)
+    const [b0, b1] = endpoints(b)
+    return a0! - b0! || a1! - b1!
+  })
+  const incident = new Map(islands.map((island) => [island.id, [] as Corridor[]]))
+  const crossings = new Map(corridors.map((edge) => [edge.id, [] as Corridor[]]))
+  const incidentIndexes = islands.map(() => [] as number[])
+  const crossingIndexes = corridors.map(() => [] as number[])
+  for (const [index, edge] of corridors.entries()) {
+    for (const id of [edge.a, edge.b]) {
+      incident.get(id)!.push(edge)
+      incidentIndexes[islandIndexes.get(id)!]!.push(index)
+    }
+    for (let otherIndex = index + 1; otherIndex < corridors.length; otherIndex++) {
+      const other = corridors[otherIndex]!
+      if (
+        !corridorsCross(
+          { a: islandById.get(edge.a)!, b: islandById.get(edge.b)! },
+          { a: islandById.get(other.a)!, b: islandById.get(other.b)! },
+        )
+      )
+        continue
+      crossings.get(edge.id)!.push(other)
+      crossings.get(other.id)!.push(edge)
+      crossingIndexes[index]!.push(otherIndex)
+      crossingIndexes[otherIndex]!.push(index)
+    }
+  }
+  const topology = {
+    islands,
+    islandById,
+    islandIndexes,
+    corridors,
+    incident,
+    crossings,
+    incidentIndexes,
+    crossingIndexes,
+  }
+  topologyCache.set(puzzle, topology)
+  return topology
+}
+
 export function corridorId(a: string, b: string) {
   return [a, b].sort().join(':')
 }
@@ -64,8 +129,9 @@ export function bridgeSegments(
   halfIsland: number,
   count: BridgeCount,
 ): LineSegment[] {
-  const a = puzzle.islands.find((island) => island.id === corridor.a)!
-  const b = puzzle.islands.find((island) => island.id === corridor.b)!
+  const { islandById } = getPuzzleTopology(puzzle)
+  const a = islandById.get(corridor.a)!
+  const b = islandById.get(corridor.b)!
   const start = { x: a.x * cell, y: a.y * cell }
   const end = { x: b.x * cell, y: b.y * cell }
   const direction = { x: Math.sign(end.x - start.x), y: Math.sign(end.y - start.y) }
@@ -130,17 +196,9 @@ export function wouldCrossActiveBridge(
   puzzle: HashiPuzzle,
   counts: Record<string, number>,
 ) {
-  const islandById = new Map(puzzle.islands.map((island) => [island.id, island]))
-
-  return getVisibleCorridors(puzzle.islands).some(
-    (active) =>
-      active.id !== candidate.id &&
-      (counts[active.id] ?? 0) > 0 &&
-      corridorsCross(
-        { a: islandById.get(candidate.a)!, b: islandById.get(candidate.b)! },
-        { a: islandById.get(active.a)!, b: islandById.get(active.b)! },
-      ),
-  )
+  return getPuzzleTopology(puzzle)
+    .crossings.get(candidate.id)!
+    .some((active) => (counts[active.id] ?? 0) > 0)
 }
 
 function isStrictlyBetween(value: number, endpointA: number, endpointB: number) {

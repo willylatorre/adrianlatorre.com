@@ -1,14 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import { generatePuzzle } from './generator'
-import { findHashiHint } from './hints'
-import type { HashiCategory, HashiPuzzle } from './types'
+import { findHashiHint, type HashiHintRule } from './hints'
+import type { BridgeCounts, HashiCategory, HashiPuzzle } from './types'
 
 function puzzle(islands: HashiPuzzle['islands'], width = 5, height = 5): HashiPuzzle {
   return { id: 'hint-test', category: 'intro', width, height, islands }
 }
 
+// Geometric scan order may find another forced move first. Follow legal hints
+// until the technique under test is reached, rather than relying on array order.
+function nextRule(puzzle: HashiPuzzle, rule: HashiHintRule, initial: BridgeCounts = {}) {
+  const counts = { ...initial }
+  for (let step = 0; step < 30; step++) {
+    const result = findHashiHint(puzzle, counts)
+    if (result.kind !== 'hint' || result.hint.rule === rule) return result
+    counts[result.hint.corridorId] = result.hint.minimumCount
+  }
+  throw new Error(`Did not reach ${rule}`)
+}
+
 describe('Hashi hints', () => {
-  it('forces the full clue through an island\'s only route', () => {
+  it("forces the full clue through an island's only route", () => {
     const result = findHashiHint(
       puzzle([
         { id: 'a', x: 0, y: 2, clue: 2 },
@@ -28,14 +40,14 @@ describe('Hashi hints', () => {
   })
 
   it('finds the all-but-one deduction on an edge 5', () => {
-    const result = findHashiHint(
+    const result = nextRule(
       puzzle([
         { id: 'center', x: 2, y: 0, clue: 5 },
         { id: 'left', x: 0, y: 0, clue: 2 },
         { id: 'right', x: 4, y: 0, clue: 2 },
         { id: 'down', x: 2, y: 4, clue: 2 },
       ]),
-      {},
+      'capacity',
     )
 
     expect(result).toMatchObject({
@@ -52,7 +64,7 @@ describe('Hashi hints', () => {
     { clue: 7, minimumCount: 1 },
     { clue: 8, minimumCount: 2 },
   ])('applies the middle-$clue capacity technique', ({ clue, minimumCount }) => {
-    const result = findHashiHint(
+    const result = nextRule(
       puzzle([
         { id: 'center', x: 2, y: 2, clue },
         { id: 'left', x: 0, y: 2, clue: 2 },
@@ -60,7 +72,7 @@ describe('Hashi hints', () => {
         { id: 'up', x: 2, y: 0, clue: 2 },
         { id: 'down', x: 2, y: 4, clue: 2 },
       ]),
-      {},
+      'capacity',
     )
 
     expect(result).toMatchObject({
@@ -70,7 +82,7 @@ describe('Hashi hints', () => {
   })
 
   it('applies the middle 6 facing a 1 technique', () => {
-    const result = findHashiHint(
+    const result = nextRule(
       puzzle([
         { id: 'center', x: 2, y: 2, clue: 6 },
         { id: 'left', x: 0, y: 2, clue: 2 },
@@ -78,12 +90,12 @@ describe('Hashi hints', () => {
         { id: 'one', x: 2, y: 0, clue: 1 },
         { id: 'down', x: 2, y: 4, clue: 2 },
       ]),
-      {},
+      'capacity',
     )
 
     expect(result).toMatchObject({
       kind: 'hint',
-      hint: { corridorId: 'center:down', minimumCount: 1, rule: 'capacity' },
+      hint: { corridorId: 'center:right', minimumCount: 1, rule: 'capacity' },
     })
   })
 
@@ -98,7 +110,7 @@ describe('Hashi hints', () => {
       { id: 'dr', x: 4, y: 4, clue: 2 },
     ])
 
-    expect(findHashiHint(crossingPressure, { 'c:d': 1 })).toMatchObject({
+    expect(nextRule(crossingPressure, 'crossing', { 'c:d': 1 })).toMatchObject({
       kind: 'hint',
       hint: {
         corridorId: 'v:x',

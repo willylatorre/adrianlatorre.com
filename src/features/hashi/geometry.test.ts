@@ -4,6 +4,7 @@ import {
   corridorsCross,
   countCorridorCrossings,
   getVisibleCorridors,
+  getPuzzleTopology,
   wouldCrossActiveBridge,
 } from './geometry'
 import type { HashiPuzzle } from './types'
@@ -22,6 +23,14 @@ const puzzle: HashiPuzzle = {
 }
 
 describe('Hashi geometry', () => {
+  it('reuses immutable topology but replaces it with a new puzzle', () => {
+    const topology = getPuzzleTopology(puzzle)
+    expect(getPuzzleTopology(puzzle)).toBe(topology)
+    const other = { ...puzzle, islands: puzzle.islands.slice(0, 2) }
+    expect(getPuzzleTopology(other)).not.toBe(topology)
+    expect(getPuzzleTopology(other).corridors).toHaveLength(1)
+    expect(topology.corridors).toHaveLength(2)
+  })
   it('finds nearest visible orthogonal islands only', () => {
     expect(getVisibleCorridors(puzzle.islands).map(({ a, b }) => [a, b])).toEqual([
       ['a', 'b'],

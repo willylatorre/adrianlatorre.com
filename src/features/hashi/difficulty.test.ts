@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assessDifficulty, difficultyFromTrace } from './difficulty'
+import { cloneFallback } from './fallbacks'
 import type { HashiPuzzle } from './types'
 
 const line: HashiPuzzle = {
@@ -15,6 +16,21 @@ const line: HashiPuzzle = {
 }
 
 describe('reasoning difficulty', () => {
+  it('grades identical geometry consistently after renaming and reordering islands', () => {
+    const { puzzle } = cloneFallback('daily')
+    const expected = assessDifficulty(puzzle)
+    const renamed = {
+      ...puzzle,
+      islands: puzzle.islands.map((island, index) => ({
+        ...island,
+        id: `i${(index + 2) % puzzle.islands.length}`,
+      })),
+    }
+    expect(assessDifficulty(renamed)).toEqual(expected)
+    expect(assessDifficulty({ ...renamed, islands: [...renamed.islands].reverse() })).toEqual(
+      expected,
+    )
+  })
   it('grades a direct solve as easy', () => {
     expect(assessDifficulty(line)).toMatchObject({
       solved: true,

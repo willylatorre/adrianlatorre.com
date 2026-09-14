@@ -1,11 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import {
-  bridgeSegments,
-  getVisibleCorridors,
-  wouldCrossActiveBridge,
-} from '../../features/hashi/geometry'
-import { getIslandState, getIslandTotal } from '../../features/hashi/rules'
+import { bridgeSegments, getPuzzleTopology } from '../../features/hashi/geometry'
+import { getBoardState } from '../../features/hashi/rules'
 import type {
   BridgeCount,
   BridgeCounts,
@@ -36,25 +32,13 @@ const emit = defineEmits<{
   cycle: [corridorId: string]
 }>()
 
-const corridors = computed(() => getVisibleCorridors(props.puzzle.islands))
-const islandById = computed(
-  () => new Map(props.puzzle.islands.map((island) => [island.id, island])),
-)
-const islandStates = computed(
-  () =>
-    new Map(
-      props.puzzle.islands.map((island) => [
-        island.id,
-        getIslandState(island.id, props.puzzle, props.bridgeCounts),
-      ]),
-    ),
-)
-const boardWidth = computed(
-  () => (props.puzzle.width - 1) * CELL_SIZE + BOARD_MARGIN * 2,
-)
-const boardHeight = computed(
-  () => (props.puzzle.height - 1) * CELL_SIZE + BOARD_MARGIN * 2,
-)
+const topology = computed(() => getPuzzleTopology(props.puzzle))
+const corridors = computed(() => topology.value.corridors)
+const islandById = computed(() => topology.value.islandById)
+const position = computed(() => getBoardState(props.puzzle, props.bridgeCounts))
+const islandStates = computed(() => position.value.states)
+const boardWidth = computed(() => (props.puzzle.width - 1) * CELL_SIZE + BOARD_MARGIN * 2)
+const boardHeight = computed(() => (props.puzzle.height - 1) * CELL_SIZE + BOARD_MARGIN * 2)
 const viewBox = computed(
   () => `${-BOARD_MARGIN} ${-BOARD_MARGIN} ${boardWidth.value} ${boardHeight.value}`,
 )
@@ -84,10 +68,6 @@ function corridorStateClasses(corridor: Corridor) {
   }
 }
 
-function isBlockedByCrossing(corridor: Corridor) {
-  return wouldCrossActiveBridge(corridor, props.puzzle, props.bridgeCounts)
-}
-
 function corridorLabel(corridor: Corridor) {
   const first = islandById.value.get(corridor.a)!
   const second = islandById.value.get(corridor.b)!
@@ -100,7 +80,7 @@ function corridorLabel(corridor: Corridor) {
 }
 
 function islandLabel(island: Island) {
-  const total = getIslandTotal(island.id, corridors.value, props.bridgeCounts)
+  const total = position.value.totals.get(island.id)!
   const state = islandStates.value.get(island.id)!
   const stateLabel =
     state === 'satisfied'
@@ -148,10 +128,7 @@ function islandLabel(island: Island) {
           v-for="corridor in corridors"
           :key="corridor.id"
           class="hashi-corridor"
-          :class="[
-            corridorStateClasses(corridor),
-            { 'is-hinted': hintCorridorId === corridor.id },
-          ]"
+          :class="[corridorStateClasses(corridor), { 'is-hinted': hintCorridorId === corridor.id }]"
           :data-corridor="corridor.id"
         >
           <line
@@ -172,7 +149,7 @@ function islandLabel(island: Island) {
           :class="{
             'is-readonly': !interactive,
             'is-hinted': hintCorridorId === corridor.id,
-            'is-blocked': isBlockedByCrossing(corridor),
+            'is-blocked': position.blocked.has(corridor.id),
           }"
           :data-corridor-hit="corridor.id"
           :role="interactive ? 'button' : undefined"
@@ -190,7 +167,7 @@ function islandLabel(island: Island) {
             :pointer-events="interactive ? 'stroke' : 'none'"
           />
           <line
-            v-if="!isBlockedByCrossing(corridor)"
+            v-if="!position.blocked.has(corridor.id)"
             class="hashi-focus"
             :class="{ 'is-hinted': hintCorridorId === corridor.id }"
             v-bind="hitSegment(corridor)"

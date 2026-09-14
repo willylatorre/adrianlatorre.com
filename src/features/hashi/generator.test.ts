@@ -141,7 +141,8 @@ describe('Hashi puzzle generation', () => {
   })
 
   it.each(categories)('generates a valid %s puzzle', (category) => {
-    const generated = generatePuzzle(category, 123456)
+    const generated = generatePuzzle(category, 123456, { now: () => 0 })
+    expect(generated.source).toBe('generated')
 
     expect(CATEGORY_CONFIG[category].targetIslands).toBe(expectedIslandCounts[category])
     expect([CATEGORY_CONFIG[category].width, CATEGORY_CONFIG[category].height]).toEqual(
@@ -165,7 +166,6 @@ describe('Hashi puzzle generation', () => {
     (category, seed) => {
       const { puzzle } = generatePuzzle(category, 910_000 + seed)
 
-      expect(puzzle.id).not.toBe(`fallback-${category}`)
       expect(puzzle.islands).toHaveLength(expectedIslandCounts[category])
       expectIslandsTouchEveryBoundary(puzzle)
       expectNoNeighboringIslands(puzzle)
@@ -199,7 +199,6 @@ describe('Hashi puzzle generation', () => {
       const { puzzle } = generatePuzzle('intro', 600_000 + seed)
       const clues = puzzle.islands.map(({ clue }) => clue)
 
-      expect(puzzle.id).not.toBe('fallback-intro')
       expect(Math.max(...clues)).toBeLessThanOrEqual(5)
       expect(assessDifficulty(puzzle)).toMatchObject({
         solved: true,
@@ -213,8 +212,11 @@ describe('Hashi puzzle generation', () => {
   it.each(challengingCategories)(
     'keeps generated %s puzzles varied and graded by reasoning',
     (category) => {
+      const ids = new Set<string>()
       for (let seed = 0; seed < 3; seed += 1) {
-        const generated = generatePuzzle(category, 700_000 + seed)
+        const generated = generatePuzzle(category, 700_000 + seed, { now: () => 0 })
+        expect(generated.source).toBe('generated')
+        ids.add(generated.puzzle.id)
         expectBalancedChallenge(category, generated)
 
         const { puzzle, solution } = generated
@@ -235,6 +237,7 @@ describe('Hashi puzzle generation', () => {
           ),
         ).toBe(true)
       }
+      expect(ids.size).toBe(3)
     },
     15000,
   )
@@ -257,7 +260,7 @@ describe('Hashi puzzle generation', () => {
     'has distinct validated %s fallbacks',
     (category) => {
       const ids = new Set<string>()
-      for (let seed = 0; seed < 4; seed++) {
+      for (let seed = 0; seed < 8; seed++) {
         const generated = generateFallbackPuzzle(category, seed)
         ids.add(generated.puzzle.id)
         expect(evaluatePuzzle(generated.puzzle, generated.solution).solved).toBe(true)
@@ -272,7 +275,7 @@ describe('Hashi puzzle generation', () => {
           difficulty: CATEGORY_CONFIG[category].difficulty,
         })
       }
-      expect(ids.size).toBe(4)
+      expect(ids.size).toBe(8)
       const mutated = generateFallbackPuzzle(category)
       mutated.puzzle.islands[0]!.clue = 99
       expect(generateFallbackPuzzle(category).puzzle.islands[0]!.clue).not.toBe(99)
@@ -287,9 +290,15 @@ describe('Hashi puzzle generation', () => {
     })
 
     expect(generated).toEqual(generateFallbackPuzzle('monthly', 42))
+    expect(generated.source).toBe('fallback')
     expect(generated.puzzle.islands).toHaveLength(CATEGORY_CONFIG.monthly.targetIslands)
     expect(generated.puzzle.id).toMatch(/^hashi-/)
     expect(evaluatePuzzle(generated.puzzle, generated.solution).solved).toBe(true)
+  })
+
+  it('reports fresh generation separately from fallback selection', () => {
+    expect(generatePuzzle('intro', 42, { timeBudgetMs: 1, now: () => 0 }).source).toBe('generated')
+    expect(cloneFallback('intro', 1).puzzle.id).not.toBe(cloneFallback('intro', 0).puzzle.id)
   })
 
   it.each(categories)('provides a full valid %s fallback', (category) => {

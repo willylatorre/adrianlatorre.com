@@ -25,6 +25,15 @@ export interface HashiPuzzle {
   islands: Island[]
 }
 
+export interface GeneratedPuzzle {
+  puzzle: HashiPuzzle
+  solution: BridgeCounts
+}
+
+export interface PuzzleGenerationResult extends GeneratedPuzzle {
+  source: 'generated' | 'fallback'
+}
+
 export interface LineSegment {
   x1: number
   y1: number

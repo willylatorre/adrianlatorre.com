@@ -289,8 +289,10 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     discardWorker()
     if (requestId !== activeRequestId || category !== game.preferredCategory) return
 
-    const generate = options.fallbackGeneratePuzzle ?? defaultPuzzleGenerator
-    game.replaceGeneratedPuzzle(generate(category, Math.floor(now()) + requestId))
+    if (activeRequestGameRevision === gameActionRevision) {
+      const generate = options.fallbackGeneratePuzzle ?? fallbackPuzzleGenerator
+      game.replaceGeneratedPuzzle(generate(category, Math.floor(now()) + requestId))
+    }
     generating.value = false
   }
 
@@ -323,12 +325,12 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
         if (
           data.type !== 'generated' ||
           data.requestId !== activeRequestId ||
-          data.puzzle.category !== game.preferredCategory ||
-          activeRequestGameRevision !== gameActionRevision
+          data.puzzle.category !== game.preferredCategory
         ) {
           return
         }
-        game.replaceGeneratedPuzzle(data.puzzle)
+        if (activeRequestGameRevision === gameActionRevision)
+          game.replaceGeneratedPuzzle(data.puzzle)
         generating.value = false
       }
       worker.onerror = () => {
@@ -407,8 +409,8 @@ function defaultPuzzleGenerator(category: HashiCategory, seed: number): HashiPuz
   return generatePuzzle(category, seed).puzzle
 }
 
-function fallbackPuzzleGenerator(category: HashiCategory): HashiPuzzle {
-  return cloneFallback(category).puzzle
+function fallbackPuzzleGenerator(category: HashiCategory, seed = 0): HashiPuzzle {
+  return cloneFallback(category, seed).puzzle
 }
 
 function createBrowserPuzzleWorker(): HashiPuzzleWorker | null {

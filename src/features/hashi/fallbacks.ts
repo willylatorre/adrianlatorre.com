@@ -1,15 +1,7 @@
-import { generateFallbackPuzzle } from './generator'
-import type { GeneratedPuzzle } from './generator'
-import type { HashiCategory } from './types'
+import fallbackPuzzles from './fallback-puzzles.json'
+import type { HashiCategory, PuzzleGenerationResult, GeneratedPuzzle } from './types'
 
-export function cloneFallback(category: HashiCategory): GeneratedPuzzle {
-  const generated = generateFallbackPuzzle(category)
-
-  return {
-    puzzle: {
-      ...generated.puzzle,
-      islands: generated.puzzle.islands.map((island) => ({ ...island })),
-    },
-    solution: { ...generated.solution },
-  }
+export function cloneFallback(category: HashiCategory, seed = 0): PuzzleGenerationResult {
+  const pool = fallbackPuzzles[category] as unknown as GeneratedPuzzle[]
+  return { ...structuredClone(pool[(seed >>> 0) % pool.length]!), source: 'fallback' }
 }

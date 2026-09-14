@@ -1,9 +1,17 @@
 import { assessDifficulty } from './difficulty'
-import fallbackPuzzles from './fallback-puzzles.json'
+import { cloneFallback } from './fallbacks'
 import { findSolutions } from './solver'
 import { evaluatePuzzle } from './rules'
 import { corridorsCross, countCorridorCrossings, getVisibleCorridors } from './geometry'
-import type { BridgeCounts, Corridor, HashiCategory, HashiPuzzle, Island } from './types'
+import type {
+  BridgeCounts,
+  Corridor,
+  HashiCategory,
+  HashiPuzzle,
+  Island,
+  GeneratedPuzzle,
+  PuzzleGenerationResult,
+} from './types'
 
 export const CATEGORY_CONFIG = {
   intro: {
@@ -44,10 +52,7 @@ export const CATEGORY_CONFIG = {
   },
 } as const
 
-export interface GeneratedPuzzle {
-  puzzle: HashiPuzzle
-  solution: BridgeCounts
-}
+export type { GeneratedPuzzle } from './types'
 
 export interface PuzzleGenerationOptions {
   timeBudgetMs?: number
@@ -57,7 +62,7 @@ export interface PuzzleGenerationOptions {
 type CategoryConfig = (typeof CATEGORY_CONFIG)[HashiCategory]
 type Random = () => number
 
-export const HASHI_GENERATOR_VERSION = 'v7'
+export const HASHI_GENERATOR_VERSION = 'v8'
 const DEFAULT_GENERATION_TIME_BUDGET_MS = 3_000
 const COVERAGE_RADIUS = 4
 
@@ -65,21 +70,17 @@ export function generatePuzzle(
   category: HashiCategory,
   seed: number,
   options: PuzzleGenerationOptions = {},
-): GeneratedPuzzle {
+): PuzzleGenerationResult {
   const random = mulberry32(seed)
   const now = options.now ?? Date.now
   const generationDeadline = now() + (options.timeBudgetMs ?? DEFAULT_GENERATION_TIME_BUDGET_MS)
   const generated = tryGeneratePuzzle(category, random, () => now() >= generationDeadline)
 
-  return generated ?? generateFallbackPuzzle(category, seed)
+  return generated ? { ...generated, source: 'generated' } : cloneFallback(category, seed)
 }
 
 /** Already validated offline: deadline exhaustion never starts another search. */
-export function generateFallbackPuzzle(category: HashiCategory, seed = 0): GeneratedPuzzle {
-  // JSON widens clue/count literals; the fixture suite validates every entry.
-  const pool = fallbackPuzzles[category] as unknown as GeneratedPuzzle[]
-  return structuredClone(pool[(seed >>> 0) % pool.length]!)
-}
+export const generateFallbackPuzzle = cloneFallback
 
 function tryGeneratePuzzle(
   category: HashiCategory,

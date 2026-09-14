@@ -1,6 +1,8 @@
 import { effectScope } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { HASHI_GENERATOR_VERSION } from './generator'
+import { cloneFallback } from './fallbacks'
+import { getVisibleCorridors } from './geometry'
 import { loadHashiState, saveHashiState, type HashiStorage } from './persistence'
 import { createHashiGame, useHashiGame } from './useHashiGame'
 import type { HashiCategory, HashiPuzzle } from './types'
@@ -380,6 +382,7 @@ describe('Hashi game state', () => {
 
     expect(game.preferredCategory.value).toBe('daily')
     expect(game.puzzle.value.id).toBe(pendingDailyId)
+    expect(game.generating.value).toBe(true)
     expect(pendingDailyId).toMatch(new RegExp(`^hashi-${HASHI_GENERATOR_VERSION}-daily-`))
 
     worker.deliver(3, freshDailyPuzzle)
@@ -389,7 +392,7 @@ describe('Hashi game state', () => {
     expect(game.bridgeCounts.value).toEqual({})
   })
 
-  it('synchronously creates a full puzzle when the worker is unavailable', () => {
+  it('uses the configured recovery puzzle when the worker is unavailable', () => {
     const generatedIntro = { ...fixedPuzzle, id: 'generated-intro' }
     const generatedMonthly = {
       ...fixedPuzzle,
@@ -410,6 +413,28 @@ describe('Hashi game state', () => {
     expect(game.puzzle.value.id).toBe('generated-monthly')
   })
 
+  it.each(['unavailable', 'constructor error', 'worker error'])(
+    'uses a seeded prevalidated fallback after %s',
+    (failure) => {
+      const worker = new PuzzleWorkerDouble()
+      const game = useHashiGame({
+        now: () => 1_000,
+        storage: null,
+        workerFactory: () => {
+          if (failure === 'constructor error') throw new Error('Worker unavailable')
+          return failure === 'unavailable' ? null : worker
+        },
+      })
+      if (failure === 'worker error') worker.onerror?.(new Event('error'))
+
+      expect(game.generating.value).toBe(false)
+      expect(game.puzzle.value).toEqual(cloneFallback('intro', 1_001).puzzle)
+      game.newPuzzle()
+      expect(game.puzzle.value).toEqual(cloneFallback('intro', 1_002).puzzle)
+      expect(game.generating.value).toBe(false)
+    },
+  )
+
   it('keeps fallback progress when its worker response arrives late', () => {
     const worker = new PuzzleWorkerDouble()
     const generatedPuzzle = { ...fixedPuzzle, id: 'generated-intro' }
@@ -420,11 +445,13 @@ describe('Hashi game state', () => {
     })
     const pendingPuzzleId = game.puzzle.value.id
 
-    game.cycleCorridor('i0:i1')
+    const corridorId = getVisibleCorridors(game.puzzle.value.islands)[0]!.id
+    game.cycleCorridor(corridorId)
     worker.deliver(1, generatedPuzzle)
 
     expect(game.puzzle.value.id).toBe(pendingPuzzleId)
-    expect(game.bridgeCounts.value['i0:i1']).toBe(1)
+    expect(game.bridgeCounts.value[corridorId]).toBe(1)
+    expect(game.generating.value).toBe(false)
   })
 
   it('keeps a reset fallback when its pending worker response arrives', () => {
@@ -442,5 +469,26 @@ describe('Hashi game state', () => {
 
     expect(game.puzzle.value.id).toBe(pendingPuzzleId)
     expect(game.bridgeCounts.value).toEqual({})
+    expect(game.generating.value).toBe(false)
   })
+
+  it.each(['response', 'error'])(
+    'preserves a saved fallback when the pending worker sends %s',
+    (event) => {
+      const worker = new PuzzleWorkerDouble()
+      const game = useHashiGame({ now: () => 1_000, storage: null, workerFactory: () => worker })
+      const pendingPuzzle = game.puzzle.value
+      const corridorId = getVisibleCorridors(pendingPuzzle.islands)[0]!.id
+      game.cycleCorridor(corridorId)
+      game.saveSnapshot()
+
+      if (event === 'error') worker.onerror?.(new Event('error'))
+      else worker.deliver(1, { ...fixedPuzzle, id: 'late-puzzle' })
+
+      expect(game.puzzle.value).toEqual(pendingPuzzle)
+      expect(game.bridgeCounts.value[corridorId]).toBe(1)
+      expect(game.snapshot.value).toEqual({ [corridorId]: 1 })
+      expect(game.generating.value).toBe(false)
+    },
+  )
 })

@@ -3,9 +3,7 @@ import { writeFile } from 'node:fs/promises'
 import { createJiti } from 'jiti'
 
 const jiti = createJiti(import.meta.url)
-const { CATEGORY_CONFIG, generatePuzzle, generateFallbackPuzzle } = await jiti.import(
-  '../src/features/hashi/generator.ts',
-)
+const { CATEGORY_CONFIG, generatePuzzle } = await jiti.import('../src/features/hashi/generator.ts')
 const { assessDifficulty } = await jiti.import('../src/features/hashi/difficulty.ts')
 const { countSolutionsWithDeadline } = await jiti.import('../src/features/hashi/solver.ts')
 const { evaluatePuzzle } = await jiti.import('../src/features/hashi/rules.ts')
@@ -13,12 +11,9 @@ const pools = {}
 for (const category of Object.keys(CATEGORY_CONFIG)) {
   const pool = []
   const ids = new Set()
-  const existingIds = new Set(
-    Array.from({ length: 4 }, (_, seed) => generateFallbackPuzzle(category, seed).puzzle.id),
-  )
-  for (let seed = 0; seed < 40 && pool.length < 4; seed++) {
+  for (let seed = 0; seed < 80 && pool.length < 8; seed++) {
     const generated = generatePuzzle(category, 812000 + seed, { timeBudgetMs: 15000 })
-    if (ids.has(generated.puzzle.id) || existingIds.has(generated.puzzle.id)) continue
+    if (generated.source !== 'generated' || ids.has(generated.puzzle.id)) continue
     const result = countSolutionsWithDeadline(generated.puzzle, 2, {
       deadline: Date.now() + 10000,
       now: Date.now,
@@ -31,11 +26,11 @@ for (const category of Object.keys(CATEGORY_CONFIG)) {
       grade.difficulty !== CATEGORY_CONFIG[category].difficulty
     )
       throw new Error(`Invalid ${category} fixture`)
-    pool.push(generated)
+    pool.push({ puzzle: generated.puzzle, solution: generated.solution })
     ids.add(generated.puzzle.id)
     console.log(category, pool.length, generated.puzzle.id)
   }
-  if (pool.length !== 4) throw new Error(`Not enough fresh ${category} fixtures`)
+  if (pool.length !== 8) throw new Error(`Not enough fresh ${category} fixtures`)
   pools[category] = pool
 }
 // Keep each board on one line so generated fixture diffs stay manageable.
