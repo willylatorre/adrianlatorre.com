@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 
 import { mount } from '@vue/test-utils'
+import { h } from 'vue'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import HashiBoard from './HashiBoard.vue'
 import HashiControls from './HashiControls.vue'
 import type { HashiPuzzle } from '../../features/hashi/types'
+import { useHashiGame } from '../../features/hashi/useHashiGame'
 
 const puzzle: HashiPuzzle = {
   id: 'board-test',
@@ -25,6 +27,29 @@ afterEach(() => {
 })
 
 describe('HashiBoard', () => {
+  it('renders the second bridge even when it overfills an island, and clears on the third click', async () => {
+    const wrapper = mount({
+      setup() {
+        const game = useHashiGame({ initialPuzzle: puzzle, storage: null })
+        return () =>
+          h(HashiBoard, {
+            puzzle: game.puzzle.value,
+            bridgeCounts: game.bridgeCounts.value,
+            onCycle: game.cycleCorridor,
+          })
+      },
+    })
+    const target = wrapper.get('[data-corridor-hit="a:b"] .hashi-hit')
+    await target.trigger('click')
+    expect(wrapper.findAll('[data-corridor="a:b"] .hashi-bridge')).toHaveLength(1)
+    await target.trigger('click')
+    expect(wrapper.findAll('[data-corridor="a:b"] .hashi-bridge')).toHaveLength(2)
+    expect(wrapper.get('[data-island="a"]').classes()).toContain('is-overfilled')
+    await target.trigger('click')
+    expect(wrapper.findAll('[data-corridor="a:b"] .hashi-bridge')).toHaveLength(0)
+    wrapper.unmount()
+  })
+
   it('emits cycle from click, Enter, and Space', async () => {
     const wrapper = mount(HashiBoard, { props: { puzzle, bridgeCounts: {} } })
     const target = wrapper.get('[data-corridor-hit="a:b"]')
@@ -224,9 +249,16 @@ describe('HashiBoard', () => {
     expect(wrapper.get('[data-corridor-hit="bottom:top"]').find('.hashi-focus').exists()).toBe(
       false,
     )
+    // A blocked invisible route must not intercept clicks on the bridge crossing it.
+    expect(
+      wrapper.get('[data-corridor-hit="bottom:top"] .hashi-hit').attributes('pointer-events'),
+    ).toBe('none')
     expect(wrapper.get('[data-corridor-hit="left:right"]').classes()).not.toContain('is-blocked')
     await wrapper.setProps({ bridgeCounts: {} })
     expect(wrapper.get('[data-corridor-hit="bottom:top"]').find('.hashi-focus').exists()).toBe(true)
+    expect(
+      wrapper.get('[data-corridor-hit="bottom:top"] .hashi-hit').attributes('pointer-events'),
+    ).toBe('stroke')
     await wrapper.setProps({ bridgeCounts: { 'bottom:top': 2 } })
     expect(wrapper.get('[data-corridor-hit="left:right"]').find('.hashi-focus').exists()).toBe(
       false,

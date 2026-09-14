@@ -164,7 +164,7 @@ function islandLabel(island: Island) {
             v-bind="hitSegment(corridor)"
             stroke="transparent"
             stroke-width="28"
-            :pointer-events="interactive ? 'stroke' : 'none'"
+            :pointer-events="interactive && !position.blocked.has(corridor.id) ? 'stroke' : 'none'"
           />
           <line
             v-if="!position.blocked.has(corridor.id)"

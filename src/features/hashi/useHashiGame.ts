@@ -2,7 +2,7 @@ import { computed, getCurrentScope, onScopeDispose, ref } from 'vue'
 import { generatePuzzle, HASHI_GENERATOR_VERSION } from './generator'
 import { cloneFallback } from './fallbacks'
 import type { GeneratePuzzleMessage, GeneratedPuzzleMessage } from './generator.worker'
-import { getVisibleCorridors, wouldCrossActiveBridge } from './geometry'
+import { getPuzzleTopology, wouldCrossActiveBridge } from './geometry'
 import { findHashiHint, type HashiHint, type HashiHintSearchResult } from './hints'
 import {
   loadHashiState,
@@ -163,7 +163,7 @@ export function createHashiGame(
       return Math.max(0, (solvedAt ?? now()) - startedAt)
     },
     cycleCorridor(corridorId) {
-      const corridor = getVisibleCorridors(puzzle.islands).find(({ id }) => id === corridorId)
+      const corridor = getPuzzleTopology(puzzle).corridors.find(({ id }) => id === corridorId)
       if (!corridor) return { changed: false, reason: 'unknown-corridor' }
 
       const previous = bridgeCounts[corridorId] ?? 0
