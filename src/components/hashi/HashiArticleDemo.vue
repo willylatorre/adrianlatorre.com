@@ -17,8 +17,6 @@ type DemoKind =
   | 'geometry'
   | 'layout'
   | 'diagonal'
-  | 'reasoning'
-  | 'trace'
 
 const props = defineProps<{ kind: DemoKind }>()
 
@@ -40,10 +38,6 @@ const captions: Record<DemoKind, string> = {
     'Both boards contain twelve islands. The first repeats its columns; the second uses the same amount of puzzle in a staggered arrangement.',
   diagonal:
     'Diagonal neighbours do not share a possible bridge. Orthogonal neighbours leave no visible gap for one.',
-  reasoning:
-    'More islands make a puzzle longer. The rules needed to make progress are what make it easier or harder.',
-  trace:
-    'This is the kind of solve trace the generator records: a sequence of provable moves, not a claim that a clue distribution is difficulty.',
 }
 
 const island = (id: string, x: number, y: number, clue: number): Island => ({ id, x, y, clue })
@@ -134,20 +128,6 @@ const demos: Record<Exclude<DemoKind, 'geometry'>, HashiPuzzle> = {
     island('diagonal-b', 2, 2, 3),
     island('diagonal-c', 4, 1, 2),
     island('diagonal-d', 5, 2, 3),
-  ]),
-  reasoning: puzzle('demo-reasoning', 7, 5, [
-    island('reasoning-a', 0, 2, 2),
-    island('reasoning-b', 2, 2, 4),
-    island('reasoning-c', 4, 2, 3),
-    island('reasoning-d', 6, 2, 1),
-    island('reasoning-e', 2, 0, 2),
-    island('reasoning-f', 4, 4, 2),
-  ]),
-  trace: puzzle('demo-trace', 7, 5, [
-    island('trace-a', 1, 2, 2),
-    island('trace-b', 3, 0, 2),
-    island('trace-c', 5, 2, 3),
-    island('trace-d', 3, 4, 2),
   ]),
 }
 
@@ -277,22 +257,6 @@ function cycle(corridor: string) {
           <HashiBoard :puzzle="orthogonalCrowding" :bridge-counts="{}" :interactive="false" />
         </section>
       </div>
-      <div v-else-if="kind === 'reasoning'" class="hashi-demo-reasoning">
-        <HashiBoard :puzzle="activePuzzle" :bridge-counts="{}" :interactive="false" />
-        <div>
-          <p class="hashi-demo-label">Shorter does not mean easier</p>
-          <p><strong>Longer board:</strong> Direct capacity can keep forcing bridges.</p>
-          <p><strong>Smaller board — Contradiction:</strong> the first useful move can be an assumption that fails.</p>
-        </div>
-      </div>
-      <div v-else-if="kind === 'trace'" class="hashi-demo-trace">
-        <HashiBoard :puzzle="activePuzzle" :bridge-counts="{}" :interactive="false" />
-        <ol>
-          <li><strong>Capacity:</strong> the other routes cannot hold enough.</li>
-          <li><strong>Crossing:</strong> that bridge closes the perpendicular route.</li>
-          <li><strong>Contradiction:</strong> leaving this corridor empty strands the remainder.</li>
-        </ol>
-      </div>
       <HashiBoard
         v-else
         :puzzle="activePuzzle"
@@ -347,9 +311,7 @@ function cycle(corridor: string) {
   gap: 0.8rem;
 }
 
-.hashi-demo-comparison section,
-.hashi-demo-reasoning,
-.hashi-demo-trace {
+.hashi-demo-comparison section {
   min-width: 0;
 }
 
@@ -368,34 +330,8 @@ function cycle(corridor: string) {
   font-weight: 500;
 }
 
-.hashi-demo-reasoning,
-.hashi-demo-trace {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(11rem, 0.8fr);
-  gap: 1rem;
-  align-items: center;
-}
-
-.hashi-demo-reasoning p,
-.hashi-demo-trace ol {
-  margin: 0.55rem 0 0;
-  color: var(--site-muted);
-  font-size: 0.78rem;
-  line-height: 1.45;
-}
-
-.hashi-demo-trace ol {
-  padding-left: 1.25rem;
-}
-
-.hashi-demo-trace li + li {
-  margin-top: 0.45rem;
-}
-
 @media (max-width: 34rem) {
-  .hashi-demo-comparison,
-  .hashi-demo-reasoning,
-  .hashi-demo-trace {
+  .hashi-demo-comparison {
     grid-template-columns: 1fr;
   }
 }

@@ -16,8 +16,6 @@ const kinds = [
   'geometry',
   'layout',
   'diagonal',
-  'reasoning',
-  'trace',
 ] as const
 
 describe('HashiArticleDemo', () => {
@@ -82,21 +80,4 @@ describe('HashiArticleDemo', () => {
     expect(wrapper.text()).toContain('Orthogonal touching is not')
   })
 
-  it('contrasts direct capacity with a contradiction deduction', () => {
-    const wrapper = mount(HashiArticleDemo, { props: { kind: 'reasoning' } })
-
-    expect(wrapper.text()).toContain('Shorter does not mean easier')
-    expect(wrapper.text()).toContain('Direct capacity')
-    expect(wrapper.text()).toContain('Contradiction')
-  })
-
-  it('renders the ordered deduction trace', () => {
-    const wrapper = mount(HashiArticleDemo, { props: { kind: 'trace' } })
-
-    expect(wrapper.findAll('li').map((item) => item.text())).toEqual([
-      expect.stringContaining('Capacity'),
-      expect.stringContaining('Crossing'),
-      expect.stringContaining('Contradiction'),
-    ])
-  })
 })

@@ -52,11 +52,11 @@ describe('blog markdown frontmatter exports', () => {
     expect(mod.description).toBeTruthy()
   })
 
-  it('uses concrete Hashi examples in the reality-check follow-up', async () => {
+  it('uses placement examples in the reality-check follow-up', async () => {
     const source = await import('./notes-from-a-hashi-game-that-technically-worked.md?raw')
-    const kinds = ['layout', 'diagonal', 'reasoning', 'trace']
+    const kinds = ['layout', 'diagonal']
 
-    expect(source.default.match(/<HashiArticleDemo/g)).toHaveLength(4)
+    expect(source.default.match(/<HashiArticleDemo/g)).toHaveLength(2)
     for (const kind of kinds) expect(source.default).toContain(`kind="${kind}"`)
   })
 })

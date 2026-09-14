@@ -92,8 +92,6 @@ The clue histogram was particularly seductive. It gave me numbers I could adjust
 
 I removed those distribution targets. Keeping them would have meant continuing to optimize an answer sheet's appearance while claiming to measure the experience of finding it.
 
-<HashiArticleDemo kind="reasoning" />
-
 ## Let the generator try to play
 
 The hint system provided a better starting point.
@@ -111,8 +109,6 @@ It also immediately embarrassed the category labels. One small Intro sample need
 Intro now has to finish through direct capacity, only-route, and crossing deductions. Daily can require connectivity or contradiction reasoning. Weekly and Monthly require a higher proportion of contradiction steps in the recorded solve. The proportion matters: doubling the length of an easy sequence should not promote it to hard.
 
 Weekly and Monthly deliberately share the same reasoning tier. Monthly has more puzzle to work through. I do not want its larger dimensions quietly doing a second job as evidence of greater sophistication.
-
-<HashiArticleDemo kind="trace" />
 
 ## A known answer was another low bar
 
