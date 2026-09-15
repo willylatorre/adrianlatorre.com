@@ -54,6 +54,7 @@ export interface HashiGame {
   readonly canRestoreSnapshot: boolean
   readonly hintsRemaining: number
   readonly activeHint: HashiHint | null
+  readonly feedbackCorridorIds: string[]
   readonly hintFeedback: string | null
   readonly evaluation: PuzzleEvaluation
   readonly solvedAt: number | null
@@ -80,6 +81,7 @@ export function createHashiGame(
   let snapshot = restored?.snapshot ? { ...restored.snapshot } : null
   let hintsRemaining = restored?.hintsRemaining ?? 3
   let activeHint = restored?.activeHint ?? null
+  let feedbackCorridorIds: string[] = []
   let hintFeedback = activeHint?.explanation ?? null
   let evaluation = evaluatePuzzle(puzzle, bridgeCounts)
   let startedAt = restored?.startedAt ?? now()
@@ -120,6 +122,7 @@ export function createHashiGame(
     snapshot = null
     hintsRemaining = 3
     activeHint = null
+    feedbackCorridorIds = []
     hintFeedback = null
     startedAt = now()
     solvedAt = null
@@ -150,6 +153,9 @@ export function createHashiGame(
     get activeHint() {
       return activeHint
     },
+    get feedbackCorridorIds() {
+      return feedbackCorridorIds
+    },
     get hintFeedback() {
       return hintFeedback
     },
@@ -174,6 +180,7 @@ export function createHashiGame(
 
       bridgeCounts = { ...bridgeCounts, [corridorId]: next }
       activeHint = null
+      feedbackCorridorIds = []
       hintFeedback = null
       evaluation = evaluatePuzzle(puzzle, bridgeCounts)
       if (evaluation.solved && solvedAt === null) solvedAt = now()
@@ -188,6 +195,7 @@ export function createHashiGame(
       if (snapshot === null || bridgeCountsEqual(bridgeCounts, snapshot)) return false
       bridgeCounts = { ...snapshot }
       activeHint = null
+      feedbackCorridorIds = []
       hintFeedback = null
       evaluation = evaluatePuzzle(puzzle, bridgeCounts)
       solvedAt = evaluation.solved ? (solvedAt ?? now()) : null
@@ -214,8 +222,10 @@ export function createHashiGame(
         }
         hintsRemaining -= 1
         activeHint = result.hint
+        feedbackCorridorIds = []
         hintFeedback = result.hint.explanation
       } else {
+        feedbackCorridorIds = result.kind === 'invalid' ? (result.corridorIds ?? []) : []
         hintFeedback = result.message
       }
       changed()
@@ -225,6 +235,7 @@ export function createHashiGame(
       bridgeCounts = {}
       snapshot = null
       activeHint = null
+      feedbackCorridorIds = []
       hintFeedback = null
       startedAt = now()
       solvedAt = null
@@ -375,6 +386,7 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     canRestoreSnapshot: value(() => game.canRestoreSnapshot),
     hintsRemaining: value(() => game.hintsRemaining),
     activeHint: value(() => game.activeHint),
+    feedbackCorridorIds: value(() => game.feedbackCorridorIds),
     hintFeedback: value(() => game.hintFeedback),
     evaluation: value(() => game.evaluation),
     solvedAt: value(() => game.solvedAt),

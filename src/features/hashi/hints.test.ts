@@ -196,6 +196,7 @@ describe('Hashi hints', () => {
 
     expect(result).toMatchObject({ kind: 'invalid' })
     expect(result).toHaveProperty('message', expect.stringContaining('closed group'))
+    expect(result).toHaveProperty('corridorIds', ['a:b'])
   })
 
   it('reports an unsatisfied component with no possible exit', () => {

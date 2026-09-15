@@ -123,6 +123,26 @@ describe('Hashi game state', () => {
     expect(game.bridgeCounts['c:d']).toBeUndefined()
   })
 
+  it('exposes the bridges responsible for an invalid closed group', () => {
+    const closedPair: HashiPuzzle = {
+      id: 'closed-pair',
+      category: 'intro',
+      width: 3,
+      height: 3,
+      islands: [
+        { id: 'a', x: 0, y: 0, clue: 1 },
+        { id: 'b', x: 2, y: 0, clue: 1 },
+        { id: 'c', x: 0, y: 2, clue: 1 },
+        { id: 'd', x: 2, y: 2, clue: 1 },
+      ],
+    }
+    const game = createHashiGame(closedPair, () => 1_000)
+    game.cycleCorridor('a:b')
+
+    expect(game.requestHint()).toMatchObject({ kind: 'invalid' })
+    expect(game.feedbackCorridorIds).toEqual(['a:b'])
+  })
+
   it('allows overfilled islands while keeping the puzzle incomplete', () => {
     const game = createHashiGame(fixedPuzzle, () => 1_000)
 

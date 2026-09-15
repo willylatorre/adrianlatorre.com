@@ -23,9 +23,10 @@ const props = withDefaults(
     bridgeCounts: BridgeCounts
     interactive?: boolean
     hintCorridorId?: string | null
+    feedbackCorridorIds?: string[]
     zoom?: number
   }>(),
-  { interactive: true, hintCorridorId: null, zoom: 1 },
+  { interactive: true, hintCorridorId: null, feedbackCorridorIds: () => [], zoom: 1 },
 )
 
 const emit = defineEmits<{
@@ -37,6 +38,14 @@ const corridors = computed(() => topology.value.corridors)
 const islandById = computed(() => topology.value.islandById)
 const position = computed(() => getBoardState(props.puzzle, props.bridgeCounts))
 const islandStates = computed(() => position.value.states)
+const feedbackCorridors = computed(() => new Set(props.feedbackCorridorIds))
+const highlightedCorridors = computed(
+  () =>
+    new Set([
+      ...(props.hintCorridorId ? [props.hintCorridorId] : []),
+      ...props.feedbackCorridorIds,
+    ]),
+)
 const boardWidth = computed(() => (props.puzzle.width - 1) * CELL_SIZE + BOARD_MARGIN * 2)
 const boardHeight = computed(() => (props.puzzle.height - 1) * CELL_SIZE + BOARD_MARGIN * 2)
 const viewBox = computed(
@@ -128,7 +137,13 @@ function islandLabel(island: Island) {
           v-for="corridor in corridors"
           :key="corridor.id"
           class="hashi-corridor"
-          :class="[corridorStateClasses(corridor), { 'is-hinted': hintCorridorId === corridor.id }]"
+          :class="[
+            corridorStateClasses(corridor),
+            {
+              'is-hinted': hintCorridorId === corridor.id,
+              'is-feedback': feedbackCorridors.has(corridor.id),
+            },
+          ]"
           :data-corridor="corridor.id"
         >
           <line
@@ -149,6 +164,7 @@ function islandLabel(island: Island) {
           :class="{
             'is-readonly': !interactive,
             'is-hinted': hintCorridorId === corridor.id,
+            'is-feedback': feedbackCorridors.has(corridor.id),
             'is-blocked': position.blocked.has(corridor.id),
           }"
           :data-corridor-hit="corridor.id"
@@ -167,9 +183,12 @@ function islandLabel(island: Island) {
             :pointer-events="interactive && !position.blocked.has(corridor.id) ? 'stroke' : 'none'"
           />
           <line
-            v-if="!position.blocked.has(corridor.id)"
+            v-if="!position.blocked.has(corridor.id) || highlightedCorridors.has(corridor.id)"
             class="hashi-focus"
-            :class="{ 'is-hinted': hintCorridorId === corridor.id }"
+            :class="{
+              'is-hinted': hintCorridorId === corridor.id,
+              'is-feedback': feedbackCorridors.has(corridor.id),
+            }"
             v-bind="hitSegment(corridor)"
             stroke="transparent"
             stroke-width="3"
@@ -292,6 +311,16 @@ function islandLabel(island: Island) {
 .hashi-corridor.is-hinted .hashi-bridge {
   color: color-mix(in oklch, var(--site-accent) 72%, var(--site-ink));
   opacity: 1;
+}
+
+.hashi-corridor.is-feedback .hashi-bridge {
+  color: var(--hashi-overfilled);
+  opacity: 1;
+}
+
+.hashi-corridor-hit.is-feedback .hashi-focus {
+  stroke: var(--hashi-overfilled);
+  stroke-dasharray: 5 5;
 }
 
 .hashi-bridge.is-satisfied {

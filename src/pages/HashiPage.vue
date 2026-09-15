@@ -140,6 +140,7 @@ watch(
         :puzzle="game.puzzle.value"
         :bridge-counts="game.bridgeCounts.value"
         :hint-corridor-id="game.activeHint.value?.corridorId"
+        :feedback-corridor-ids="game.feedbackCorridorIds.value"
         :zoom="boardZoom ?? 1"
         @cycle="game.cycleCorridor"
       />
@@ -178,8 +179,8 @@ watch(
         <template #content>
           <p class="hashi-rules-intro">
             Each corridor cycles 0 → 1 → 2 → 0. Satisfied islands recede; overfilled islands need a
-            bridge removed. If every number matches but groups are stranded, keep connecting.
-            Hints name the rule without placing the bridge for you.
+            bridge removed. If every number matches but groups are stranded, keep connecting. Hints
+            name the rule without placing the bridge for you.
           </p>
           <ol>
             <li>Connect islands only horizontally or vertically.</li>

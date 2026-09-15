@@ -228,6 +228,46 @@ describe('HashiBoard', () => {
     expect(wrapper.findAll('[data-corridor="a:b"] .hashi-bridge')).toHaveLength(0)
   })
 
+  it('keeps a blocked hint visible above existing bridges', () => {
+    const crossingPuzzle: HashiPuzzle = {
+      id: 'blocked-hint',
+      category: 'intro',
+      width: 5,
+      height: 5,
+      islands: [
+        { id: 'left', x: 0, y: 2, clue: 1 },
+        { id: 'right', x: 4, y: 2, clue: 1 },
+        { id: 'top', x: 2, y: 0, clue: 1 },
+        { id: 'bottom', x: 2, y: 4, clue: 1 },
+      ],
+    }
+    const wrapper = mount(HashiBoard, {
+      props: {
+        puzzle: crossingPuzzle,
+        bridgeCounts: { 'left:right': 1 },
+        hintCorridorId: 'bottom:top',
+      },
+    })
+
+    const hint = wrapper.get('[data-corridor-hit="bottom:top"]')
+    expect(hint.classes()).toContain('is-blocked')
+    expect(hint.get('.hashi-focus').classes()).toContain('is-hinted')
+  })
+
+  it('marks closed-group feedback separately from a suggested move', () => {
+    const wrapper = mount(HashiBoard, {
+      props: {
+        puzzle,
+        bridgeCounts: { 'a:b': 1 },
+        feedbackCorridorIds: ['a:b'],
+      },
+    })
+
+    expect(wrapper.get('[data-corridor="a:b"]').classes()).toContain('is-feedback')
+    expect(wrapper.get('[data-corridor-hit="a:b"]').classes()).toContain('is-feedback')
+    expect(wrapper.find('.hashi-corridor.is-hinted').exists()).toBe(false)
+  })
+
   it('updates blocked projections when bridges are added and removed', async () => {
     const crossingPuzzle: HashiPuzzle = {
       id: 'crossing-preview',

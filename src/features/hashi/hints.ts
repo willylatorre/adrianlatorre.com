@@ -18,7 +18,7 @@ export interface HashiHint {
 
 export type HashiHintSearchResult =
   | { kind: 'hint'; hint: HashiHint }
-  | { kind: 'invalid'; message: string }
+  | { kind: 'invalid'; message: string; corridorIds?: string[] }
   | { kind: 'none'; message: string }
 
 interface HintContext {
@@ -118,9 +118,18 @@ function findInvalidState(context: HintContext): HashiHintSearchResult | undefin
         )),
   )
   if (closed) {
+    const corridorIds = context.corridors
+      .filter(
+        (corridor) =>
+          (context.counts[corridor.id] ?? 0) > 0 &&
+          closed.has(corridor.a) &&
+          closed.has(corridor.b),
+      )
+      .map((corridor) => corridor.id)
     return {
       kind: 'invalid',
       message: 'Those bridges make a closed group and strand the rest of the board.',
+      corridorIds,
     }
   }
 
