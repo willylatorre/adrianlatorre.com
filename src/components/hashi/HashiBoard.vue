@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref } from 'vue'
 import { bridgeSegments, getPuzzleTopology } from '../../features/hashi/geometry'
+import {
+  buildIntersectionLookup,
+  selectPointerCorridor,
+} from '../../features/hashi/pointerSelection'
 import { getBoardState } from '../../features/hashi/rules'
 import type {
   BridgeCount,
@@ -52,6 +56,14 @@ const viewBox = computed(
   () => `${-BOARD_MARGIN} ${-BOARD_MARGIN} ${boardWidth.value} ${boardHeight.value}`,
 )
 const zoomPercent = computed(() => Math.round(props.zoom * 100))
+const intersectionLookup = computed(() => buildIntersectionLookup(topology.value, CELL_SIZE))
+const boardElement = ref<SVGSVGElement | null>(null)
+const pointerSelectedId = ref<string | null>(null)
+let previousPointerPoint: { x: number; y: number } | null = null
+let previousIntersectionKey: string | null = null
+let pendingPointer: { clientX: number; clientY: number; directCorridorId: string | null } | null =
+  null
+let pointerFrame: number | null = null
 
 function bridgeCount(corridor: Corridor): BridgeCount {
   return props.bridgeCounts[corridor.id] ?? 0
@@ -100,11 +112,85 @@ function islandLabel(island: Island) {
 
   return `Island ${island.clue}, ${total} of ${island.clue} bridges, ${stateLabel}`
 }
+
+function pointerPoint(clientX: number, clientY: number) {
+  const rect = boardElement.value?.getBoundingClientRect()
+  if (!rect || rect.width === 0 || rect.height === 0) return null
+  return {
+    x: -BOARD_MARGIN + ((clientX - rect.left) / rect.width) * boardWidth.value,
+    y: -BOARD_MARGIN + ((clientY - rect.top) / rect.height) * boardHeight.value,
+  }
+}
+
+function resolvePointer(clientX: number, clientY: number, directCorridorId: string | null) {
+  const point = pointerPoint(clientX, clientY)
+  if (!point) return
+  const movement = previousPointerPoint
+    ? { x: point.x - previousPointerPoint.x, y: point.y - previousPointerPoint.y }
+    : { x: 0, y: 0 }
+  const selected = selectPointerCorridor({
+    point,
+    movement,
+    directCorridorId,
+    previousCorridorId: pointerSelectedId.value,
+    previousIntersectionKey,
+    blocked: position.value.blocked,
+    intersections: intersectionLookup.value,
+    cellSize: CELL_SIZE,
+    hotspotRadius: 12,
+  })
+  pointerSelectedId.value = selected.corridorId
+  previousIntersectionKey = selected.intersectionKey
+  previousPointerPoint = point
+}
+
+function directCorridorFromEvent(event: Event) {
+  return (
+    (event.target as Element | null)?.closest<SVGGElement>('[data-corridor-hit]')?.dataset
+      .corridorHit ?? null
+  )
+}
+
+function onPointerMove(event: PointerEvent) {
+  if (!props.interactive || event.pointerType !== 'mouse') return
+  pendingPointer = {
+    clientX: event.clientX,
+    clientY: event.clientY,
+    directCorridorId: directCorridorFromEvent(event),
+  }
+  if (pointerFrame !== null) return
+  pointerFrame = requestAnimationFrame(() => {
+    pointerFrame = null
+    if (!pendingPointer) return
+    resolvePointer(pendingPointer.clientX, pendingPointer.clientY, pendingPointer.directCorridorId)
+    pendingPointer = null
+  })
+}
+
+function clearPointerSelection() {
+  if (pointerFrame !== null) cancelAnimationFrame(pointerFrame)
+  pointerFrame = null
+  pendingPointer = null
+  previousPointerPoint = null
+  previousIntersectionKey = null
+  pointerSelectedId.value = null
+}
+
+function onCorridorClick(event: MouseEvent, corridorId: string) {
+  if (!props.interactive) return
+  const pointerType = 'pointerType' in event ? (event as PointerEvent).pointerType : 'mouse'
+  if (pointerType === 'mouse') resolvePointer(event.clientX, event.clientY, corridorId)
+  const selected = pointerType === 'mouse' ? (pointerSelectedId.value ?? corridorId) : corridorId
+  if (selected) emit('cycle', selected)
+}
+
+onBeforeUnmount(clearPointerSelection)
 </script>
 
 <template>
   <div class="hashi-board-scroll" role="region" tabindex="0" aria-label="Scrollable Hashi board">
     <svg
+      ref="boardElement"
       class="hashi-board"
       :viewBox="viewBox"
       :width="boardWidth"
@@ -112,6 +198,8 @@ function islandLabel(island: Island) {
       :style="{ width: `${zoomPercent}%`, height: 'auto' }"
       role="group"
       aria-label="Hashi puzzle board"
+      @pointermove="onPointerMove"
+      @pointerleave="clearPointerSelection"
     >
       <g class="hashi-grid" aria-hidden="true">
         <line
@@ -166,12 +254,13 @@ function islandLabel(island: Island) {
             'is-hinted': hintCorridorId === corridor.id,
             'is-feedback': feedbackCorridors.has(corridor.id),
             'is-blocked': position.blocked.has(corridor.id),
+            'is-pointer-selected': pointerSelectedId === corridor.id,
           }"
           :data-corridor-hit="corridor.id"
           :role="interactive ? 'button' : undefined"
           :tabindex="interactive ? 0 : undefined"
           :aria-label="corridorLabel(corridor)"
-          @click="interactive && emit('cycle', corridor.id)"
+          @click="onCorridorClick($event, corridor.id)"
           @keydown.enter.prevent="interactive && emit('cycle', corridor.id)"
           @keydown.space.prevent="interactive && emit('cycle', corridor.id)"
         >
@@ -294,7 +383,7 @@ function islandLabel(island: Island) {
   cursor: default;
 }
 
-.hashi-corridor-hit:not(.is-blocked):hover .hashi-focus,
+.hashi-corridor-hit.is-pointer-selected .hashi-focus,
 .hashi-corridor-hit:not(.is-blocked):focus-visible .hashi-focus {
   stroke: color-mix(in oklch, var(--site-accent) 22%, transparent);
 }

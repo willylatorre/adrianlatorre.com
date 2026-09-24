@@ -14,7 +14,6 @@ import { evaluatePuzzle } from './rules'
 import type {
   BridgeCount,
   BridgeCounts,
-  Corridor,
   HashiCategory,
   HashiPuzzle,
   PuzzleEvaluation,

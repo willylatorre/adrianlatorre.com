@@ -54,6 +54,7 @@ export type HashiCategory = 'intro' | 'daily' | 'weekly' | 'monthly'
 export interface HashiScore {
   nickname: string
   durationMs: number
+  hintsUsed: number | null
   createdAt: string
 }
 
@@ -67,4 +68,5 @@ export interface HashiScoreCreate {
   puzzleFingerprint: string
   nickname: string
   durationMs: number
+  hintsUsed: number
 }

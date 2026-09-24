@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import HashiBoard from '../components/hashi/HashiBoard.vue'
 import HashiControls from '../components/hashi/HashiControls.vue'
 import { useHashiGame } from '../features/hashi/useHashiGame'
@@ -10,9 +10,15 @@ const game = useHashiGame()
 const leaderboard = useHashiLeaderboard()
 const nicknameDialogOpen = ref(false)
 const nickname = ref('')
-const pendingScore = ref<{ durationMs: number; puzzleFingerprint: string } | null>(null)
+const pendingScore = ref<{
+  durationMs: number
+  hintsUsed: number
+  puzzleFingerprint: string
+} | null>(null)
 const submittedFingerprints = new Set<string>()
 const boardZoom = ref<number | null>(null)
+const positionFeedback = ref<'saved' | 'restored' | null>(null)
+let positionFeedbackTimer: ReturnType<typeof setTimeout> | undefined
 
 const categoryLabels = {
   intro: 'Intro puzzle',
@@ -42,8 +48,15 @@ async function maybeQualify() {
   if (!game.evaluation.value.solved || submittedFingerprints.has(fingerprint) || pendingScore.value)
     return
   const entries = await leaderboard.load(game.preferredCategory.value)
-  if (!leaderboard.error.value && leaderboard.qualifies(game.elapsedMs.value, entries)) {
-    pendingScore.value = { durationMs: game.elapsedMs.value, puzzleFingerprint: fingerprint }
+  if (
+    !leaderboard.error.value &&
+    leaderboard.qualifies(game.elapsedMs.value, game.hintsUsed.value, entries)
+  ) {
+    pendingScore.value = {
+      durationMs: game.elapsedMs.value,
+      hintsUsed: game.hintsUsed.value,
+      puzzleFingerprint: fingerprint,
+    }
     nickname.value = ''
     nicknameDialogOpen.value = true
   }
@@ -56,6 +69,7 @@ async function submitScore() {
     puzzleFingerprint: pendingScore.value.puzzleFingerprint,
     nickname: nickname.value.trim(),
     durationMs: pendingScore.value.durationMs,
+    hintsUsed: pendingScore.value.hintsUsed,
   })
   if (!saved) return
   submittedFingerprints.add(pendingScore.value.puzzleFingerprint)
@@ -74,7 +88,46 @@ function zoomBoard(direction: 'in' | 'out') {
   boardZoom.value = Math.round(Math.min(1.6, Math.max(0.6, next)) * 10) / 10
 }
 
+function showPositionFeedback(feedback: 'saved' | 'restored') {
+  if (positionFeedbackTimer) clearTimeout(positionFeedbackTimer)
+  positionFeedback.value = feedback
+  positionFeedbackTimer = setTimeout(() => {
+    positionFeedback.value = null
+  }, 1_500)
+}
+
+function savePosition() {
+  game.saveSnapshot()
+  showPositionFeedback('saved')
+}
+
+function restorePosition() {
+  game.restoreSnapshot()
+  showPositionFeedback('restored')
+}
+
+function clearPositionFeedback() {
+  if (positionFeedbackTimer) clearTimeout(positionFeedbackTimer)
+  positionFeedback.value = null
+}
+
+function resetPuzzle() {
+  clearPositionFeedback()
+  game.reset()
+}
+
+function newPuzzle() {
+  clearPositionFeedback()
+  game.newPuzzle()
+}
+
+function selectCategory(category: Parameters<typeof game.selectCategory>[0]) {
+  clearPositionFeedback()
+  game.selectCategory(category)
+}
+
 onMounted(loadLeaderboard)
+onUnmounted(clearPositionFeedback)
 watch(() => game.preferredCategory.value, loadLeaderboard)
 watch(
   () => game.evaluation.value.solved,
@@ -99,19 +152,21 @@ watch(
       :category="game.preferredCategory.value"
       :bridge-counts="game.bridgeCounts.value"
       :can-restore-snapshot="game.canRestoreSnapshot.value"
+      :has-snapshot="game.hasSnapshot.value"
+      :position-feedback="positionFeedback"
       :hints-remaining="game.hintsRemaining.value"
       :has-active-hint="game.activeHint.value !== null"
       :hint-unavailable="game.generating.value"
       :board-zoom="boardZoom"
-      @select-category="game.selectCategory"
-      @save-snapshot="game.saveSnapshot"
-      @restore-snapshot="game.restoreSnapshot"
+      @select-category="selectCategory"
+      @save-snapshot="savePosition"
+      @restore-snapshot="restorePosition"
       @request-hint="game.requestHint"
       @zoom-out="zoomBoard('out')"
       @zoom-fit="boardZoom = null"
       @zoom-in="zoomBoard('in')"
-      @reset="game.reset"
-      @new-puzzle="game.newPuzzle"
+      @reset="resetPuzzle"
+      @new-puzzle="newPuzzle"
     />
     <p v-if="game.hintFeedback.value" class="hashi-hint-feedback" data-hashi-hint role="status">
       <strong v-if="game.activeHint.value">{{ game.activeHint.value.title }}.</strong>
@@ -164,7 +219,13 @@ watch(
     </section>
 
     <section data-section="rules" class="hashi-rules" aria-labelledby="hashi-rules-title">
-      <UCollapsible :ui="{ content: 'motion-reduce:!animate-none' }">
+      <UCollapsible
+        :unmount-on-hide="true"
+        :ui="{
+          content:
+            'overflow-hidden data-[state=open]:animate-[collapsible-down_200ms_ease-out] data-[state=closed]:animate-[collapsible-up_200ms_ease-out] motion-reduce:data-[state=closed]:hidden motion-reduce:!animate-none',
+        }"
+      >
         <template #default>
           <button
             id="hashi-rules-title"

@@ -108,5 +108,8 @@ describe('HashiPage', () => {
     const wrapper = mount(HashiPage, { global: { plugins: [router] } })
 
     expect(wrapper.get('[data-slot="content"]').classes()).toContain('motion-reduce:!animate-none')
+    expect(wrapper.get('[data-slot="content"]').classes()).toContain(
+      'motion-reduce:data-[state=closed]:hidden',
+    )
   })
 })

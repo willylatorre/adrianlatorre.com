@@ -14,6 +14,8 @@ const props = withDefaults(
     category: HashiCategory
     bridgeCounts?: BridgeCounts
     canRestoreSnapshot?: boolean
+    hasSnapshot?: boolean
+    positionFeedback?: 'saved' | 'restored' | null
     hintsRemaining?: number
     hasActiveHint?: boolean
     hintUnavailable?: boolean
@@ -22,6 +24,8 @@ const props = withDefaults(
   {
     bridgeCounts: () => ({}),
     canRestoreSnapshot: false,
+    hasSnapshot: false,
+    positionFeedback: null,
     hintsRemaining: 3,
     hasActiveHint: false,
     hintUnavailable: false,
@@ -43,7 +47,9 @@ const emit = defineEmits<{
 
 const hasBridges = computed(() => Object.values(props.bridgeCounts).some((count) => count > 0))
 const boardZoomLabel = computed(() =>
-  props.boardZoom === null ? 'Board zoom: fit' : `Board zoom: ${Math.round(props.boardZoom * 100)}%`,
+  props.boardZoom === null
+    ? 'Board zoom: fit'
+    : `Board zoom: ${Math.round(props.boardZoom * 100)}%`,
 )
 
 function selectCategory(category: HashiCategory) {
@@ -85,7 +91,12 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
 
     <div class="hashi-position-actions" aria-label="Puzzle actions">
       <div class="hashi-zoom-controls" aria-label="Board zoom">
-        <span data-board-zoom class="hashi-zoom-label" aria-live="polite" :aria-label="boardZoomLabel">
+        <span
+          data-board-zoom
+          class="hashi-zoom-label"
+          aria-live="polite"
+          :aria-label="boardZoomLabel"
+        >
           {{ boardZoom === null ? 'Fit' : `${Math.round(boardZoom * 100)}%` }}
         </span>
         <UButton
@@ -142,24 +153,36 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
       <UButton
         type="button"
         data-action="save-snapshot"
-        icon="i-lucide-save"
-        label="Save position"
+        :data-position-state="hasSnapshot ? 'saved' : undefined"
+        :icon="hasSnapshot ? 'i-lucide-check' : 'i-lucide-save'"
+        :label="hasSnapshot ? 'Position saved' : 'Save position'"
         color="neutral"
-        variant="ghost"
+        :variant="hasSnapshot ? 'soft' : 'ghost'"
         size="sm"
+        class="hashi-position-button"
         @click="emit('save-snapshot')"
       />
       <UButton
         type="button"
         data-action="restore-snapshot"
-        icon="i-lucide-history"
-        label="Restore position"
+        :icon="positionFeedback === 'restored' ? 'i-lucide-check' : 'i-lucide-history'"
+        :label="positionFeedback === 'restored' ? 'Restored' : 'Restore position'"
         color="neutral"
         variant="ghost"
         size="sm"
+        class="hashi-position-button"
         :disabled="!canRestoreSnapshot"
         @click="emit('restore-snapshot')"
       />
+      <span class="sr-only" aria-live="polite">
+        {{
+          positionFeedback === 'saved'
+            ? 'Position saved'
+            : positionFeedback === 'restored'
+              ? 'Position restored'
+              : ''
+        }}
+      </span>
       <UButton
         type="button"
         data-action="reset"
@@ -209,6 +232,10 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
 .hashi-position-actions {
   flex: none;
   gap: 4px;
+}
+
+.hashi-position-button {
+  min-inline-size: 8.35rem;
 }
 
 .hashi-zoom-controls {

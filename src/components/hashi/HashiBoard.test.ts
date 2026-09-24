@@ -305,6 +305,54 @@ describe('HashiBoard', () => {
     )
     expect(wrapper.get('[data-corridor-hit="bottom:top"]').find('.hashi-focus').exists()).toBe(true)
   })
+
+  it('uses sticky pointer direction to choose a corridor at an intersection', async () => {
+    let frame: FrameRequestCallback | undefined
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frame = callback
+      return 1
+    })
+    vi.stubGlobal('cancelAnimationFrame', vi.fn())
+    const crossingPuzzle: HashiPuzzle = {
+      id: 'directional-crossing',
+      category: 'intro',
+      width: 5,
+      height: 5,
+      islands: [
+        { id: 'left', x: 0, y: 2, clue: 1 },
+        { id: 'right', x: 4, y: 2, clue: 1 },
+        { id: 'top', x: 2, y: 0, clue: 1 },
+        { id: 'bottom', x: 2, y: 4, clue: 1 },
+      ],
+    }
+    const wrapper = mount(HashiBoard, { props: { puzzle: crossingPuzzle, bridgeCounts: {} } })
+    vi.spyOn(wrapper.get('svg').element, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 222, 222),
+    )
+
+    await wrapper.get('[data-corridor-hit="left:right"]').trigger('pointermove', {
+      clientX: 99,
+      clientY: 111,
+      pointerType: 'mouse',
+    })
+    frame?.(0)
+    await wrapper.get('[data-corridor-hit="bottom:top"]').trigger('pointermove', {
+      clientX: 111,
+      clientY: 111,
+      pointerType: 'mouse',
+    })
+    frame?.(16)
+
+    expect(wrapper.get('[data-corridor-hit="left:right"]').classes()).toContain(
+      'is-pointer-selected',
+    )
+    await wrapper.get('[data-corridor-hit="bottom:top"]').trigger('click', {
+      clientX: 111,
+      clientY: 111,
+      pointerType: 'mouse',
+    })
+    expect(wrapper.emitted('cycle')).toEqual([['left:right']])
+  })
 })
 
 describe('HashiControls', () => {
@@ -371,6 +419,21 @@ describe('HashiControls', () => {
     ).toBeUndefined()
     await restorable.get('[data-action="restore-snapshot"]').trigger('click')
     expect(restorable.emitted('restore-snapshot')).toHaveLength(1)
+  })
+
+  it('shows persistent saved state and transient restored feedback', () => {
+    const saved = mountControls({ hasSnapshot: true, positionFeedback: 'saved' })
+    expect(saved.get('[data-action="save-snapshot"]').text()).toContain('Position saved')
+    expect(saved.get('[data-action="save-snapshot"]').attributes('data-position-state')).toBe(
+      'saved',
+    )
+
+    const restored = mountControls({
+      hasSnapshot: true,
+      canRestoreSnapshot: true,
+      positionFeedback: 'restored',
+    })
+    expect(restored.get('[data-action="restore-snapshot"]').text()).toContain('Restored')
   })
 
   it('confirms destructive actions only when nonzero bridges exist', async () => {
