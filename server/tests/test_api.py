@@ -31,6 +31,7 @@ def test_hashi_leaderboard_orders_times_and_isolates_categories(tmp_path: Path) 
                 "puzzleFingerprint": "a" * 16,
                 "nickname": nickname,
                 "durationMs": duration,
+                "hintsUsed": 0,
             },
         )
         assert response.status_code == 201
@@ -42,6 +43,7 @@ def test_hashi_leaderboard_orders_times_and_isolates_categories(tmp_path: Path) 
             "puzzleFingerprint": "b" * 16,
             "nickname": "Bea",
             "durationMs": 1_000,
+            "hintsUsed": 0,
         },
     )
     assert response.status_code == 201
@@ -63,6 +65,7 @@ def test_hashi_score_rejects_bad_category_nickname_duration_and_fingerprint(tmp_
             "puzzleFingerprint": "x",
             "nickname": "",
             "durationMs": -1,
+            "hintsUsed": 4,
         },
     )
 
@@ -79,10 +82,64 @@ def test_hashi_score_rejects_whitespace_only_nickname(tmp_path: Path) -> None:
             "puzzleFingerprint": "a" * 16,
             "nickname": "   ",
             "durationMs": 10_000,
+            "hintsUsed": 0,
         },
     )
 
     assert response.status_code == 422
+
+
+def test_hashi_leaderboard_uses_hints_only_to_break_equal_times(tmp_path: Path) -> None:
+    client = build_client(tmp_path)
+    scores = [
+        ("Slow clean", 61_000, 0),
+        ("Fast hinted", 60_000, 3),
+        ("Fast clean", 60_000, 0),
+    ]
+
+    for nickname, duration_ms, hints_used in scores:
+        response = client.post(
+            "/api/hashi/scores",
+            json={
+                "category": "daily",
+                "puzzleFingerprint": "a" * 16,
+                "nickname": nickname,
+                "durationMs": duration_ms,
+                "hintsUsed": hints_used,
+            },
+        )
+        assert response.status_code == 201
+
+    entries = client.get("/api/hashi/leaderboard?category=daily&limit=5").json()["entries"]
+    assert [entry["nickname"] for entry in entries] == [
+        "Fast clean",
+        "Fast hinted",
+        "Slow clean",
+    ]
+    assert [entry["hintsUsed"] for entry in entries] == [0, 3, 0]
+
+
+def test_hashi_leaderboard_migrates_legacy_hint_rows_as_unknown(tmp_path: Path) -> None:
+    database = tmp_path / "test.db"
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            """CREATE TABLE hashi_scores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                category TEXT NOT NULL,
+                puzzle_fingerprint TEXT NOT NULL,
+                nickname TEXT NOT NULL,
+                duration_ms INTEGER NOT NULL,
+                created_at INTEGER NOT NULL
+            )"""
+        )
+        connection.execute(
+            "INSERT INTO hashi_scores(category, puzzle_fingerprint, nickname, duration_ms, created_at) VALUES(?, ?, ?, ?, ?)",
+            ("daily", "a" * 16, "Legacy", 50_000, 1_000),
+        )
+
+    client = build_client(tmp_path)
+    entry = client.get("/api/hashi/leaderboard?category=daily&limit=5").json()["entries"][0]
+    assert entry["hintsUsed"] is None
 
 
 def test_wave_counter_preserves_seed_total_and_records_events(tmp_path: Path) -> None:

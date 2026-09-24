@@ -16,10 +16,19 @@ class HashiLeaderboard:
                     puzzle_fingerprint TEXT NOT NULL,
                     nickname TEXT NOT NULL,
                     duration_ms INTEGER NOT NULL CHECK(duration_ms > 0),
+                    hints_used INTEGER CHECK(hints_used BETWEEN 0 AND 3),
                     created_at INTEGER NOT NULL
                 )
                 """
             )
+            columns = {
+                row[1]
+                for row in connection.execute("PRAGMA table_info(hashi_scores)").fetchall()
+            }
+            if "hints_used" not in columns:
+                connection.execute(
+                    "ALTER TABLE hashi_scores ADD COLUMN hints_used INTEGER CHECK(hints_used BETWEEN 0 AND 3)"
+                )
             connection.execute(
                 """
                 CREATE INDEX IF NOT EXISTS hashi_scores_category_time
@@ -34,39 +43,48 @@ class HashiLeaderboard:
         with sqlite3.connect(self.database_path) as connection:
             connection.execute(
                 """
-                INSERT INTO hashi_scores(category, puzzle_fingerprint, nickname, duration_ms, created_at)
-                VALUES(?, ?, ?, ?, ?)
+                INSERT INTO hashi_scores(
+                    category, puzzle_fingerprint, nickname, duration_ms, hints_used, created_at
+                )
+                VALUES(?, ?, ?, ?, ?, ?)
                 """,
                 (
                     score.category,
                     score.puzzle_fingerprint,
                     nickname,
                     score.duration_ms,
+                    score.hints_used,
                     created_at,
                 ),
             )
 
-        return self._score(nickname, score.duration_ms, created_at)
+        return self._score(nickname, score.duration_ms, score.hints_used, created_at)
 
     def top(self, category: HashiCategory, limit: int) -> list[HashiScore]:
         with sqlite3.connect(self.database_path) as connection:
             rows = connection.execute(
                 """
-                SELECT nickname, duration_ms, created_at
+                SELECT nickname, duration_ms, hints_used, created_at
                 FROM hashi_scores
                 WHERE category = ?
-                ORDER BY duration_ms ASC, created_at ASC
+                ORDER BY duration_ms ASC, hints_used IS NULL ASC, hints_used ASC, created_at ASC
                 LIMIT ?
                 """,
                 (category, limit),
             ).fetchall()
 
-        return [self._score(nickname, duration_ms, created_at) for nickname, duration_ms, created_at in rows]
+        return [
+            self._score(nickname, duration_ms, hints_used, created_at)
+            for nickname, duration_ms, hints_used, created_at in rows
+        ]
 
     @staticmethod
-    def _score(nickname: str, duration_ms: int, created_at: int) -> HashiScore:
+    def _score(
+        nickname: str, duration_ms: int, hints_used: int | None, created_at: int
+    ) -> HashiScore:
         return HashiScore(
             nickname=nickname,
             duration_ms=duration_ms,
+            hints_used=hints_used,
             created_at=datetime.fromtimestamp(created_at / 1_000, UTC),
         )
