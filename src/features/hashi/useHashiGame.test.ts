@@ -98,6 +98,36 @@ describe('Hashi game state', () => {
     expect(game.snapshot).toEqual({ 'a:b': 2 })
   })
 
+  it('distinguishes a saved position from a restorable position', () => {
+    const game = createHashiGame(fixedPuzzle, () => 1_000)
+
+    expect(game.hasSnapshot).toBe(false)
+    expect(game.canRestoreSnapshot).toBe(false)
+    game.saveSnapshot()
+    expect(game.hasSnapshot).toBe(true)
+    expect(game.canRestoreSnapshot).toBe(false)
+    game.cycleCorridor('a:b')
+    expect(game.hasSnapshot).toBe(true)
+    expect(game.canRestoreSnapshot).toBe(true)
+    game.reset()
+    expect(game.hasSnapshot).toBe(false)
+  })
+
+  it('reports how many hints were spent on the current puzzle', () => {
+    const nextPuzzle = { ...fixedPuzzle, id: 'next' }
+    const game = createHashiGame(fixedPuzzle, () => 1_000, {
+      generatePuzzle: () => nextPuzzle,
+    })
+
+    expect(game.hintsUsed).toBe(0)
+    game.requestHint()
+    expect(game.hintsUsed).toBe(1)
+    game.reset()
+    expect(game.hintsUsed).toBe(1)
+    game.newPuzzle()
+    expect(game.hintsUsed).toBe(0)
+  })
+
   it('persists a saved position and clears it for reset and replacement puzzles', () => {
     const storage = createStorage()
     const game = createHashiGame(fixedPuzzle, () => 1_000, { storage })

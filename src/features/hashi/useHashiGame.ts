@@ -51,8 +51,10 @@ export interface HashiGame {
   readonly preferredCategory: HashiCategory
   readonly bridgeCounts: BridgeCounts
   readonly snapshot: BridgeCounts | null
+  readonly hasSnapshot: boolean
   readonly canRestoreSnapshot: boolean
   readonly hintsRemaining: number
+  readonly hintsUsed: number
   readonly activeHint: HashiHint | null
   readonly feedbackCorridorIds: string[]
   readonly hintFeedback: string | null
@@ -144,11 +146,17 @@ export function createHashiGame(
     get snapshot() {
       return snapshot
     },
+    get hasSnapshot() {
+      return snapshot !== null
+    },
     get canRestoreSnapshot() {
       return snapshot !== null && !bridgeCountsEqual(bridgeCounts, snapshot)
     },
     get hintsRemaining() {
       return hintsRemaining
+    },
+    get hintsUsed() {
+      return 3 - hintsRemaining
     },
     get activeHint() {
       return activeHint
@@ -383,8 +391,10 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     preferredCategory: value(() => game.preferredCategory),
     bridgeCounts: value(() => game.bridgeCounts),
     snapshot: value(() => game.snapshot),
+    hasSnapshot: value(() => game.hasSnapshot),
     canRestoreSnapshot: value(() => game.canRestoreSnapshot),
     hintsRemaining: value(() => game.hintsRemaining),
+    hintsUsed: value(() => game.hintsUsed),
     activeHint: value(() => game.activeHint),
     feedbackCorridorIds: value(() => game.feedbackCorridorIds),
     hintFeedback: value(() => game.hintFeedback),
