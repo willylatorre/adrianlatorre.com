@@ -228,6 +228,20 @@ describe('HashiBoard', () => {
     expect(wrapper.findAll('[data-corridor="a:b"] .hashi-bridge')).toHaveLength(0)
   })
 
+  it('projects both lanes when a hint asks for a second bridge', () => {
+    const wrapper = mount(HashiBoard, {
+      props: {
+        puzzle,
+        bridgeCounts: { 'a:b': 1 },
+        hintCorridorId: 'a:b',
+        hintMinimumCount: 2,
+      },
+    })
+
+    expect(wrapper.findAll('[data-corridor-hit="a:b"] .hashi-hint-projection')).toHaveLength(2)
+    expect(wrapper.findAll('[data-corridor="a:b"] .hashi-bridge')).toHaveLength(1)
+  })
+
   it('keeps a blocked hint visible above existing bridges', () => {
     const crossingPuzzle: HashiPuzzle = {
       id: 'blocked-hint',

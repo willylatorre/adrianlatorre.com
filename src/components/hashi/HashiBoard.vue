@@ -27,10 +27,17 @@ const props = withDefaults(
     bridgeCounts: BridgeCounts
     interactive?: boolean
     hintCorridorId?: string | null
+    hintMinimumCount?: 1 | 2 | null
     feedbackCorridorIds?: string[]
     zoom?: number
   }>(),
-  { interactive: true, hintCorridorId: null, feedbackCorridorIds: () => [], zoom: 1 },
+  {
+    interactive: true,
+    hintCorridorId: null,
+    hintMinimumCount: null,
+    feedbackCorridorIds: () => [],
+    zoom: 1,
+  },
 )
 
 const emit = defineEmits<{
@@ -75,6 +82,11 @@ function bridgeSegmentsFor(corridor: Corridor) {
 
 function hitSegment(corridor: Corridor) {
   return bridgeSegments(corridor, props.puzzle, CELL_SIZE, ISLAND_HALF, 1)[0]!
+}
+
+function hintSegmentsFor(corridor: Corridor) {
+  const minimumCount = props.hintMinimumCount ?? (bridgeCount(corridor) === 0 ? 1 : 2)
+  return bridgeSegments(corridor, props.puzzle, CELL_SIZE, ISLAND_HALF, minimumCount)
 }
 
 function segmentKey(segment: LineSegment) {
@@ -284,6 +296,24 @@ onBeforeUnmount(clearPointerSelection)
             pointer-events="none"
             aria-hidden="true"
           />
+          <template v-if="hintCorridorId === corridor.id">
+            <line
+              v-for="segment in hintSegmentsFor(corridor)"
+              :key="`hint-halo-${segmentKey(segment)}`"
+              class="hashi-hint-halo"
+              v-bind="segment"
+              pointer-events="none"
+              aria-hidden="true"
+            />
+            <line
+              v-for="segment in hintSegmentsFor(corridor)"
+              :key="`hint-${segmentKey(segment)}`"
+              class="hashi-hint-projection"
+              v-bind="segment"
+              pointer-events="none"
+              aria-hidden="true"
+            />
+          </template>
         </g>
       </g>
 
@@ -393,7 +423,24 @@ onBeforeUnmount(clearPointerSelection)
 }
 
 .hashi-corridor-hit.is-hinted .hashi-focus {
-  stroke: color-mix(in oklch, var(--site-accent) 72%, var(--site-ink));
+  stroke: transparent;
+}
+
+.hashi-hint-halo,
+.hashi-hint-projection {
+  fill: none;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.hashi-hint-halo {
+  stroke: color-mix(in oklch, var(--site-bg) 92%, transparent);
+  stroke-width: 8;
+}
+
+.hashi-hint-projection {
+  stroke: color-mix(in oklch, var(--site-accent) 82%, var(--site-ink));
+  stroke-width: 3.5;
   stroke-dasharray: 7 5;
 }
 

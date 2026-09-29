@@ -195,6 +195,7 @@ watch(
         :puzzle="game.puzzle.value"
         :bridge-counts="game.bridgeCounts.value"
         :hint-corridor-id="game.activeHint.value?.corridorId"
+        :hint-minimum-count="game.activeHint.value?.minimumCount"
         :feedback-corridor-ids="game.feedbackCorridorIds.value"
         :zoom="boardZoom ?? 1"
         @cycle="game.cycleCorridor"
