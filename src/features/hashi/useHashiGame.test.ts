@@ -59,6 +59,18 @@ const crossingPuzzle: HashiPuzzle = {
   ],
 }
 
+const timerPuzzle: HashiPuzzle = {
+  id: 'timer',
+  category: 'intro',
+  width: 5,
+  height: 3,
+  islands: [
+    { id: 'a', x: 0, y: 1, clue: 1 },
+    { id: 'b', x: 2, y: 1, clue: 2 },
+    { id: 'c', x: 4, y: 1, clue: 1 },
+  ],
+}
+
 function createStorage(): HashiStorage {
   const values = new Map<string, string>()
 
@@ -183,13 +195,24 @@ describe('Hashi game state', () => {
     expect(game.evaluation.solved).toBe(false)
   })
 
-  it('captures a solved wall-clock duration', () => {
+  it('starts timing with the first successful bridge change', () => {
     let clock = 1_000
-    const game = createHashiGame(fixedPuzzle, () => clock)
+    const game = createHashiGame(timerPuzzle, () => clock)
 
     clock = 2_500
-    expect(game.elapsedMs).toBe(1_500)
+    game.requestHint()
+    expect(game.cycleCorridor('missing')).toEqual({
+      changed: false,
+      reason: 'unknown-corridor',
+    })
+    expect(game.elapsedMs).toBe(0)
+
     game.cycleCorridor('a:b')
+    expect(game.startedAt).toBe(2_500)
+
+    clock = 4_000
+    expect(game.elapsedMs).toBe(1_500)
+    game.cycleCorridor('b:c')
 
     clock = 9_000
     expect(game.evaluation.solved).toBe(true)
@@ -205,6 +228,22 @@ describe('Hashi game state', () => {
     )!
 
     expect(game.elapsedMs.value).toBe(0)
+    vi.advanceTimersByTime(1_000)
+
+    expect(game.elapsedMs.value).toBe(0)
+    scope.stop()
+    vi.useRealTimers()
+  })
+
+  it('updates the framework-facing elapsed time after the first bridge', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1_000)
+    const scope = effectScope()
+    const game = scope.run(() =>
+      useHashiGame({ initialPuzzle: timerPuzzle, now: Date.now, storage: null }),
+    )!
+
+    game.cycleCorridor('a:b')
     vi.advanceTimersByTime(1_000)
 
     expect(game.elapsedMs.value).toBe(1_000)
@@ -235,8 +274,22 @@ describe('Hashi game state', () => {
       snapshot: null,
       hintsRemaining: 3,
       activeHint: null,
-      startedAt: 1_000,
+      startedAt: null,
     })
+  })
+
+  it('returns the timer to waiting when the puzzle is reset', () => {
+    let clock = 1_000
+    const game = createHashiGame(timerPuzzle, () => clock)
+
+    game.cycleCorridor('a:b')
+    clock = 2_000
+    expect(game.elapsedMs).toBe(1_000)
+
+    game.reset()
+    clock = 5_000
+    expect(game.startedAt).toBeNull()
+    expect(game.elapsedMs).toBe(0)
   })
 
   it('spends one heart on a new hint and reopens the same hint for free', () => {

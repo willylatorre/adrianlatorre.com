@@ -18,7 +18,7 @@ export interface PersistedHashiState {
   snapshot?: BridgeCounts | null
   hintsRemaining: number
   activeHint: HashiHint | null
-  startedAt: number
+  startedAt: number | null
   /** Accepted only for backward compatibility with runs saved before snapshots replaced Undo. */
   history?: Array<{ corridorId: string; previous: BridgeCount }>
   solvedAt?: number | null
@@ -71,7 +71,12 @@ export function parsePersistedHashiState(raw: string | null): PersistedHashiStat
     ) {
       return null
     }
-    if (!isTimestamp(value.startedAt) || !isHistory(value.history, value.puzzle)) return null
+    if (
+      (value.startedAt !== null && !isTimestamp(value.startedAt)) ||
+      !isHistory(value.history, value.puzzle)
+    ) {
+      return null
+    }
     if (value.solvedAt !== undefined && value.solvedAt !== null && !isTimestamp(value.solvedAt)) {
       return null
     }

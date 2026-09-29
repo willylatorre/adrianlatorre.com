@@ -54,6 +54,20 @@ describe('Hashi persistence', () => {
     expect(loadHashiState(storage)).toEqual(state)
   })
 
+  it('round-trips a game whose timer has not started', () => {
+    const storage = createStorage()
+    const waitingState: PersistedHashiState = {
+      ...state,
+      bridgeCounts: {},
+      activeHint: null,
+      startedAt: null,
+      solvedAt: null,
+    }
+
+    expect(saveHashiState(waitingState, storage)).toBe(true)
+    expect(loadHashiState(storage)).toEqual(waitingState)
+  })
+
   it('drops corrupt and obsolete local records', () => {
     const storage = createStorage()
     storage.setItem(HASHI_STORAGE_KEY, '{"version":99}')

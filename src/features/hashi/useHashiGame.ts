@@ -58,6 +58,7 @@ export interface HashiGame {
   readonly feedbackCorridorIds: string[]
   readonly hintFeedback: string | null
   readonly evaluation: PuzzleEvaluation
+  readonly startedAt: number | null
   readonly solvedAt: number | null
   readonly elapsedMs: number
   cycleCorridor(corridorId: string): CycleResult
@@ -85,7 +86,7 @@ export function createHashiGame(
   let feedbackCorridorIds: string[] = []
   let hintFeedback = activeHint?.explanation ?? null
   let evaluation = evaluatePuzzle(puzzle, bridgeCounts)
-  let startedAt = restored?.startedAt ?? now()
+  let startedAt = restored ? restored.startedAt : null
   let solvedAt = restored?.solvedAt ?? (evaluation.solved ? now() : null)
   let puzzleSerial = 0
   const puzzleGenerator = options.generatePuzzle ?? defaultPuzzleGenerator
@@ -125,7 +126,7 @@ export function createHashiGame(
     activeHint = null
     feedbackCorridorIds = []
     hintFeedback = null
-    startedAt = now()
+    startedAt = null
     solvedAt = null
     evaluation = evaluatePuzzle(puzzle, bridgeCounts)
   }
@@ -169,10 +170,14 @@ export function createHashiGame(
     get evaluation() {
       return evaluation
     },
+    get startedAt() {
+      return startedAt
+    },
     get solvedAt() {
       return solvedAt
     },
     get elapsedMs() {
+      if (startedAt === null) return 0
       return Math.max(0, (solvedAt ?? now()) - startedAt)
     },
     cycleCorridor(corridorId) {
@@ -189,8 +194,10 @@ export function createHashiGame(
       activeHint = null
       feedbackCorridorIds = []
       hintFeedback = null
+      const actionAt = now()
+      if (startedAt === null) startedAt = actionAt
       evaluation = evaluatePuzzle(puzzle, bridgeCounts)
-      if (evaluation.solved && solvedAt === null) solvedAt = now()
+      if (evaluation.solved && solvedAt === null) solvedAt = actionAt
       changed()
       return { changed: true }
     },
@@ -244,7 +251,7 @@ export function createHashiGame(
       activeHint = null
       feedbackCorridorIds = []
       hintFeedback = null
-      startedAt = now()
+      startedAt = null
       solvedAt = null
       evaluation = evaluatePuzzle(puzzle, bridgeCounts)
       changed()
@@ -375,7 +382,7 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     })
   if (getCurrentScope()) {
     const timer = setInterval(() => {
-      if (game.solvedAt === null) clock.value = now()
+      if (game.startedAt !== null && game.solvedAt === null) clock.value = now()
     }, 1_000)
     onScopeDispose(() => {
       clearInterval(timer)
