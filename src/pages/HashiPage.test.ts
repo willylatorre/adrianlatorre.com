@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { beforeAll, describe, expect, it } from 'vitest'
 import HashiPage from './HashiPage.vue'
@@ -63,6 +64,17 @@ describe('HashiPage', () => {
     expect(wrapper.find('[data-action="undo"]').exists()).toBe(false)
     expect(wrapper.get('[data-action="save-snapshot"]').text()).toContain('Save position')
     expect(wrapper.get('[data-action="restore-snapshot"]').text()).toContain('Restore position')
+  })
+
+  it('keeps the leaderboard nickname out of payment autofill', async () => {
+    const wrapper = mount(HashiPage, { global: { plugins: [router] } })
+    ;(wrapper.vm as unknown as { nicknameDialogOpen: boolean }).nicknameDialogOpen = true
+    await nextTick()
+    const input = document.querySelector<HTMLInputElement>('#hashi-nickname')!
+
+    expect(input.getAttribute('autocomplete')).toBe('off')
+    expect(input.getAttribute('name')).toBe('hashi-player-alias')
+    wrapper.unmount()
   })
 
   it('fits the board by default and changes its canvas size when zooming', async () => {

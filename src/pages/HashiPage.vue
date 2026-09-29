@@ -313,8 +313,9 @@ watch(
           <UInput
             id="hashi-nickname"
             v-model="nickname"
+            name="hashi-player-alias"
             maxlength="20"
-            autocomplete="nickname"
+            autocomplete="off"
             autofocus
           />
           <div class="hashi-nickname-actions">
