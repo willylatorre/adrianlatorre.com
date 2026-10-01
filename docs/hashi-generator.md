@@ -1,6 +1,6 @@
 # Hashi generation
 
-The v8 generator separates placement, a valid bridge network, uniqueness, and reasoning difficulty. The version prefix invalidates generated boards from older algorithms. `generatePuzzle` returns `source: 'generated' | 'fallback'` alongside the puzzle and answer, so callers and tests can distinguish fresh generation from reserve selection.
+The v9 generator separates placement, a valid bridge network, uniqueness, and reasoning difficulty. The version prefix invalidates generated boards from older algorithms. `generatePuzzle` returns `source: 'generated' | 'fallback'` alongside the puzzle and answer, so callers and tests can distinguish fresh generation from reserve selection.
 
 ## Layout
 
@@ -14,6 +14,8 @@ The v8 generator separates placement, a valid bridge network, uniqueness, and re
 Placement grows a connected planar backbone using seeded weighted randomness. New rows/columns and varying bridge lengths are encouraged, but there is no greedy rectangular mesh or blanket 3×3 exclusion around islands. Diagonal neighbors are allowed; orthogonally touching islands are excluded so bridges have room. Inserting an island into a bridge splits the edge while preserving connectivity. Extra noncrossing edges are added after growth.
 
 Every accepted placement reaches the boundaries, uses at least 75% of both coordinate axes, covers local areas, and has no large empty bands. Tests additionally check density and diagonal staggering across multiple seeds.
+
+The bridge solution is checked for the most conspicuous straight-line repetition: three nearby, branchless runs of at least four edges in the same direction that overlap for 12 grid spaces. This applies to vertical and horizontal runs. A side branch interrupts a run. The same check validates the prebuilt fallback puzzles, so a generation timeout does not reintroduce the rejected layout.
 
 ## Uniqueness
 

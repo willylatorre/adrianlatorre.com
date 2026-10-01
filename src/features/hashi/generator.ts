@@ -62,7 +62,7 @@ export interface PuzzleGenerationOptions {
 type CategoryConfig = (typeof CATEGORY_CONFIG)[HashiCategory]
 type Random = () => number
 
-export const HASHI_GENERATOR_VERSION = 'v8'
+export const HASHI_GENERATOR_VERSION = 'v9'
 const DEFAULT_GENERATION_TIME_BUDGET_MS = 3_000
 const COVERAGE_RADIUS = 4
 
@@ -110,7 +110,11 @@ function tryGeneratePuzzle(
       initialSolution,
     )
     const unique = makeUnique(initialPuzzle, initialSolution, corridors, random, shouldStop)
-    if (unique && hasCategoryShape(unique.puzzle, unique.solution, corridors, config)) {
+    if (
+      unique &&
+      !hasLongParallelChains(unique.puzzle.islands, corridors, unique.solution) &&
+      hasCategoryShape(unique.puzzle, unique.solution, corridors, config)
+    ) {
       const assessment = assessDifficulty(unique.puzzle, shouldStop)
       if (!assessment.solved || assessment.difficulty !== config.difficulty) continue
       return {
@@ -548,6 +552,7 @@ function buildPlanarSolution(
     if (active.length - islands.length + 1 < config.targetCycleEdges) continue
 
     const activeCounts = assignBridgeCounts(active, random, config.targetCycleEdges > 0)
+    if (hasLongParallelChains(islands, corridors, activeCounts)) continue
 
     return Object.fromEntries(
       corridors.map(({ id }) => [id, selectedIds.has(id) ? activeCounts[id] : 0]),
@@ -561,6 +566,92 @@ function assignBridgeCounts(active: Corridor[], random: Random, includeHighClues
   return Object.fromEntries(
     active.map((edge) => [edge.id, random() < (includeHighClues ? 0.45 : 0.2) ? 2 : 1]),
   ) as BridgeCounts
+}
+
+/** Detect nearby, overlapping stretches of bridges with no side branches. */
+export function hasLongParallelChains(
+  islands: Island[],
+  corridors: Corridor[],
+  solution: BridgeCounts,
+) {
+  const islandById = new Map(islands.map((island) => [island.id, island]))
+  const active = corridors.filter(({ id }) => (solution[id] ?? 0) > 0)
+  const incident = new Map(islands.map(({ id }) => [id, [] as Corridor[]]))
+  for (const corridor of active) {
+    incident.get(corridor.a)!.push(corridor)
+    incident.get(corridor.b)!.push(corridor)
+  }
+
+  const axis = (corridor: Corridor) =>
+    islandById.get(corridor.a)!.x === islandById.get(corridor.b)!.x ? 'vertical' : 'horizontal'
+  const continuesStraight = (id: string, direction: 'vertical' | 'horizontal') => {
+    const edges = incident.get(id)!
+    return edges.length === 2 && edges.every((edge) => axis(edge) === direction)
+  }
+  const visited = new Set<string>()
+  const runs: Array<{
+    direction: 'vertical' | 'horizontal'
+    line: number
+    from: number
+    to: number
+  }> = []
+
+  for (const corridor of active) {
+    if (visited.has(corridor.id)) continue
+    const direction = axis(corridor)
+    let start = corridor.a
+    let end = corridor.b
+    if (continuesStraight(start, direction) && !continuesStraight(end, direction)) {
+      ;[start, end] = [end, start]
+    }
+    const first = islandById.get(start)!
+    let previous = start
+    let current = end
+    let edges = 1
+    visited.add(corridor.id)
+    while (continuesStraight(current, direction)) {
+      const next = incident
+        .get(current)!
+        .find((edge) => (edge.a === current ? edge.b : edge.a) !== previous)!
+      if (visited.has(next.id)) break
+      visited.add(next.id)
+      previous = current
+      current = next.a === current ? next.b : next.a
+      edges += 1
+    }
+    if (edges < 4) continue
+    const last = islandById.get(current)!
+    const coordinate = direction === 'vertical' ? 'y' : 'x'
+    runs.push({
+      direction,
+      line: first[direction === 'vertical' ? 'x' : 'y'],
+      from: Math.min(first[coordinate], last[coordinate]),
+      to: Math.max(first[coordinate], last[coordinate]),
+    })
+  }
+
+  for (const direction of ['vertical', 'horizontal'] as const) {
+    const parallel = runs
+      .filter((run) => run.direction === direction)
+      .sort((left, right) => left.line - right.line)
+    for (let first = 0; first < parallel.length; first += 1) {
+      const a = parallel[first]!
+      for (let second = first + 1; second < parallel.length; second += 1) {
+        const b = parallel[second]!
+        if (b.line - a.line > 4) break
+        if (a.line === b.line) continue
+        for (let third = second + 1; third < parallel.length; third += 1) {
+          const c = parallel[third]!
+          if (c.line - a.line > 4) break
+          if (b.line === c.line) continue
+          if (Math.min(a.to, b.to, c.to) - Math.max(a.from, b.from, c.from) >= 12) {
+            return true
+          }
+        }
+      }
+    }
+  }
+  return false
 }
 
 function buildPlanarSpanningTree(

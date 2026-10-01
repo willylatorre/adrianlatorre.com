@@ -6,6 +6,7 @@ import {
   countOpeningDeductions,
   generatePuzzle,
   generateFallbackPuzzle,
+  hasLongParallelChains,
   hasBroadCoordinateUse,
   hasLocalIslandCoverage,
   hasMinimumIslandSpacing,
@@ -13,7 +14,7 @@ import {
 import { corridorsCross, countCorridorCrossings, getVisibleCorridors } from './geometry'
 import { evaluatePuzzle } from './rules'
 import { countSolutionsWithDeadline } from './solver'
-import type { HashiCategory, HashiPuzzle, Island } from './types'
+import type { BridgeCounts, HashiCategory, HashiPuzzle, Island } from './types'
 
 const categories: HashiCategory[] = ['intro', 'daily', 'weekly', 'monthly']
 const expectedIslandCounts: Record<HashiCategory, number> = {
@@ -140,6 +141,28 @@ describe('Hashi puzzle generation', () => {
     expect(countOpeningDeductions(constrainedLeaves)).toBe(3)
   })
 
+  it('recognizes long parallel chains in either direction and stops at a side branch', () => {
+    const vertical = [0, 2, 4].flatMap((x) =>
+      [0, 2, 4, 6, 8, 10, 12, 14, 16].map((y) => ({ id: `${x},${y}`, x, y, clue: 2 })),
+    )
+    const corridors = getVisibleCorridors(vertical)
+    const solution = Object.fromEntries(
+      corridors.map((corridor) => {
+        const a = vertical.find((island) => island.id === corridor.a)!
+        const b = vertical.find((island) => island.id === corridor.b)!
+        return [corridor.id, a.x === b.x ? 1 : 0]
+      }),
+    ) as BridgeCounts
+
+    expect(hasLongParallelChains(vertical, corridors, solution)).toBe(true)
+    const horizontal = vertical.map((island) => ({ ...island, x: island.y, y: island.x }))
+    const horizontalCorridors = getVisibleCorridors(horizontal)
+    expect(hasLongParallelChains(horizontal, horizontalCorridors, solution)).toBe(true)
+
+    const joined: BridgeCounts = { ...solution, [`${vertical[4]!.id}:${vertical[13]!.id}`]: 1 }
+    expect(hasLongParallelChains(vertical, corridors, joined)).toBe(false)
+  })
+
   it.each(categories)('generates a valid %s puzzle', (category) => {
     const generated = generatePuzzle(category, 123456, { now: () => 0 })
     expect(generated.source).toBe('generated')
@@ -149,13 +172,20 @@ describe('Hashi puzzle generation', () => {
       expectedDimensions[category],
     )
     expect(evaluatePuzzle(generated.puzzle, generated.solution).solved).toBe(true)
+    expect(
+      hasLongParallelChains(
+        generated.puzzle.islands,
+        getVisibleCorridors(generated.puzzle.islands),
+        generated.solution,
+      ),
+    ).toBe(false)
     expect(generated.puzzle.width).toBe(CATEGORY_CONFIG[category].width)
     expect(generated.puzzle.height).toBe(CATEGORY_CONFIG[category].height)
     expect(generated.puzzle.islands).toHaveLength(CATEGORY_CONFIG[category].targetIslands)
     expectIslandsTouchEveryBoundary(generated.puzzle)
     expectNoNeighboringIslands(generated.puzzle)
     expectNoLargeEmptyBands(generated.puzzle)
-  })
+  }, 10000)
 
   it.each(
     categories.flatMap((category) =>
@@ -264,6 +294,13 @@ describe('Hashi puzzle generation', () => {
         const generated = generateFallbackPuzzle(category, seed)
         ids.add(generated.puzzle.id)
         expect(evaluatePuzzle(generated.puzzle, generated.solution).solved).toBe(true)
+        expect(
+          hasLongParallelChains(
+            generated.puzzle.islands,
+            getVisibleCorridors(generated.puzzle.islands),
+            generated.solution,
+          ),
+        ).toBe(false)
         expect(
           countSolutionsWithDeadline(generated.puzzle, 2, {
             deadline: Date.now() + 2000,

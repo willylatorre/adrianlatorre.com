@@ -3,7 +3,10 @@ import { writeFile } from 'node:fs/promises'
 import { createJiti } from 'jiti'
 
 const jiti = createJiti(import.meta.url)
-const { CATEGORY_CONFIG, generatePuzzle } = await jiti.import('../src/features/hashi/generator.ts')
+const { CATEGORY_CONFIG, generatePuzzle, hasLongParallelChains } = await jiti.import(
+  '../src/features/hashi/generator.ts',
+)
+const { getVisibleCorridors } = await jiti.import('../src/features/hashi/geometry.ts')
 const { assessDifficulty } = await jiti.import('../src/features/hashi/difficulty.ts')
 const { countSolutionsWithDeadline } = await jiti.import('../src/features/hashi/solver.ts')
 const { evaluatePuzzle } = await jiti.import('../src/features/hashi/rules.ts')
@@ -23,6 +26,11 @@ for (const category of Object.keys(CATEGORY_CONFIG)) {
       result.count !== 1 ||
       result.timedOut ||
       !evaluatePuzzle(generated.puzzle, generated.solution).solved ||
+      hasLongParallelChains(
+        generated.puzzle.islands,
+        getVisibleCorridors(generated.puzzle.islands),
+        generated.solution,
+      ) ||
       grade.difficulty !== CATEGORY_CONFIG[category].difficulty
     )
       throw new Error(`Invalid ${category} fixture`)
