@@ -2,6 +2,7 @@
 import { computed, getCurrentInstance, onMounted, onUnmounted, ref, watch } from 'vue'
 import HashiBoard from '../components/hashi/HashiBoard.vue'
 import HashiControls from '../components/hashi/HashiControls.vue'
+import HashiArticleDemo from '../components/hashi/HashiArticleDemo.vue'
 import { useHashiGame } from '../features/hashi/useHashiGame'
 import HashiLeaderboard from '../components/hashi/HashiLeaderboard.vue'
 import { useHashiLeaderboard } from '../features/hashi/useHashiLeaderboard'
@@ -334,24 +335,11 @@ watch(
               </ol>
             </section>
 
-            <figure class="hashi-example">
-              <svg
-                class="hashi-example-diagram"
-                viewBox="0 0 320 88"
-                role="img"
-                aria-label="Two islands marked 2 connected by two parallel bridges"
-              >
-                <path class="hashi-example-bridge" d="M78 36H242M78 52H242" />
-                <rect class="hashi-example-island" x="28" y="19" width="52" height="52" rx="16" />
-                <rect class="hashi-example-island" x="240" y="19" width="52" height="52" rx="16" />
-                <text class="hashi-example-number" x="54" y="53">2</text>
-                <text class="hashi-example-number" x="266" y="53">2</text>
-              </svg>
-              <figcaption>
-                <strong>Example:</strong> each 2 has only this neighbor, so a double bridge
-                satisfies both clues.
-              </figcaption>
-            </figure>
+            <section class="hashi-example" aria-labelledby="hashi-example-title">
+              <h3 id="hashi-example-title">Example: two islands marked 2</h3>
+              <p>Each island sees only the other, so two bridges satisfy both clues.</p>
+              <HashiArticleDemo kind="cycle" />
+            </section>
 
             <div class="hashi-techniques">
               <h3>If you’re stuck</h3>
@@ -681,49 +669,28 @@ watch(
 
 .hashi-example {
   display: grid;
-  grid-template-columns: minmax(13rem, 19rem) minmax(14rem, 1fr);
-  align-items: center;
-  gap: 1rem;
+  gap: 0.35rem;
   margin: 0;
-  padding: 0.85rem 0;
+  padding: 0.95rem 0;
   border-block: 1px solid var(--site-border);
 }
 
-.hashi-example-diagram {
-  display: block;
-  width: 100%;
-  overflow: visible;
-  font-family: inherit;
-}
-
-.hashi-example-bridge {
-  fill: none;
-  stroke: var(--site-accent);
-  stroke-linecap: round;
-  stroke-width: 4;
-}
-
-.hashi-example-island {
-  fill: var(--site-bg);
-  stroke: var(--site-ink);
-  stroke-width: 4;
-}
-
-.hashi-example-number {
-  fill: var(--site-ink);
-  font-size: 27px;
+.hashi-example h3 {
+  margin: 0;
+  font-size: 0.88rem;
   font-weight: 680;
-  text-anchor: middle;
 }
 
-.hashi-example figcaption {
+.hashi-example > p {
+  margin: 0;
   color: var(--site-muted);
-  font-size: 0.84rem;
+  font-size: 0.86rem;
   line-height: 1.55;
 }
 
-.hashi-example figcaption strong {
-  color: var(--site-ink);
+:deep(.hashi-example .hashi-article-demo) {
+  max-width: none;
+  margin: 0.4rem 0 0;
 }
 
 .hashi-techniques {
@@ -738,17 +705,6 @@ watch(
   color: var(--site-muted);
   font-size: 0.86rem;
   line-height: 1.55;
-}
-
-@media (max-width: 600px) {
-  .hashi-example {
-    grid-template-columns: 1fr;
-    gap: 0.45rem;
-  }
-
-  .hashi-example-diagram {
-    max-width: 19rem;
-  }
 }
 
 .hashi-techniques a {

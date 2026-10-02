@@ -23,7 +23,7 @@ const props = defineProps<{ kind: DemoKind }>()
 const captions: Record<DemoKind, string> = {
   visible:
     'The three islands create two short corridors. There is no long left-to-right corridor through the middle island.',
-  cycle: 'Try the corridor: one bridge, two bridges, then clear it.',
+  cycle: 'Click once for one bridge, again for two, and a third time to clear the corridor.',
   crossing: 'The horizontal bridge is already active. Try adding the vertical one.',
   totals: 'Add bridges around the center 2. It recedes when satisfied and warns when overfilled.',
   connectivity: 'Every 2 is satisfied in both views, but only one view connects all four islands.',
