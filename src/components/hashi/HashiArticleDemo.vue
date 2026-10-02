@@ -55,7 +55,12 @@ const demos: Record<Exclude<DemoKind, 'geometry'>, HashiPuzzle> = {
     island('visible-center', 3, 1, 2),
     island('visible-blocked', 5, 1, 1),
   ]),
-  cycle: puzzle('demo-cycle', 6, 3, [island('cycle-a', 1, 1, 2), island('cycle-b', 4, 1, 2)]),
+  cycle: puzzle('demo-cycle', 7, 3, [
+    island('cycle-a', 0, 1, 1),
+    island('cycle-b', 2, 1, 3),
+    island('cycle-c', 4, 1, 3),
+    island('cycle-d', 6, 1, 1),
+  ]),
   crossing: puzzle('demo-crossing', 7, 5, [
     island('cross-left', 1, 2, 1),
     island('cross-right', 5, 2, 1),

@@ -331,8 +331,11 @@ watch(
             </section>
 
             <section class="hashi-example" aria-labelledby="hashi-example-title">
-              <h3 id="hashi-example-title">Example: two islands marked 2</h3>
-              <p>Each island sees only the other, so two bridges satisfy both clues.</p>
+              <h3 id="hashi-example-title">Example: a double bridge in a connected chain</h3>
+              <p>
+                The two 3s can share two bridges and still each connect to an outer 1, keeping all
+                four islands in one network.
+              </p>
               <HashiArticleDemo kind="cycle" />
             </section>
 
@@ -710,7 +713,7 @@ watch(
 }
 
 .hashi-leaderboard {
-  margin-top: clamp(2.2rem, 6vw, 4rem);
+  margin-top: 1rem;
 }
 
 .hashi-leaderboard h2 {

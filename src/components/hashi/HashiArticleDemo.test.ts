@@ -28,7 +28,11 @@ describe('HashiArticleDemo', () => {
 
   it('cycles a production corridor through one, two, and zero bridges', async () => {
     const wrapper = mount(HashiArticleDemo, { props: { kind: 'cycle' } })
-    const corridor = wrapper.get('[data-corridor-hit="cycle-a:cycle-b"]')
+    const clues = wrapper.findAll('.hashi-island-number').map((node) => node.text())
+
+    expect(clues).toEqual(['1', '3', '3', '1'])
+    expect(wrapper.findAll('.hashi-island')).toHaveLength(4)
+    const corridor = wrapper.get('[data-corridor-hit="cycle-b:cycle-c"]')
 
     await corridor.trigger('click')
     expect(wrapper.findAll('.hashi-bridge')).toHaveLength(1)
@@ -79,5 +83,4 @@ describe('HashiArticleDemo', () => {
     expect(wrapper.text()).toContain('Diagonal is allowed')
     expect(wrapper.text()).toContain('Orthogonal touching is not')
   })
-
 })
