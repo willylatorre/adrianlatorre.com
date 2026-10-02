@@ -2,12 +2,18 @@
 import type { HashiScore } from '../../types/api-generated'
 import type { HashiCategory } from '../../features/hashi/types'
 
-defineProps<{
-  category: HashiCategory
-  entries: HashiScore[]
-  loading: boolean
-  error: string | null
-}>()
+withDefaults(
+  defineProps<{
+    category: HashiCategory
+    entries: HashiScore[]
+    loading: boolean
+    error: string | null
+    headingId?: string
+  }>(),
+  {
+    headingId: 'hashi-leaderboard-title',
+  },
+)
 
 defineEmits<{ retry: [] }>()
 
@@ -22,7 +28,7 @@ function formatDuration(durationMs: number) {
     <div class="hashi-leaderboard-heading">
       <div>
         <p class="hashi-kicker">Fastest {{ category }}</p>
-        <h2 id="hashi-leaderboard-title">Leaderboard</h2>
+        <h2 :id="headingId">Leaderboard</h2>
       </div>
       <span v-if="loading" class="hashi-leaderboard-note">Loading</span>
     </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, getCurrentInstance, onMounted, onUnmounted, ref, watch } from 'vue'
 import HashiBoard from '../components/hashi/HashiBoard.vue'
 import HashiControls from '../components/hashi/HashiControls.vue'
 import { useHashiGame } from '../features/hashi/useHashiGame'
@@ -10,6 +10,13 @@ const game = useHashiGame()
 const leaderboard = useHashiLeaderboard()
 const nicknameDialogOpen = ref(false)
 const nickname = ref('')
+const completionState = ref<'checking' | 'qualified' | 'missed' | 'unavailable' | null>(null)
+const completionResult = ref<{
+  category: Parameters<typeof game.selectCategory>[0]
+  durationMs: number
+  hintsUsed: number
+  puzzleFingerprint: string
+} | null>(null)
 const pendingScore = ref<{
   durationMs: number
   hintsUsed: number
@@ -19,6 +26,10 @@ const submittedFingerprints = new Set<string>()
 const boardZoom = ref<number | null>(null)
 const positionFeedback = ref<'saved' | 'restored' | null>(null)
 let positionFeedbackTimer: ReturnType<typeof setTimeout> | undefined
+let confettiTimer: ReturnType<typeof setTimeout> | undefined
+let completionHandledForRun = false
+
+const confetti = getCurrentInstance()?.appContext.config.globalProperties.$confetti
 
 const categoryLabels = {
   intro: 'Intro puzzle',
@@ -43,23 +54,72 @@ async function loadLeaderboard() {
   await leaderboard.load(game.preferredCategory.value)
 }
 
-async function maybeQualify() {
-  const fingerprint = game.puzzle.value.id
-  if (!game.evaluation.value.solved || submittedFingerprints.has(fingerprint) || pendingScore.value)
+async function checkCompletionResult() {
+  const result = completionResult.value
+  if (!result) return
+
+  completionState.value = 'checking'
+  const entries = await leaderboard.load(result.category)
+  if (completionResult.value !== result || game.puzzle.value.id !== result.puzzleFingerprint) return
+
+  if (leaderboard.error.value) {
+    completionState.value = 'unavailable'
     return
-  const entries = await leaderboard.load(game.preferredCategory.value)
-  if (
-    !leaderboard.error.value &&
-    leaderboard.qualifies(game.elapsedMs.value, game.hintsUsed.value, entries)
-  ) {
-    pendingScore.value = {
-      durationMs: game.elapsedMs.value,
-      hintsUsed: game.hintsUsed.value,
-      puzzleFingerprint: fingerprint,
-    }
-    nickname.value = ''
-    nicknameDialogOpen.value = true
   }
+
+  if (leaderboard.qualifies(result.durationMs, result.hintsUsed, entries)) {
+    pendingScore.value = result
+    nickname.value = ''
+    completionState.value = 'qualified'
+    return
+  }
+
+  pendingScore.value = null
+  completionState.value = 'missed'
+}
+
+function celebrateCompletion() {
+  const prefersReducedMotion =
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  if (prefersReducedMotion || !confetti) return
+  if (confettiTimer) clearTimeout(confettiTimer)
+  confetti.remove()
+  confetti.start({
+    particles: [
+      { type: 'circle', size: 7 },
+      { type: 'rect', size: 6 },
+    ],
+    defaultColors: ['#38645a', '#c9a96e', '#8b929d'],
+    particlesPerFrame: 0.45,
+    defaultDropRate: 7,
+  })
+  confettiTimer = setTimeout(() => {
+    confetti.stop()
+    confetti.remove()
+  }, 2_200)
+}
+
+function resetCompletionState() {
+  completionHandledForRun = false
+  completionState.value = null
+  completionResult.value = null
+  pendingScore.value = null
+  nicknameDialogOpen.value = false
+}
+
+function handleCompletion() {
+  const fingerprint = game.puzzle.value.id
+  if (completionHandledForRun || submittedFingerprints.has(fingerprint)) return
+  completionHandledForRun = true
+  completionResult.value = {
+    category: game.preferredCategory.value,
+    durationMs: game.elapsedMs.value,
+    hintsUsed: game.hintsUsed.value,
+    puzzleFingerprint: fingerprint,
+  }
+  nicknameDialogOpen.value = true
+  celebrateCompletion()
+  void checkCompletionResult()
 }
 
 async function submitScore() {
@@ -80,6 +140,10 @@ async function submitScore() {
 function discardScore() {
   pendingScore.value = null
   nicknameDialogOpen.value = false
+}
+
+function retryCompletionCheck() {
+  void checkCompletionResult()
 }
 
 function zoomBoard(direction: 'in' | 'out') {
@@ -113,26 +177,33 @@ function clearPositionFeedback() {
 
 function resetPuzzle() {
   clearPositionFeedback()
+  resetCompletionState()
   game.reset()
 }
 
 function newPuzzle() {
   clearPositionFeedback()
+  resetCompletionState()
   game.newPuzzle()
 }
 
 function selectCategory(category: Parameters<typeof game.selectCategory>[0]) {
   clearPositionFeedback()
+  resetCompletionState()
   game.selectCategory(category)
 }
 
 onMounted(loadLeaderboard)
-onUnmounted(clearPositionFeedback)
+onUnmounted(() => {
+  clearPositionFeedback()
+  if (confettiTimer) clearTimeout(confettiTimer)
+  confetti?.remove()
+})
 watch(() => game.preferredCategory.value, loadLeaderboard)
 watch(
   () => game.evaluation.value.solved,
   (solved) => {
-    if (solved) void maybeQualify()
+    if (solved) handleCompletion()
   },
 )
 </script>
@@ -305,31 +376,65 @@ watch(
       @update:open="(open: boolean) => !open && discardScore()"
     >
       <template #content>
-        <form class="hashi-nickname-dialog" @submit.prevent="submitScore">
-          <p class="hashi-kicker">Top five time</p>
-          <h2>Put a name on it?</h2>
-          <p>Your solve joins the {{ categoryLabel.toLowerCase() }} board.</p>
-          <label for="hashi-nickname">Nickname</label>
-          <UInput
-            id="hashi-nickname"
-            v-model="nickname"
-            name="hashi-player-alias"
-            maxlength="20"
-            autocomplete="off"
-            autofocus
-          />
-          <div class="hashi-nickname-actions">
-            <UButton type="button" color="neutral" variant="ghost" @click="discardScore"
-              >Not now</UButton
-            >
-            <UButton
-              type="submit"
-              color="primary"
-              :disabled="!validNickname || leaderboard.loading.value"
-              >Save time</UButton
-            >
-          </div>
-        </form>
+        <div
+          class="hashi-nickname-dialog"
+          :class="{
+            'has-leaderboard': completionState === 'missed' || completionState === 'unavailable',
+          }"
+        >
+          <template v-if="completionState === 'checking'">
+            <p class="hashi-kicker">Puzzle complete</p>
+            <h2>Checking your time…</h2>
+            <p>One moment while we check the {{ categoryLabel.toLowerCase() }} leaderboard.</p>
+          </template>
+          <template v-else-if="completionState === 'qualified' || completionState === null">
+            <form @submit.prevent="submitScore">
+              <p class="hashi-kicker">Top five time</p>
+              <h2>Put a name on it?</h2>
+              <p>Your solve joins the {{ categoryLabel.toLowerCase() }} board.</p>
+              <label for="hashi-nickname">Nickname</label>
+              <UInput
+                id="hashi-nickname"
+                v-model="nickname"
+                name="hashi-player-alias"
+                maxlength="20"
+                autocomplete="off"
+                autofocus
+              />
+              <div class="hashi-nickname-actions">
+                <UButton type="button" color="neutral" variant="ghost" @click="discardScore"
+                  >Not now</UButton
+                >
+                <UButton
+                  type="submit"
+                  color="primary"
+                  :disabled="!validNickname || leaderboard.loading.value"
+                  >Save time</UButton
+                >
+              </div>
+            </form>
+          </template>
+          <template v-else>
+            <p class="hashi-kicker">Puzzle complete</p>
+            <h2 v-if="completionState === 'missed'">Hmm, you didn’t make the leaderboard.</h2>
+            <h2 v-else>Your time is ready to check.</h2>
+            <p v-if="completionState === 'missed'">
+              Here are the current fastest {{ categoryLabel.toLowerCase() }} solves.
+            </p>
+            <p v-else>We couldn’t reach the leaderboard just now. Try again in a moment.</p>
+            <HashiLeaderboard
+              heading-id="hashi-completion-leaderboard-title"
+              :category="completionResult?.category ?? game.preferredCategory.value"
+              :entries="leaderboard.entries.value"
+              :loading="leaderboard.loading.value"
+              :error="leaderboard.error.value"
+              @retry="retryCompletionCheck"
+            />
+            <div class="hashi-nickname-actions">
+              <UButton type="button" color="primary" @click="discardScore">Close</UButton>
+            </div>
+          </template>
+        </div>
       </template>
     </UModal>
   </main>
@@ -562,12 +667,20 @@ watch(
   padding: 1.5rem;
   background: var(--site-surface);
 }
+.hashi-nickname-dialog.has-leaderboard {
+  width: min(100vw - 2rem, 34rem);
+  max-height: min(85vh, 42rem);
+  overflow-y: auto;
+}
+.hashi-nickname-dialog > form {
+  display: grid;
+}
 .hashi-nickname-dialog h2 {
   margin: 0.55rem 0 0;
   font-size: 1.45rem;
   letter-spacing: -0.04em;
 }
-.hashi-nickname-dialog > p:not(.hashi-kicker) {
+.hashi-nickname-dialog p:not(.hashi-kicker) {
   margin: 0.45rem 0 1.3rem;
   color: var(--site-muted);
   font-size: 0.9rem;
@@ -583,6 +696,9 @@ watch(
   justify-content: flex-end;
   gap: 0.45rem;
   margin-top: 1.1rem;
+}
+.hashi-nickname-dialog.has-leaderboard .hashi-nickname-actions {
+  margin-top: 1rem;
 }
 
 .hashi-build-notes {
