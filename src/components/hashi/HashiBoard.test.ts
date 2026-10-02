@@ -397,7 +397,7 @@ describe('HashiControls', () => {
     const wrapper = mountControls()
     const tabs = wrapper.findAll('[role="tab"]')
 
-    expect(tabs.map((tab) => tab.text())).toEqual(['Intro', 'Daily', 'Weekly', 'Monthly'])
+    expect(tabs.map((tab) => tab.text())).toEqual(['Intro', 'Easy', 'Medium', 'Hard'])
     expect(tabs[0]?.attributes('aria-current')).toBe('page')
     expect(wrapper.get('[role="tablist"]').classes()).toContain('hashi-category-tabs')
 

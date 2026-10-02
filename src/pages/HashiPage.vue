@@ -6,6 +6,7 @@ import HashiArticleDemo from '../components/hashi/HashiArticleDemo.vue'
 import { useHashiGame } from '../features/hashi/useHashiGame'
 import HashiLeaderboard from '../components/hashi/HashiLeaderboard.vue'
 import { useHashiLeaderboard } from '../features/hashi/useHashiLeaderboard'
+import { HASHI_CATEGORY_LABELS } from '../features/hashi/types'
 
 const game = useHashiGame()
 const leaderboard = useHashiLeaderboard()
@@ -32,14 +33,8 @@ let completionHandledForRun = false
 
 const confetti = getCurrentInstance()?.appContext.config.globalProperties.$confetti
 
-const categoryLabels = {
-  intro: 'Intro puzzle',
-  daily: 'Daily puzzle',
-  weekly: 'Weekly puzzle',
-  monthly: 'Monthly puzzle',
-} as const
-
-const categoryLabel = computed(() => categoryLabels[game.preferredCategory.value])
+const categoryLabel = computed(() => HASHI_CATEGORY_LABELS[game.preferredCategory.value])
+const categoryPuzzleLabel = computed(() => `${categoryLabel.value} puzzle`)
 const formattedElapsed = computed(() => {
   const totalSeconds = Math.floor(game.elapsedMs.value / 1_000)
   const minutes = Math.floor(totalSeconds / 60)
@@ -247,7 +242,7 @@ watch(
 
     <section data-section="board" class="hashi-board-section" aria-label="Hashi puzzle">
       <div class="hashi-meta">
-        <span>{{ categoryLabel }}</span>
+        <span>{{ categoryPuzzleLabel }}</span>
         <time :datetime="`PT${Math.floor(game.elapsedMs.value / 1_000)}S`">{{
           formattedElapsed
         }}</time>

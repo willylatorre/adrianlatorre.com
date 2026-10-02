@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { BridgeCounts, HashiCategory } from '../../features/hashi/types'
+import {
+  HASHI_CATEGORY_LABELS,
+  type BridgeCounts,
+  type HashiCategory,
+} from '../../features/hashi/types'
 
 const categories: ReadonlyArray<{ value: HashiCategory; label: string }> = [
   { value: 'intro', label: 'Intro' },
-  { value: 'daily', label: 'Daily' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
+  { value: 'daily', label: HASHI_CATEGORY_LABELS.daily },
+  { value: 'weekly', label: HASHI_CATEGORY_LABELS.weekly },
+  { value: 'monthly', label: HASHI_CATEGORY_LABELS.monthly },
 ]
 
 const props = withDefaults(

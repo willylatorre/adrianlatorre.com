@@ -1,4 +1,11 @@
 export type HashiCategory = 'intro' | 'daily' | 'weekly' | 'monthly'
+export const HASHI_CATEGORY_LABELS: Record<HashiCategory, string> = {
+  intro: 'Intro',
+  daily: 'Easy',
+  weekly: 'Medium',
+  monthly: 'Hard',
+}
+
 export type Axis = 'horizontal' | 'vertical'
 export type BridgeCount = 0 | 1 | 2
 export type BridgeCounts = Record<string, BridgeCount>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HashiScore } from '../../types/api-generated'
-import type { HashiCategory } from '../../features/hashi/types'
+import { HASHI_CATEGORY_LABELS, type HashiCategory } from '../../features/hashi/types'
 
 withDefaults(
   defineProps<{
@@ -27,7 +27,7 @@ function formatDuration(durationMs: number) {
   <div class="hashi-leaderboard-content">
     <div class="hashi-leaderboard-heading">
       <div>
-        <p class="hashi-kicker">Fastest {{ category }}</p>
+        <p class="hashi-kicker">Fastest {{ HASHI_CATEGORY_LABELS[category] }}</p>
         <h2 :id="headingId">Leaderboard</h2>
       </div>
       <span v-if="loading" class="hashi-leaderboard-note">Loading</span>
