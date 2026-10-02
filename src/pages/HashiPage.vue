@@ -310,43 +310,75 @@ watch(
           </button>
         </template>
         <template #content>
-          <p class="hashi-rules-intro">
-            Each corridor cycles 0 → 1 → 2 → 0. Satisfied islands recede; overfilled islands need a
-            bridge removed. If every number matches but groups are stranded, keep connecting. Hints
-            name the rule without placing the bridge for you.
-          </p>
-          <ol>
-            <li>Connect islands only horizontally or vertically.</li>
-            <li>Connect only the nearest visible island in a row or column.</li>
-            <li>Never pass a bridge through an island.</li>
-            <li>Use no more than two bridges in one corridor.</li>
-            <li>Never cross another bridge.</li>
-            <li>Match every island's number exactly.</li>
-            <li>Keep every island in one connected network.</li>
-          </ol>
-          <div class="hashi-techniques">
-            <h3>Useful deductions</h3>
-            <ul>
-              <li>A 1 or 2 with only one neighbor sends that many bridges to it.</li>
-              <li>Corner 4, edge 6, and middle 8 force two bridges in every direction.</li>
-              <li>Corner 3, edge 5, and middle 7 force at least one bridge in every direction.</li>
-              <li>
-                A middle 6 facing a 1 forces at least one bridge toward each of its other three
-                neighbors.
-              </li>
-              <li>
-                A forced bridge closes every route that would cross it, often starting a cascade.
-              </li>
-              <li>
-                Never complete a closed island segment—such as 1–1 or a doubled 2–2—before the whole
-                board is connected.
-              </li>
-            </ul>
-            <a
-              data-hashi-techniques-source
-              href="https://www.conceptispuzzles.com/index.aspx?uri=puzzle/hashi/techniques"
-              >See the illustrated Conceptis techniques</a
-            >
+          <div class="hashi-rules-content">
+            <section class="hashi-rules-group" aria-labelledby="hashi-goal-title">
+              <h3 id="hashi-goal-title">The goal</h3>
+              <p>
+                Connect every island in a single network. Its number is the total bridges touching
+                it; a double bridge counts as two.
+              </p>
+            </section>
+
+            <section class="hashi-rules-group" aria-labelledby="hashi-rules-list-title">
+              <h3 id="hashi-rules-list-title">The rules</h3>
+              <ol>
+                <li>
+                  Join islands in the same row or column, using the nearest island. Bridges cannot
+                  pass through another island.
+                </li>
+                <li>
+                  A corridor can hold up to two bridges. Click it to cycle: none → one → two → none.
+                </li>
+                <li>Bridges cannot cross.</li>
+                <li>Match every number, then check that all islands belong to the same network.</li>
+              </ol>
+            </section>
+
+            <figure class="hashi-example">
+              <svg
+                class="hashi-example-diagram"
+                viewBox="0 0 320 88"
+                role="img"
+                aria-label="Two islands marked 2 connected by two parallel bridges"
+              >
+                <path class="hashi-example-bridge" d="M78 36H242M78 52H242" />
+                <rect class="hashi-example-island" x="28" y="19" width="52" height="52" rx="16" />
+                <rect class="hashi-example-island" x="240" y="19" width="52" height="52" rx="16" />
+                <text class="hashi-example-number" x="54" y="53">2</text>
+                <text class="hashi-example-number" x="266" y="53">2</text>
+              </svg>
+              <figcaption>
+                <strong>Example:</strong> each 2 has only this neighbor, so a double bridge
+                satisfies both clues.
+              </figcaption>
+            </figure>
+
+            <div class="hashi-techniques">
+              <h3>If you’re stuck</h3>
+              <ul>
+                <li>A 1 or 2 with only one neighbor sends that many bridges to it.</li>
+                <li>Corner 4, edge 6, and middle 8 force two bridges in every direction.</li>
+                <li>
+                  Corner 3, edge 5, and middle 7 force at least one bridge in every direction.
+                </li>
+                <li>
+                  A middle 6 facing a 1 forces at least one bridge toward each of its other three
+                  neighbors.
+                </li>
+                <li>
+                  A forced bridge closes every route that would cross it, often starting a cascade.
+                </li>
+                <li>
+                  Never complete a closed island segment—such as 1–1 or a doubled 2–2—before the
+                  whole board is connected.
+                </li>
+              </ul>
+              <a
+                data-hashi-techniques-source
+                href="https://www.conceptispuzzles.com/index.aspx?uri=puzzle/hashi/techniques"
+                >See the illustrated Conceptis techniques</a
+              >
+            </div>
           </div>
         </template>
       </UCollapsible>
@@ -600,24 +632,102 @@ watch(
   outline-offset: 3px;
 }
 
-.hashi-rules ol {
+.hashi-rules-content {
   display: grid;
-  gap: 0.55rem;
+  max-width: 43rem;
+  gap: 1.2rem;
+  padding-bottom: 1.5rem;
+}
+
+.hashi-rules-group h3,
+.hashi-techniques h3 {
+  margin: 0 0 0.45rem;
+  font-size: 0.88rem;
+  font-weight: 680;
+}
+
+.hashi-rules-group p {
   margin: 0;
-  padding: 0 0 1.45rem 1.35rem;
   color: var(--site-muted);
   font-size: 0.86rem;
   line-height: 1.55;
 }
 
-.hashi-techniques {
-  padding: 0 0 1.45rem;
+.hashi-rules ol {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  color: var(--site-muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  list-style: none;
+  counter-reset: hashi-rule;
 }
 
-.hashi-techniques h3 {
-  margin: 0 0 0.7rem;
-  font-size: 0.86rem;
+.hashi-rules ol li {
+  display: grid;
+  grid-template-columns: 1.35rem 1fr;
+  gap: 0.55rem;
+  counter-increment: hashi-rule;
+}
+
+.hashi-rules ol li::before {
+  content: counter(hashi-rule) '.';
+  color: var(--site-accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.hashi-example {
+  display: grid;
+  grid-template-columns: minmax(13rem, 19rem) minmax(14rem, 1fr);
+  align-items: center;
+  gap: 1rem;
+  margin: 0;
+  padding: 0.85rem 0;
+  border-block: 1px solid var(--site-border);
+}
+
+.hashi-example-diagram {
+  display: block;
+  width: 100%;
+  overflow: visible;
+  font-family: inherit;
+}
+
+.hashi-example-bridge {
+  fill: none;
+  stroke: var(--site-accent);
+  stroke-linecap: round;
+  stroke-width: 4;
+}
+
+.hashi-example-island {
+  fill: var(--site-bg);
+  stroke: var(--site-ink);
+  stroke-width: 4;
+}
+
+.hashi-example-number {
+  fill: var(--site-ink);
+  font-size: 27px;
   font-weight: 680;
+  text-anchor: middle;
+}
+
+.hashi-example figcaption {
+  color: var(--site-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.hashi-example figcaption strong {
+  color: var(--site-ink);
+}
+
+.hashi-techniques {
+  padding-top: 0.1rem;
 }
 
 .hashi-techniques ul {
@@ -630,19 +740,22 @@ watch(
   line-height: 1.55;
 }
 
+@media (max-width: 600px) {
+  .hashi-example {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .hashi-example-diagram {
+    max-width: 19rem;
+  }
+}
+
 .hashi-techniques a {
   display: inline-block;
   margin-top: 0.8rem;
   color: var(--site-ink);
   font-size: 0.8rem;
-}
-
-.hashi-rules-intro {
-  max-width: 62ch;
-  margin: 0 0 0.9rem;
-  color: var(--site-muted);
-  font-size: 0.86rem;
-  line-height: 1.55;
 }
 
 .hashi-leaderboard {
