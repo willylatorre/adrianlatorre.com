@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 660" role="img" aria-labelledby="title desc">
+  <title id="title">Resolve policy before checking usage</title>
+  <desc id="desc">A usage type selects a general or AI-work budget bucket. General limits come from settings. AI-work user limits come from versioned defaults with overrides; its organization pool comes from a separate allocation. A resolver supplies the three windows, which are compared against bucket-wide usage.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#526454"/></marker>
+  </defs>
+  <rect width="720" height="660" fill="#faf8f2"/>
+  <g font-family="system-ui, sans-serif" fill="#25322b">
+    <text x="36" y="44" font-size="13" letter-spacing="2">02 / BUDGET POLICY</text>
+    <text x="36" y="79" font-size="25" font-weight="600">One bucket. Three budget windows.</text>
+    <rect x="166" y="110" width="388" height="70" rx="12" fill="#e9eee2" stroke="#80937b"/>
+    <text x="360" y="139" text-anchor="middle" font-size="18" font-weight="600">Usage type → explicit bucket</text>
+    <text x="360" y="164" text-anchor="middle" font-size="15">General or AI work</text>
+    <g fill="none" stroke="#526454" stroke-width="2" marker-end="url(#arrow)">
+      <path d="M360 180 V204 H137 V225"/>
+      <path d="M360 180 V225"/>
+      <path d="M360 180 V204 H583 V225"/>
+    </g>
+    <rect x="36" y="228" width="202" height="125" rx="12" fill="#fffdf8" stroke="#b8bfb3"/>
+    <text x="137" y="258" text-anchor="middle" font-size="17" font-weight="600">Service settings</text>
+    <text x="137" y="289" text-anchor="middle" font-size="15">General bucket</text>
+    <text x="137" y="315" text-anchor="middle" font-size="15">User limits + org pool</text>
+    <rect x="259" y="228" width="202" height="125" rx="12" fill="#fffdf8" stroke="#b8bfb3"/>
+    <text x="360" y="258" text-anchor="middle" font-size="17" font-weight="600">Versioned policy</text>
+    <text x="360" y="289" text-anchor="middle" font-size="15">AI-work user defaults</text>
+    <text x="360" y="315" text-anchor="middle" font-size="15">+ per-user overrides</text>
+    <rect x="482" y="228" width="202" height="125" rx="12" fill="#fffdf8" stroke="#b8bfb3"/>
+    <text x="583" y="258" text-anchor="middle" font-size="17" font-weight="600">Separate allocation</text>
+    <text x="583" y="289" text-anchor="middle" font-size="15">AI-work org pool</text>
+    <text x="583" y="315" text-anchor="middle" font-size="15">Own source + cache</text>
+    <g fill="none" stroke="#526454" stroke-width="2" marker-end="url(#arrow)">
+      <path d="M137 353 V377 H310 V399"/>
+      <path d="M360 353 V399"/>
+      <path d="M583 353 V377 H410 V399"/>
+    </g>
+    <rect x="166" y="402" width="388" height="63" rx="12" fill="#e9eee2" stroke="#80937b"/>
+    <text x="360" y="439" text-anchor="middle" font-size="19" font-weight="600">Single effective-limits resolver</text>
+    <path d="M360 465 V502" fill="none" stroke="#526454" stroke-width="2" marker-end="url(#arrow)"/>
+    <rect x="36" y="505" width="648" height="91" rx="12" fill="#fffdf8" stroke="#80937b"/>
+    <text x="360" y="538" text-anchor="middle" font-size="17" font-weight="600">User / daily · User / monthly · Organization / monthly</text>
+    <text x="360" y="567" text-anchor="middle" font-size="16">Compare each finite limit with usage across the whole bucket</text>
+    <text x="360" y="629" text-anchor="middle" font-size="15" fill="#59635b">A user override changes an allowance. It does not increase the org pool.</text>
+  </g>
+</svg>

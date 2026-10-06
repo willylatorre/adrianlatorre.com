@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 530" role="img" aria-labelledby="title desc">
+  <title id="title">Price new usage, preserve booked history</title>
+  <desc id="desc">Normalized provider usage and a deployed conversion table feed pure decimal pricing. Token counts, credits, and cost with currency are persisted in daily aggregates. Table changes apply to new bookings.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#526454"/></marker>
+  </defs>
+  <rect width="720" height="530" fill="#faf8f2"/>
+  <g font-family="system-ui, sans-serif" fill="#25322b">
+    <text x="36" y="44" font-size="13" letter-spacing="2">01 / BOOKING</text>
+    <text x="36" y="79" font-size="25" font-weight="600">The table prices. The ledger remembers.</text>
+    <rect x="36" y="116" width="304" height="92" rx="12" fill="#fffdf8" stroke="#b8bfb3"/>
+    <text x="56" y="148" font-size="18" font-weight="600">Provider usage</text>
+    <text x="56" y="177" font-size="15">Normalize input, output, cache</text>
+    <rect x="380" y="116" width="304" height="92" rx="12" fill="#fffdf8" stroke="#b8bfb3"/>
+    <text x="400" y="148" font-size="18" font-weight="600">Deployed conversion table</text>
+    <text x="400" y="177" font-size="15">Model + zone → rates, multiplier</text>
+    <g fill="none" stroke="#526454" stroke-width="2" marker-end="url(#arrow)">
+      <path d="M188 208 V235 H310 V257"/>
+      <path d="M532 208 V235 H410 V257"/>
+      <path d="M360 340 V385"/>
+    </g>
+    <rect x="180" y="260" width="360" height="80" rx="12" fill="#e9eee2" stroke="#80937b"/>
+    <text x="360" y="292" text-anchor="middle" font-size="19" font-weight="600">Pure decimal pricing</text>
+    <text x="360" y="318" text-anchor="middle" font-size="15">Calculate amounts at booking time</text>
+    <rect x="36" y="388" width="648" height="88" rx="12" fill="#fffdf8" stroke="#80937b"/>
+    <text x="360" y="420" text-anchor="middle" font-size="19" font-weight="600">Daily ledger aggregates</text>
+    <text x="360" y="449" text-anchor="middle" font-size="16">Token counters · booked credits · booked cost + currency</text>
+    <text x="360" y="507" text-anchor="middle" font-size="15" fill="#59635b">A later table edit affects new bookings. Existing amounts stay booked.</text>
+  </g>
+</svg>
