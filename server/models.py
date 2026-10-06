@@ -49,7 +49,6 @@ class HashiScoreCreate(BaseModel):
     )
     nickname: str = Field(min_length=1, max_length=20, pattern=r"^[^\x00-\x1f<>]+$")
     duration_ms: int = Field(alias="durationMs", ge=1_000, le=604_800_000)
-    hints_used: int = Field(alias="hintsUsed", ge=0, le=3)
 
     @field_validator("nickname")
     @classmethod
@@ -64,7 +63,6 @@ class HashiScore(BaseModel):
 
     nickname: str
     duration_ms: int = Field(alias="durationMs")
-    hints_used: int | None = Field(alias="hintsUsed")
     created_at: datetime = Field(alias="createdAt")
 
 

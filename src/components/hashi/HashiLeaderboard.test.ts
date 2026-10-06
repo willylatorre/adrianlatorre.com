@@ -5,20 +5,20 @@ import { describe, expect, it } from 'vitest'
 import HashiLeaderboard from './HashiLeaderboard.vue'
 
 describe('HashiLeaderboard', () => {
-  it('shows recorded hints and labels legacy scores as unknown', () => {
+  it('shows ranked solve times without a hint column', () => {
     const wrapper = mount(HashiLeaderboard, {
       props: {
         category: 'daily',
         loading: false,
         error: null,
         entries: [
-          { nickname: 'Ada', durationMs: 60_000, hintsUsed: 2, createdAt: '2026-09-24' },
-          { nickname: 'Legacy', durationMs: 61_000, hintsUsed: null, createdAt: '2026-09-23' },
+          { nickname: 'Ada', durationMs: 60_000, createdAt: '2026-09-24' },
+          { nickname: 'Legacy', durationMs: 61_000, createdAt: '2026-09-23' },
         ],
       },
     })
 
-    expect(wrapper.get('[aria-label="2 hints used"]').text()).toContain('2')
-    expect(wrapper.get('[aria-label="Hint use not recorded"]').text()).toContain('—')
+    expect(wrapper.text()).toContain('1:00')
+    expect(wrapper.find('[aria-label*="hint"]').exists()).toBe(false)
   })
 })

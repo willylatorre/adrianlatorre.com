@@ -20,8 +20,6 @@ const props = withDefaults(
     canRestoreSnapshot?: boolean
     hasSnapshot?: boolean
     positionFeedback?: 'saved' | 'restored' | null
-    hintsRemaining?: number
-    hasActiveHint?: boolean
     hintUnavailable?: boolean
     boardZoom?: number | null
   }>(),
@@ -30,8 +28,6 @@ const props = withDefaults(
     canRestoreSnapshot: false,
     hasSnapshot: false,
     positionFeedback: null,
-    hintsRemaining: 3,
-    hasActiveHint: false,
     hintUnavailable: false,
     boardZoom: null,
   },
@@ -134,24 +130,15 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
           @click="emit('zoom-in')"
         />
       </div>
-      <span
-        class="hashi-hint-hearts"
-        data-hint-hearts
-        :aria-label="`${hintsRemaining} ${hintsRemaining === 1 ? 'hint' : 'hints'} remaining`"
-      >
-        <span aria-hidden="true">
-          <span v-for="heart in 3" :key="heart">{{ heart <= hintsRemaining ? '♥' : '♡' }}</span>
-        </span>
-      </span>
       <UButton
         type="button"
         data-action="hint"
         icon="i-lucide-lightbulb"
-        label="Hint"
+        label="Hint (+20s)"
         color="neutral"
         variant="soft"
         size="sm"
-        :disabled="hintUnavailable || (hintsRemaining === 0 && !hasActiveHint)"
+        :disabled="hintUnavailable"
         @click="emit('request-hint')"
       />
       <UButton
@@ -254,15 +241,6 @@ function destructiveAction(action: 'reset' | 'new-puzzle') {
   font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
   text-align: center;
-}
-
-.hashi-hint-hearts {
-  min-width: 3.4rem;
-  color: color-mix(in oklch, var(--site-accent) 72%, var(--site-ink));
-  font-size: 0.82rem;
-  letter-spacing: 0.12em;
-  text-align: center;
-  white-space: nowrap;
 }
 
 @media (max-width: 960px) {

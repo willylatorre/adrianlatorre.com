@@ -10,16 +10,11 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 export function qualifies(
   durationMs: number,
-  hintsUsed: number,
-  entries: ReadonlyArray<Pick<HashiScore, 'durationMs' | 'hintsUsed'>>,
+  entries: ReadonlyArray<Pick<HashiScore, 'durationMs'>>,
 ) {
   if (entries.length < 5) return true
   const cutoff = entries[4]!
-  return (
-    durationMs < cutoff.durationMs ||
-    (durationMs === cutoff.durationMs &&
-      (cutoff.hintsUsed === null || hintsUsed < cutoff.hintsUsed))
-  )
+  return durationMs < cutoff.durationMs
 }
 
 export function useHashiLeaderboard() {

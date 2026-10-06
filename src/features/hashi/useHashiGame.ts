@@ -52,8 +52,6 @@ export interface HashiGame {
   readonly snapshot: BridgeCounts | null
   readonly hasSnapshot: boolean
   readonly canRestoreSnapshot: boolean
-  readonly hintsRemaining: number
-  readonly hintsUsed: number
   readonly activeHint: HashiHint | null
   readonly feedbackCorridorIds: string[]
   readonly hintFeedback: string | null
@@ -81,7 +79,6 @@ export function createHashiGame(
   let preferredCategory = restored?.preferredCategory ?? puzzle.category
   let bridgeCounts = { ...restored?.bridgeCounts }
   let snapshot = restored?.snapshot ? { ...restored.snapshot } : null
-  let hintsRemaining = restored?.hintsRemaining ?? 3
   let activeHint = restored?.activeHint ?? null
   let feedbackCorridorIds: string[] = []
   let hintFeedback = activeHint?.explanation ?? null
@@ -94,12 +91,11 @@ export function createHashiGame(
   const persist = () => {
     saveHashiState(
       {
-        version: 2,
+        version: 3,
         preferredCategory,
         puzzle,
         bridgeCounts,
         snapshot,
-        hintsRemaining,
         activeHint,
         startedAt,
         solvedAt,
@@ -122,7 +118,6 @@ export function createHashiGame(
     puzzle = nextPuzzle
     bridgeCounts = {}
     snapshot = null
-    hintsRemaining = 3
     activeHint = null
     feedbackCorridorIds = []
     hintFeedback = null
@@ -151,12 +146,6 @@ export function createHashiGame(
     },
     get canRestoreSnapshot() {
       return snapshot !== null && !bridgeCountsEqual(bridgeCounts, snapshot)
-    },
-    get hintsRemaining() {
-      return hintsRemaining
-    },
-    get hintsUsed() {
-      return 3 - hintsRemaining
     },
     get activeHint() {
       return activeHint
@@ -225,16 +214,7 @@ export function createHashiGame(
 
       const result = findHashiHint(puzzle, bridgeCounts)
       if (result.kind === 'hint') {
-        if (hintsRemaining === 0) {
-          const unavailable = {
-            kind: 'none' as const,
-            message: 'No hints left for this puzzle.',
-          }
-          hintFeedback = unavailable.message
-          changed()
-          return unavailable
-        }
-        hintsRemaining -= 1
+        if (startedAt !== null) startedAt -= 20_000
         activeHint = result.hint
         feedbackCorridorIds = []
         hintFeedback = result.hint.explanation
@@ -399,8 +379,6 @@ export function useHashiGame(options: UseHashiGameOptions = {}) {
     snapshot: value(() => game.snapshot),
     hasSnapshot: value(() => game.hasSnapshot),
     canRestoreSnapshot: value(() => game.canRestoreSnapshot),
-    hintsRemaining: value(() => game.hintsRemaining),
-    hintsUsed: value(() => game.hintsUsed),
     activeHint: value(() => game.activeHint),
     feedbackCorridorIds: value(() => game.feedbackCorridorIds),
     hintFeedback: value(() => game.hintFeedback),

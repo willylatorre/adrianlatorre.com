@@ -11,12 +11,11 @@ export interface HashiStorage {
 }
 
 export interface PersistedHashiState {
-  version: 2
+  version: 3
   preferredCategory: HashiCategory
   puzzle: HashiPuzzle
   bridgeCounts: BridgeCounts
   snapshot?: BridgeCounts | null
-  hintsRemaining: number
   activeHint: HashiHint | null
   startedAt: number | null
   /** Accepted only for backward compatibility with runs saved before snapshots replaced Undo. */
@@ -56,7 +55,7 @@ export function parsePersistedHashiState(raw: string | null): PersistedHashiStat
     const value: unknown = JSON.parse(raw)
     if (
       !isRecord(value) ||
-      (value.version !== 1 && value.version !== 2) ||
+      (value.version !== 1 && value.version !== 2 && value.version !== 3) ||
       !isCategory(value.preferredCategory)
     ) {
       return null
@@ -81,19 +80,17 @@ export function parsePersistedHashiState(raw: string | null): PersistedHashiStat
       return null
     }
 
-    const hintsRemaining = value.version === 1 ? 3 : value.hintsRemaining
     const activeHint = value.version === 1 ? null : value.activeHint
-    if (!isHintCount(hintsRemaining) || !isHashiHint(activeHint, value.puzzle, value.bridgeCounts)) {
+    if (!isHashiHint(activeHint, value.puzzle, value.bridgeCounts)) {
       return null
     }
 
     return {
-      version: 2,
+      version: 3,
       preferredCategory: value.preferredCategory,
       puzzle: value.puzzle,
       bridgeCounts: value.bridgeCounts,
       snapshot: value.snapshot ?? null,
-      hintsRemaining,
       activeHint,
       startedAt: value.startedAt,
       history: value.history,
@@ -135,10 +132,6 @@ function isHintRule(value: unknown): value is HashiHintRule {
     value === 'connectivity' ||
     value === 'contradiction'
   )
-}
-
-function isHintCount(value: unknown): value is number {
-  return Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 3
 }
 
 export function isCategory(value: unknown): value is HashiCategory {

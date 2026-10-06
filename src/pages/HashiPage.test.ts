@@ -38,21 +38,20 @@ describe('HashiPage', () => {
     await wrapper.get('[data-rules-trigger]').trigger('click')
 
     expect(wrapper.text()).toContain('How to play')
-    expect(wrapper.text()).toContain('horizontally or vertically')
-    expect(wrapper.text()).toContain('nearest visible island')
-    expect(wrapper.text()).toContain('no more than two bridges')
-    expect(wrapper.text()).toContain('Never cross another bridge')
-    expect(wrapper.text()).toContain('one connected network')
-    expect(wrapper.text()).toContain('0 → 1 → 2 → 0')
+    expect(wrapper.text()).toContain('same row or column')
+    expect(wrapper.text()).toContain('nearest island')
+    expect(wrapper.text()).toContain('up to two bridges')
+    expect(wrapper.text()).toContain('Bridges cannot cross')
+    expect(wrapper.text()).toContain('all islands belong to the same network')
+    expect(wrapper.text()).toContain('none → one → two → none')
     expect(wrapper.text()).toContain('Satisfied')
-    expect(wrapper.text()).toContain('overfilled')
-    expect(wrapper.text()).toContain('stranded')
-    expect(wrapper.text()).toContain('Useful deductions')
+    expect(wrapper.text()).toContain('Overfilled')
+    expect(wrapper.text()).toContain('whole board is connected')
+    expect(wrapper.text()).toContain('If you’re stuck')
     expect(wrapper.text()).toContain('Corner 4, edge 6, and middle 8')
     expect(wrapper.text()).toContain('Corner 3, edge 5, and middle 7')
     expect(wrapper.text()).toContain('A middle 6 facing a 1')
     expect(wrapper.text()).toContain('closed island segment')
-    expect(wrapper.text()).toContain('name the rule without placing the bridge')
     expect(wrapper.get('[data-hashi-techniques-source]').attributes('href')).toContain(
       'conceptispuzzles.com',
     )
@@ -96,7 +95,7 @@ describe('HashiPage', () => {
   it('offers rule-based hints without placing the highlighted bridge', async () => {
     const wrapper = mount(HashiPage, { global: { plugins: [router] } })
 
-    expect(wrapper.get('[data-hint-hearts]').attributes('aria-label')).toBe('3 hints remaining')
+    expect(wrapper.get('[data-action="hint"]').text()).toContain('+20s')
     await wrapper.get('[data-action="hint"]').trigger('click')
 
     expect(wrapper.get('[data-hashi-hint]').attributes('role')).toBe('status')
@@ -105,7 +104,7 @@ describe('HashiPage', () => {
     )
     const hinted = wrapper.get('.hashi-corridor-hit.is-hinted')
     expect(hinted.attributes('aria-label')).toContain('0 bridges')
-    expect(wrapper.get('[data-hint-hearts]').attributes('aria-label')).toBe('2 hints remaining')
+    expect(wrapper.find('[data-hint-hearts]').exists()).toBe(false)
   })
 
   it('labels satisfied and overfilled board feedback without relying on color', () => {

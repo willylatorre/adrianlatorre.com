@@ -16,12 +16,10 @@ const completionState = ref<'checking' | 'qualified' | 'missed' | 'unavailable' 
 const completionResult = ref<{
   category: Parameters<typeof game.selectCategory>[0]
   durationMs: number
-  hintsUsed: number
   puzzleFingerprint: string
 } | null>(null)
 const pendingScore = ref<{
   durationMs: number
-  hintsUsed: number
   puzzleFingerprint: string
 } | null>(null)
 const submittedFingerprints = new Set<string>()
@@ -63,7 +61,7 @@ async function checkCompletionResult() {
     return
   }
 
-  if (leaderboard.qualifies(result.durationMs, result.hintsUsed, entries)) {
+  if (leaderboard.qualifies(result.durationMs, entries)) {
     pendingScore.value = result
     nickname.value = ''
     completionState.value = 'qualified'
@@ -110,7 +108,6 @@ function handleCompletion() {
   completionResult.value = {
     category: game.preferredCategory.value,
     durationMs: game.elapsedMs.value,
-    hintsUsed: game.hintsUsed.value,
     puzzleFingerprint: fingerprint,
   }
   nicknameDialogOpen.value = true
@@ -125,7 +122,6 @@ async function submitScore() {
     puzzleFingerprint: pendingScore.value.puzzleFingerprint,
     nickname: nickname.value.trim(),
     durationMs: pendingScore.value.durationMs,
-    hintsUsed: pendingScore.value.hintsUsed,
   })
   if (!saved) return
   submittedFingerprints.add(pendingScore.value.puzzleFingerprint)
@@ -221,8 +217,6 @@ watch(
       :can-restore-snapshot="game.canRestoreSnapshot.value"
       :has-snapshot="game.hasSnapshot.value"
       :position-feedback="positionFeedback"
-      :hints-remaining="game.hintsRemaining.value"
-      :has-active-hint="game.activeHint.value !== null"
       :hint-unavailable="game.generating.value"
       :board-zoom="boardZoom"
       @select-category="selectCategory"
@@ -391,6 +385,7 @@ watch(
     <UModal
       v-model:open="nicknameDialogOpen"
       :dismissible="true"
+      :ui="{ content: 'w-[calc(100vw-2rem)] max-w-[34rem]' }"
       @update:open="(open: boolean) => !open && discardScore()"
     >
       <template #content>
@@ -730,12 +725,11 @@ watch(
 }
 
 .hashi-nickname-dialog {
-  width: min(100vw - 2rem, 24rem);
+  width: 100%;
   padding: 1.5rem;
   background: var(--site-surface);
 }
 .hashi-nickname-dialog.has-leaderboard {
-  width: min(100vw - 2rem, 34rem);
   max-height: min(85vh, 42rem);
   overflow-y: auto;
 }

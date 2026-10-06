@@ -386,8 +386,6 @@ describe('HashiControls', () => {
         category: 'intro',
         bridgeCounts: {},
         canRestoreSnapshot: false,
-        hintsRemaining: 3,
-        hasActiveHint: false,
         ...props,
       },
       global: { plugins: [router] },
@@ -469,22 +467,12 @@ describe('HashiControls', () => {
     expect(active.emitted('new-puzzle')).toHaveLength(1)
   })
 
-  it('shows three hint hearts and emits a hint request', async () => {
-    const wrapper = mountControls({ hintsRemaining: 2 })
-    const meter = wrapper.get('[data-hint-hearts]')
+  it('explains the time cost and emits a hint request', async () => {
+    const wrapper = mountControls()
 
-    expect(meter.attributes('aria-label')).toBe('2 hints remaining')
-    expect(meter.text()).toBe('♥♥♡')
+    expect(wrapper.get('[data-action="hint"]').text()).toContain('+20s')
     await wrapper.get('[data-action="hint"]').trigger('click')
     expect(wrapper.emitted('request-hint')).toHaveLength(1)
-  })
-
-  it('allows reopening an active hint after all hearts are spent', () => {
-    const empty = mountControls({ hintsRemaining: 0 })
-    const reopenable = mountControls({ hintsRemaining: 0, hasActiveHint: true })
-
-    expect(empty.get('[data-action="hint"]').attributes('disabled')).toBeDefined()
-    expect(reopenable.get('[data-action="hint"]').attributes('disabled')).toBeUndefined()
   })
 
   it('disables hints while a replacement puzzle is still generating', () => {

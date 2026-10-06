@@ -125,19 +125,17 @@ describe('Hashi game state', () => {
     expect(game.hasSnapshot).toBe(false)
   })
 
-  it('reports how many hints were spent on the current puzzle', () => {
-    const nextPuzzle = { ...fixedPuzzle, id: 'next' }
-    const game = createHashiGame(fixedPuzzle, () => 1_000, {
-      generatePuzzle: () => nextPuzzle,
-    })
+  it('adds twenty seconds to an already running timer for a new hint', () => {
+    let clock = 1_000
+    const game = createHashiGame(timerPuzzle, () => clock)
 
-    expect(game.hintsUsed).toBe(0)
+    game.cycleCorridor('a:b')
+    clock = 1_500
     game.requestHint()
-    expect(game.hintsUsed).toBe(1)
-    game.reset()
-    expect(game.hintsUsed).toBe(1)
-    game.newPuzzle()
-    expect(game.hintsUsed).toBe(0)
+    expect(game.elapsedMs).toBe(20_500)
+
+    game.requestHint()
+    expect(game.elapsedMs).toBe(20_500)
   })
 
   it('persists a saved position and clears it for reset and replacement puzzles', () => {
@@ -272,7 +270,6 @@ describe('Hashi game state', () => {
       puzzle: fixedPuzzle,
       bridgeCounts: {},
       snapshot: null,
-      hintsRemaining: 3,
       activeHint: null,
       startedAt: null,
     })
@@ -292,22 +289,20 @@ describe('Hashi game state', () => {
     expect(game.elapsedMs).toBe(0)
   })
 
-  it('spends one heart on a new hint and reopens the same hint for free', () => {
+  it('reopens the same hint without changing the timer', () => {
     const game = createHashiGame(fixedPuzzle, () => 1_000)
 
     expect(game.requestHint()).toMatchObject({
       kind: 'hint',
       hint: { corridorId: 'a:b', minimumCount: 1 },
     })
-    expect(game.hintsRemaining).toBe(2)
     expect(game.activeHint?.corridorId).toBe('a:b')
     expect(game.hintFeedback).toContain('only one usable route')
 
     expect(game.requestHint()).toMatchObject({ kind: 'hint' })
-    expect(game.hintsRemaining).toBe(2)
   })
 
-  it('clears a displayed hint after a move and keeps spent hearts on reset', () => {
+  it('clears a displayed hint after a move', () => {
     const game = createHashiGame(fixedPuzzle, () => 1_000)
 
     game.requestHint()
@@ -316,11 +311,10 @@ describe('Hashi game state', () => {
     expect(game.hintFeedback).toBeNull()
 
     game.reset()
-    expect(game.hintsRemaining).toBe(2)
     expect(game.activeHint).toBeNull()
   })
 
-  it('keeps hearts outside saved positions and replenishes them for a new puzzle', () => {
+  it('keeps hints outside saved positions and clears them for a new puzzle', () => {
     const nextPuzzle = { ...fixedPuzzle, id: 'next' }
     const game = createHashiGame(fixedPuzzle, () => 1_000, {
       generatePuzzle: () => nextPuzzle,
@@ -330,15 +324,13 @@ describe('Hashi game state', () => {
     game.saveSnapshot()
     game.cycleCorridor('a:b')
     game.restoreSnapshot()
-    expect(game.hintsRemaining).toBe(2)
     expect(game.activeHint).toBeNull()
 
     game.newPuzzle()
     expect(game.puzzle.id).toBe('next')
-    expect(game.hintsRemaining).toBe(3)
   })
 
-  it('persists the remaining hearts and displayed hint across refresh', () => {
+  it('persists the displayed hint across refresh', () => {
     const storage = createStorage()
     const first = createHashiGame(fixedPuzzle, () => 1_000, { storage })
 
@@ -348,37 +340,20 @@ describe('Hashi game state', () => {
       initialState: loadHashiState(storage)!,
     })
 
-    expect(restored.hintsRemaining).toBe(2)
     expect(restored.activeHint?.corridorId).toBe('a:b')
     restored.requestHint()
-    expect(restored.hintsRemaining).toBe(2)
   })
 
-  it('does not charge a heart for an invalid or already-complete position', () => {
+  it('does not change the timer for an invalid or already-complete position', () => {
     const invalid = createHashiGame(fixedPuzzle, () => 1_000)
     invalid.cycleCorridor('a:b')
     invalid.cycleCorridor('a:b')
 
     expect(invalid.requestHint()).toMatchObject({ kind: 'invalid' })
-    expect(invalid.hintsRemaining).toBe(3)
 
     const complete = createHashiGame(fixedPuzzle, () => 1_000)
     complete.cycleCorridor('a:b')
     expect(complete.requestHint()).toMatchObject({ kind: 'none' })
-    expect(complete.hintsRemaining).toBe(3)
-  })
-
-  it('explains when all three hint hearts have been spent', () => {
-    const game = createHashiGame(fixedPuzzle, () => 1_000)
-
-    for (let hint = 0; hint < 3; hint += 1) {
-      game.requestHint()
-      game.reset()
-    }
-
-    expect(game.hintsRemaining).toBe(0)
-    expect(game.requestHint()).toEqual({ kind: 'none', message: 'No hints left for this puzzle.' })
-    expect(game.hintsRemaining).toBe(0)
   })
 
   it('selects a category and starts a fresh generated puzzle', () => {
@@ -401,12 +376,11 @@ describe('Hashi game state', () => {
     const storage = createStorage()
     saveHashiState(
       {
-        version: 2,
+        version: 3,
         preferredCategory: 'daily',
         puzzle: { ...fixedPuzzle, id: 'saved', category: 'daily' },
         bridgeCounts: {},
         snapshot: { 'a:b': 1 },
-        hintsRemaining: 1,
         activeHint: null,
         startedAt: 500,
         history: [{ corridorId: 'a:b', previous: 0 }],
@@ -436,11 +410,10 @@ describe('Hashi game state', () => {
     }
     saveHashiState(
       {
-        version: 2,
+        version: 3,
         preferredCategory: 'monthly',
         puzzle: { ...fixedPuzzle, id: 'hashi-v3-monthly-old', category: 'monthly' },
         bridgeCounts: { 'a:b': 1 },
-        hintsRemaining: 1,
         activeHint: null,
         startedAt: 500,
         history: [{ corridorId: 'a:b', previous: 0 }],

@@ -40,12 +40,6 @@ function formatDuration(durationMs: number) {
       <li v-for="(entry, index) in entries" :key="`${entry.nickname}-${entry.createdAt}`">
         <span>{{ index + 1 }}</span
         ><strong>{{ entry.nickname }}</strong
-        ><span
-          class="hashi-score-hints"
-          :aria-label="
-            entry.hintsUsed === null ? 'Hint use not recorded' : `${entry.hintsUsed} hints used`
-          "
-          ><UIcon name="i-lucide-lightbulb" aria-hidden="true" /> {{ entry.hintsUsed ?? '—' }}</span
         ><time>{{ formatDuration(entry.durationMs) }}</time>
       </li>
     </ol>
@@ -93,7 +87,7 @@ function formatDuration(durationMs: number) {
 }
 .hashi-score-list li {
   display: grid;
-  grid-template-columns: 1.5rem 1fr 3rem auto;
+  grid-template-columns: 1.5rem minmax(0, 1fr) auto;
   gap: 0.6rem;
   padding: 0.35rem 0;
   border-top: 1px solid color-mix(in oklch, var(--site-border) 70%, transparent);
@@ -103,17 +97,14 @@ function formatDuration(durationMs: number) {
   color: var(--site-muted);
   font-variant-numeric: tabular-nums;
 }
-.hashi-score-hints {
-  display: inline-flex;
-  align-items: center;
-  justify-content: end;
-  gap: 0.25rem;
-}
-.hashi-score-hints svg {
-  width: 0.8rem;
-  height: 0.8rem;
-}
 .hashi-score-list strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 580;
+}
+.hashi-score-list time {
+  white-space: nowrap;
 }
 </style>
