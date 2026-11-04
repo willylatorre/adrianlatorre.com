@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 820" role="img" aria-labelledby="title desc">
+  <title id="title">Declare once. Enforce on every call.</title>
+  <desc id="desc">An approval annotation installs a shared tool wrapper. The wrapper prepares a proposal, interrupts execution for a decision, atomically records approval and claims one attempt, then rechecks permissions and executes. Denial or revision performs no write. The outcome is retained in conversation history.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10z" fill="#526454"/></marker>
+  </defs>
+  <rect width="720" height="820" fill="#faf8f2"/>
+  <g font-family="system-ui, sans-serif" fill="#25322b">
+    <text x="36" y="44" font-size="13" letter-spacing="2">TOOL POLICY / EXECUTION / EVIDENCE</text>
+    <text x="36" y="82" font-size="28" font-weight="600">Declare once. Enforce on every call.</text>
+    <rect x="36" y="112" width="648" height="68" rx="12" fill="#25322b"/>
+    <text x="58" y="141" font-size="16" font-family="monospace" fill="#f5f4eb">@write_tool(approval=ModificationPolicy(TEXT))</text>
+    <text x="58" y="164" font-size="14" fill="#ccd7c8">The annotation installs the shared approval wrapper.</text>
+    <g fill="none" stroke="#526454" stroke-width="2" marker-end="url(#arrow)">
+      <path d="M280 180 V216"/><path d="M280 292 V328"/>
+      <path d="M280 404 V453"/><path d="M280 543 V579"/>
+      <path d="M280 655 V691"/>
+      <path d="M484 366 H529"/>
+    </g>
+    <rect x="76" y="220" width="408" height="72" rx="12" fill="#fffdf8" stroke="#b8bfb3"/>
+    <text x="96" y="249" font-size="18" font-weight="600">01  Prepare the exact change</text>
+    <text x="96" y="274" font-size="15">Validate target, access, payload and preview</text>
+    <rect x="76" y="332" width="408" height="72" rx="12" fill="#fffdf8" stroke="#b8bfb3"/>
+    <text x="96" y="361" font-size="18" font-weight="600">02  Interrupt execution</text>
+    <text x="96" y="386" font-size="15">Checkpoint the run; await a decision</text>
+    <text x="535" y="360" font-size="15" font-weight="600">Deny / revise</text>
+    <text x="535" y="384" font-size="15">No write</text>
+    <rect x="292" y="418" width="86" height="23" rx="4" fill="#faf8f2"/>
+    <text x="300" y="435" font-size="14" fill="#526454">Approve</text>
+    <rect x="76" y="457" width="408" height="86" rx="12" fill="#e9eee2" stroke="#80937b" stroke-width="2"/>
+    <text x="96" y="486" font-size="18" font-weight="600">03  Record authorization + claim</text>
+    <text x="96" y="510" font-size="15">Who approved what, and when</text>
+    <text x="96" y="530" font-size="14" fill="#526454">Atomic · one execution attempt</text>
+    <rect x="76" y="583" width="408" height="72" rx="12" fill="#fffdf8" stroke="#b8bfb3"/>
+    <text x="96" y="612" font-size="18" font-weight="600">04  Recheck, then execute</text>
+    <text x="96" y="637" font-size="15">Current permissions and relevant versions</text>
+    <rect x="76" y="695" width="408" height="72" rx="12" fill="#fffdf8" stroke="#b8bfb3"/>
+    <text x="96" y="724" font-size="18" font-weight="600">05  Retain the outcome</text>
+    <text x="96" y="749" font-size="15">Settle the operation into permanent history</text>
+    <text x="36" y="800" font-size="15" fill="#59635b">Authorization exists before the side effect. The outcome follows it.</text>
+  </g>
+</svg>
