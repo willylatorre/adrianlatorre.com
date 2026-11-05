@@ -1,6 +1,6 @@
 ---
 title: Notes From Making Tool Approvals Automatic
-date: 2026-11-04
+date: 2026-11-05
 description: Declaring approval requirements on tools, enforcing them with LangGraph interrupts, and keeping a record of who authorized what before the side effect happens.
 ---
 
