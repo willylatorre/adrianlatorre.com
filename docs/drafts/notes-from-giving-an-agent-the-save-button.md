@@ -37,6 +37,8 @@ The annotation stamps the tool with its write scope and approval metadata, and i
 
 The policy separates two responsibilities. `prepare` resolves the target, checks permissions, validates the input, and produces a concrete proposed change. `execute` performs the approved operation. The tool-specific policy knows what changing this kind of entity means; the shared runtime knows how to manage an approval lifecycle.
 
+The gate is generic. Text is its first client. A different entity brings its own validation, payload, and execution rules, while using the same interruption, decision, and audit machinery. That is a much smaller job than teaching every new tool how to stop safely.
+
 <img src="/images/tool-approval-lifecycle.svg" alt="Approval lifecycle: the tool annotation installs a wrapper that prepares the change, interrupts execution, records authorization and claims one attempt, rechecks permissions, executes, and retains the outcome. Denial or revision performs no write." />
 
 *One tool annotation, one shared lifecycle. The authorization record exists before execution can begin.*
@@ -53,7 +55,7 @@ We use LangChain's graph runtime, LangGraph, and its [interrupts inside tools](h
 
 In this application, that interruption means a concrete operation is waiting for authorization.
 
-Clarification has a separate meaning and a separate path. “Which experiment did you mean?” supplies missing context. The answer helps the model prepare an operation. It authorizes no write.
+Clarification has a separate meaning and a separate path. “Which document did you mean?” supplies missing context. The answer helps the model prepare an operation. It authorizes no write.
 
 | Interaction | What it establishes | What follows |
 | --- | --- | --- |
@@ -64,13 +66,46 @@ LangGraph's interrupt primitive is general enough to support different kinds of 
 
 That matters because the model should never interpret an ordinary conversational “yes” as permission to execute a pending destructive action. The runtime expects an identified approval decision through the approval path.
 
-A user saying “yes, that experiment” has selected an experiment. They have not signed a surprisingly short power of attorney.
+A user saying “yes, that document” has selected a document. They have not signed a surprisingly short power of attorney.
+
+## Why the pause belongs inside the tool
+
+The placement of the interrupt changes what the user can authorize.
+
+A gate before the tool runs can show the arguments the model generated. Those may still contain an ambiguous destination, content that needs sanitizing, or an operation the user cannot perform. There is a difference between reviewing a request and reviewing the change that will actually reach the API.
+
+For this flow, the tool's policy has the information needed to close that gap. It resolves the destination, checks access, builds the final payload, and derives the preview. Only then does the wrapper interrupt execution.
+
+```text
+Model arguments
+      |
+      v
+PREPARE — read-only
+Validate -> Resolve -> Authorize -> Read version -> Build -> Preview
+      |
+      v
+INTERRUPT — decision on the prepared change
+      |
+      +-- Deny / revise -> Record decision; no write
+      |
+      +-- Approve
+             |
+             v
+CLAIM — record authorization; consume it once
+             |
+             v
+EXECUTE — recheck -> write -> record outcome
+```
+
+A middleware approach can work when its approval boundary already has the information the product needs. Here, putting the interrupt after preparation gives the card and the audit record the same concrete proposal to refer to.
+
+The pause happens after we know what the operation means, while there is still time to prevent it. That is a useful place for a pause. Immediately after the write would be more of a dramatic effect.
 
 ## Prepare something worth authorizing
 
 Before the interrupt, the policy produces a prepared change: the resolved target, the final payload, the preview, and a digest identifying the proposal.
 
-For example, a request to create a text element becomes a specific location and specific sanitized content. The application checks access before offering that operation for approval.
+For example, a request to create a document becomes a specific location and specific sanitized content. The application checks access before offering that operation for approval.
 
 The prepared change is cached under the scoped tool-call ID. The approval refers to that stored proposal, and execution uses its payload. The model does not get another turn to improvise the arguments after the user approves them.
 
@@ -146,12 +181,12 @@ A simplified settled record might look like this:
   "tool_call_id": "call-123",
   "tool_name": "modify-text",
   "proposal_digest": "sha256:...",
-  "location": "Sample experiment / Results",
+  "location": "Project workspace / Documents",
   "decision": "approve",
   "decided_by": { "username": "user-42" },
   "decided_at": "2026-11-04T19:30:00Z",
   "status": "completed",
-  "result_eid": "text-456"
+  "result_id": "document-456"
 }
 ```
 
@@ -195,7 +230,7 @@ I used the design of [shadcn's AI Elements Confirmation](https://ui.shadcn.com/d
 
 *The shadcn Confirmation example that informed the card design. This screenshot shows the UI pattern; our runtime supplies the approval policy and audit record.*
 
-The card presents the action, its destination, and the prepared change. Its decision goes back through the structured approval path, carrying the identifiers needed to match the pending operation.
+The intended card interaction presents the action, its destination, and the prepared change. Its decision goes back through the structured approval path, carrying the identifiers needed to match the pending operation. Rendering that preview is part of the integration contract: emitting an approval event from the backend is only useful if the client can display what the user is about to authorize.
 
 The useful property is that every annotated tool can use the same interaction and leave the same kind of record. The tool provides the content; the runtime provides the lifecycle; the UI provides the decision surface.
 
