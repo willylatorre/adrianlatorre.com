@@ -12,13 +12,19 @@ import { UPGRADE_COST_MICRO, CLICK_UPGRADE_COST_MICRO } from '../../features/tok
 import { producerCost } from '../../features/token-eater/engine'
 import { formatTokens } from '../../features/token-eater/numbers'
 
-const props = defineProps<{
-  tokensMicro: bigint
-  producers: Record<ProducerId, number>
-  upgrades: UpgradeId[]
-  clickUpgrades: ClickUpgradeId[]
-  ratePerProducer: ReadonlyMap<ProducerId, bigint>
-}>()
+const props = withDefaults(
+  defineProps<{
+    tokensMicro: bigint
+    producers: Record<ProducerId, number>
+    upgrades: UpgradeId[]
+    clickUpgrades: ClickUpgradeId[]
+    ratePerProducer: ReadonlyMap<ProducerId, bigint>
+    mode?: 'all' | 'producers' | 'upgrades'
+  }>(),
+  {
+    mode: 'all',
+  },
+)
 
 const emit = defineEmits<{
   buy: [id: ProducerId, amount: number | 'max']
@@ -82,13 +88,17 @@ function clickUpgradePrice(id: ClickUpgradeId): bigint {
 </script>
 
 <template>
-  <section class="shop" aria-labelledby="shop-heading">
-    <header class="shop__header">
+  <section
+    class="shop"
+    :class="`shop--${mode}`"
+    :aria-labelledby="mode === 'upgrades' ? 'upgrades-heading' : 'shop-heading'"
+  >
+    <header v-if="mode !== 'upgrades'" class="shop__header">
       <h2 id="shop-heading">Build capacity</h2>
       <p>Each purchase makes tokens faster. Prices rise 15% per unit.</p>
     </header>
 
-    <ul class="shop__list">
+    <ul v-if="mode !== 'upgrades'" class="shop__list">
       <li
         v-for="producer in visibleProducers"
         :key="producer.id"
@@ -155,7 +165,8 @@ function clickUpgradePrice(id: ClickUpgradeId): bigint {
       </li>
     </ul>
 
-    <div class="shop__upgrades">
+    <div v-if="mode !== 'producers'" class="shop__upgrades">
+      <h2 v-if="mode === 'upgrades'" id="upgrades-heading" class="shop__main-heading">Upgrades</h2>
       <h3>Efficiency</h3>
       <p class="shop__upgrades-note">
         One-time multipliers. They apply to everything you already own.
@@ -207,7 +218,7 @@ function clickUpgradePrice(id: ClickUpgradeId): bigint {
       </p>
     </div>
 
-    <div class="shop__upgrades">
+    <div v-if="mode !== 'producers'" class="shop__upgrades">
       <h3>Clicking</h3>
       <p class="shop__upgrades-note">
         Clicks always earn at least 1% of your passive rate. These multiply that.
@@ -253,6 +264,17 @@ function clickUpgradePrice(id: ClickUpgradeId): bigint {
 .shop {
   display: grid;
   gap: 1.6rem;
+}
+
+.shop--upgrades {
+  gap: 1rem;
+}
+
+.shop__main-heading {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 680;
+  letter-spacing: -0.02em;
 }
 
 .shop__header h2 {

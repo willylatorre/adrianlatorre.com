@@ -165,26 +165,41 @@ onUnmounted(() => {
     />
 
     <div class="token-eater__stage">
-      <WinPanel
-        v-if="game.won.value"
-        :started-at="game.state.value.startedAt"
-        :finished-at="game.state.value.wonAt ?? Date.now()"
-        :clicks="game.state.value.clicks"
-        :best-upgrades="upgradeCount"
-        :total-upgrades="totalUpgrades"
-        @restart="restart"
-      />
-      <TokenCounter
-        :tokens-micro="game.state.value.tokens"
-        :lifetime-micro="game.state.value.lifetimeTokens"
-        :stats="game.stats.value"
-        :next-milestone="game.stats.value.nextMilestone"
-        :click-yield-micro="game.stats.value.clickYieldMicro"
-        :exact-view="exactView"
-        :won="game.won.value"
-        @click="handleClick"
-        @toggle-exact="exactView = !exactView"
-      />
+      <section class="token-eater__counter-column" aria-label="Token counter">
+        <WinPanel
+          v-if="game.won.value"
+          :started-at="game.state.value.startedAt"
+          :finished-at="game.state.value.wonAt ?? Date.now()"
+          :clicks="game.state.value.clicks"
+          :best-upgrades="upgradeCount"
+          :total-upgrades="totalUpgrades"
+          @restart="restart"
+        />
+        <TokenCounter
+          :tokens-micro="game.state.value.tokens"
+          :lifetime-micro="game.state.value.lifetimeTokens"
+          :stats="game.stats.value"
+          :next-milestone="game.stats.value.nextMilestone"
+          :click-yield-micro="game.stats.value.clickYieldMicro"
+          :exact-view="exactView"
+          :won="game.won.value"
+          @click="handleClick"
+          @toggle-exact="exactView = !exactView"
+        />
+      </section>
+
+      <aside class="token-eater__stage-upgrades" aria-label="Upgrades">
+        <ProducerShop
+          mode="upgrades"
+          :tokens-micro="game.state.value.tokens"
+          :producers="game.state.value.producers"
+          :upgrades="game.state.value.upgrades"
+          :click-upgrades="game.state.value.clickUpgrades"
+          :rate-per-producer="ratePerProducer"
+          @buy-upgrade="buyGlobalUpgrade"
+          @buy-click="buyClickUpgrade"
+        />
+      </aside>
     </div>
 
     <p class="token-eater__goal">
@@ -253,6 +268,7 @@ onUnmounted(() => {
 
       <aside class="token-eater__secondary" aria-label="Shop">
         <ProducerShop
+          mode="producers"
           :tokens-micro="game.state.value.tokens"
           :producers="game.state.value.producers"
           :upgrades="game.state.value.upgrades"
@@ -303,8 +319,19 @@ onUnmounted(() => {
 
 .token-eater__stage {
   display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(19rem, 0.95fr);
+  align-items: start;
   gap: 1rem;
-  max-width: 46rem;
+}
+
+.token-eater__counter-column {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
+}
+
+.token-eater__stage-upgrades {
+  min-width: 0;
 }
 
 .token-eater__goal {
@@ -410,6 +437,14 @@ onUnmounted(() => {
 }
 
 @media (max-width: 960px) {
+  .token-eater__stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .token-eater__stage-upgrades {
+    padding-top: 0.5rem;
+  }
+
   .token-eater__layout {
     grid-template-columns: 1fr;
   }
