@@ -53,8 +53,8 @@ function runBot(options: BotOptions): BotResult {
     const now = START + elapsedMs
     let boughtSomething = false
 
-    if (!state.autoClickerOwned && state.tokens >= toMicro(10n)) {
-      const result = buyAutoClicker(state, now)
+    if (state.tokens >= toMicro(10n)) {
+      const result = buyAutoClicker(state, 'max', now)
       if (result.ok) {
         state = result.state
         boughtSomething = true
@@ -147,8 +147,9 @@ describe('token-eater balance', () => {
   it('an engaged player finishes in a sane window', () => {
     const result = runBot({ clicksPerSecond: 2, usePowerups: true })
     expect(result.won).toBe(true)
-    // The design target is roughly 20 to 30 minutes of active play.
-    expect(result.minutes).toBeGreaterThan(12)
+    // The first automation intentionally shortens an engaged run, but should
+    // not turn the full game into a sub-minute click race.
+    expect(result.minutes).toBeGreaterThan(8)
     expect(result.minutes).toBeLessThan(40)
   })
 

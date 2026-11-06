@@ -153,12 +153,7 @@ Three things control the arc:
 
 Getting that last point right took more attempts than I expected. My first versions finished in six minutes because the upgrades were so cheap relative to income that a player could buy every multiplier almost immediately, and every multiplier compounds. The fix was not a smarter player model. It was making late content genuinely expensive, so the curve has a long tail instead of a cliff.
 
-The suite now replays a greedy bot against the real catalog and asserts the run lands in a window:
-
-- an engaged player who clicks and uses powerups finishes in about 15 minutes;
-- a casual player finishes in about 22;
-- an idle player who only presses powerups finishes in about 27;
-- a player who never presses a powerup still finishes, in about 35.
+The suite replays a greedy bot against the real catalog. With the new intern, the model finishes in about 10 minutes for an engaged player (2 clicks/s plus powerups), 14 for a casual player (0.5 clicks/s plus powerups), and 26 for a low-input run (0.2 clicks/s, no powerups). These are pacing checks, not promises about a human playthrough.
 
 That last one is a design rule, not a coincidence. Powerups should be a convenience, not a subscription to notifications. If the game cannot be finished without them, it is not a game, it is a schedule.
 
@@ -176,7 +171,7 @@ The instant powerups pay a multiple of your _current_ rate, so they scale with y
 
 The clicking itself is also a producer. A click earns at least one token and at least 1% of your passive rate, multiplied by five click upgrades. Early on that is the fastest way out of the tutorial. Late in the run it is a rounding error, which is the joke the copy is making.
 
-The first automation is deliberately tiny: for ten tokens, hire an **unsupervised intern** who clicks the button once every ten seconds. That is the moment the game stops being only a clicker and becomes an incremental game. It also makes the loop legible: click ten times, buy the intern, then watch the number move on its own. The intern's partial interval is saved too, so a tab closing at nine seconds does not make them forget the job.
+The first automation is deliberately tiny: for ten tokens, hire an **unsupervised intern** who clicks the button once every second. Hire more interns to add more clicks per second; each new hire gets a 10× raise. That is the moment the game stops being only a clicker and becomes an incremental game. It also makes the loop legible: click ten times, hire the intern, then watch the number move on its own. The intern's partial interval is saved too, so a tab closing at nine-tenths of a second does not make them forget the job.
 
 ## Saving a number nobody stores
 

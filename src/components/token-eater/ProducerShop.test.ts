@@ -16,7 +16,7 @@ function mountShop(mode: 'producers' | 'upgrades') {
       >,
       upgrades: [],
       clickUpgrades: [],
-      autoClickerOwned: false,
+      autoClickers: 0,
       ratePerProducer: new Map(),
     },
   })
@@ -29,6 +29,7 @@ describe('ProducerShop modes', () => {
     expect(wrapper.find('[data-upgrade="batching"]').exists()).toBe(true)
     expect(wrapper.find('[data-click-upgrade="spoon"]').exists()).toBe(true)
     expect(wrapper.find('[data-auto-clicker]').text()).toContain('Unsupervised intern')
+    expect(wrapper.find('[data-auto-clicker]').text()).toContain('per second')
     expect(wrapper.find('[data-producer]').exists()).toBe(false)
   })
 

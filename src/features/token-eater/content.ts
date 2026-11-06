@@ -359,10 +359,12 @@ export type ClickUpgradeId = 'spoon' | 'ladle' | 'excavator' | 'vacuum' | 'horiz
 
 export const AUTO_CLICKER = {
   name: 'Unsupervised intern',
-  blurb: 'Has access to the big button. Clicks it every ten seconds. HR is reviewing the setup.',
+  blurb: 'Has access to the big button. HR is reviewing the setup.',
   icon: 'i-lucide-mouse-pointer-click',
   cost: 10n,
-  intervalMs: 10_000,
+  costGrowthNumerator: 10n,
+  costGrowthDenominator: 1n,
+  intervalMs: 1_000,
 } as const
 
 export interface ClickUpgradeDefinition {

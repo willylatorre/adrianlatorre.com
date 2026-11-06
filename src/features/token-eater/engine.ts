@@ -15,7 +15,14 @@ import {
   type ProducerId,
   type UpgradeId,
 } from './content'
-import { costAt, earningsFor, progressTowardGoal, TOKEN_GOAL_MICRO, toMicro } from './numbers'
+import {
+  costAt,
+  earningsFor,
+  progressTowardGoal,
+  scaleByPower,
+  TOKEN_GOAL_MICRO,
+  toMicro,
+} from './numbers'
 
 /**
  * The simulation. No Vue, no DOM, no clock of its own: every function takes the
@@ -37,9 +44,9 @@ export interface EngineState {
   clickUpgrades: ClickUpgradeId[]
   /** Total clicks, used for a small piece of flavour copy. */
   clicks: number
-  /** Whether the one-time automatic clicker upgrade has been purchased. */
-  autoClickerOwned: boolean
-  /** Milliseconds accumulated toward the intern's next automatic click. */
+  /** Number of interns, each clicking once per second. */
+  autoClickers: number
+  /** Milliseconds accumulated toward the interns' next automatic click. */
   autoClickRemainderMs: number
   /** Active powerup cooldowns, as epoch milliseconds when ready. */
   powerupReadyAt: Partial<Record<PowerupId, number>>
@@ -83,7 +90,7 @@ export function createInitialState(now = 0): EngineState {
     upgrades: [],
     clickUpgrades: [],
     clicks: 0,
-    autoClickerOwned: false,
+    autoClickers: 0,
     autoClickRemainderMs: 0,
     powerupReadyAt: {},
     boostEndsAt: null,
@@ -119,6 +126,16 @@ export function producerCost(id: ProducerId, owned: number): bigint {
   return costAt(base, owned)
 }
 
+/** Each additional intern costs ten times as much as the previous hire. */
+export function autoClickerCost(owned: number): bigint {
+  return scaleByPower(
+    toMicro(AUTO_CLICKER.cost),
+    AUTO_CLICKER.costGrowthNumerator,
+    AUTO_CLICKER.costGrowthDenominator,
+    owned,
+  )
+}
+
 /** Production from owned producers, before automation, in micro/s. */
 function producerRateMicro(state: EngineState): bigint {
   let total = 0n
@@ -131,7 +148,7 @@ function producerRateMicro(state: EngineState): bigint {
   return total * BigInt(upgradeMultiplierOf(state))
 }
 
-/** The intern runs one click every ten seconds, using normal click upgrades. */
+/** One intern runs one click per second, using normal click upgrades. */
 export function automaticClickYieldMicro(state: EngineState): bigint {
   const producerRate = producerRateMicro(state)
   const floor = toMicro(1n)
@@ -143,8 +160,10 @@ export function automaticClickYieldMicro(state: EngineState): bigint {
 /** Passive rate includes producers and the intern when it is owned. */
 export function passiveRateMicro(state: EngineState): bigint {
   const producers = producerRateMicro(state)
-  if (!state.autoClickerOwned) return producers
-  const automated = (automaticClickYieldMicro(state) * 1_000n) / BigInt(AUTO_CLICKER.intervalMs)
+  if (state.autoClickers <= 0) return producers
+  const automated =
+    (automaticClickYieldMicro(state) * BigInt(state.autoClickers) * 1_000n) /
+    BigInt(AUTO_CLICKER.intervalMs)
   return producers + automated
 }
 
@@ -203,13 +222,13 @@ export function tick(state: EngineState, elapsedMs: number, now: number): Engine
   const boostedRate = rate * BigInt(boost)
   const productionGained = earningsFor(boostedRate, seconds)
   const tickMs = Math.max(0, Math.round(seconds))
-  const autoElapsed = state.autoClickerOwned ? state.autoClickRemainderMs + tickMs : 0
-  const autoClicks = state.autoClickerOwned ? Math.floor(autoElapsed / AUTO_CLICKER.intervalMs) : 0
-  const autoClickRemainderMs = state.autoClickerOwned ? autoElapsed % AUTO_CLICKER.intervalMs : 0
+  const autoElapsed = state.autoClickers > 0 ? state.autoClickRemainderMs + tickMs : 0
+  const autoPeriods = state.autoClickers > 0 ? Math.floor(autoElapsed / AUTO_CLICKER.intervalMs) : 0
+  const autoClicks = autoPeriods * state.autoClickers
+  const autoClickRemainderMs = state.autoClickers > 0 ? autoElapsed % AUTO_CLICKER.intervalMs : 0
   const automatedClicks = BigInt(autoClicks)
-  const autoGained = state.autoClickerOwned
-    ? automaticClickYieldMicro(state) * automatedClicks * BigInt(boost)
-    : 0n
+  const autoGained =
+    state.autoClickers > 0 ? automaticClickYieldMicro(state) * automatedClicks * BigInt(boost) : 0n
   const gained = productionGained + autoGained
 
   const lifetimeTokens = state.lifetimeTokens + gained
@@ -281,20 +300,44 @@ export function buyProducer(
   return { ok: true, state: next }
 }
 
-/** Purchases the one-time intern who clicks the button every ten seconds. */
-export function buyAutoClicker(state: EngineState, now: number): PurchaseResult {
+/** Purchases one or more interns; each contributes one automatic click per second. */
+export function buyAutoClicker(
+  state: EngineState,
+  amount: number | 'max',
+  now: number,
+): PurchaseResult {
   if (state.wonAt !== null) return { ok: false, reason: 'won' }
-  if (state.autoClickerOwned) return { ok: false, reason: 'already-owned' }
-  const price = toMicro(AUTO_CLICKER.cost)
-  if (state.tokens < price) return { ok: false, reason: 'insufficient' }
+  let tokens = state.tokens
+  let owned = state.autoClickers
+  let bought = 0
+
+  if (amount === 'max') {
+    while (bought < 10_000) {
+      const price = autoClickerCost(owned)
+      if (price > tokens) break
+      tokens -= price
+      owned += 1
+      bought += 1
+    }
+  } else {
+    const count = Math.max(0, Math.floor(amount))
+    for (let index = 0; index < count; index += 1) {
+      const price = autoClickerCost(owned)
+      if (price > tokens) break
+      tokens -= price
+      owned += 1
+      bought += 1
+    }
+  }
+
+  if (bought === 0) return { ok: false, reason: 'insufficient' }
 
   return {
     ok: true,
     state: {
       ...state,
-      tokens: state.tokens - price,
-      autoClickerOwned: true,
-      autoClickRemainderMs: 0,
+      tokens,
+      autoClickers: owned,
       lastTickAt: now,
     },
   }

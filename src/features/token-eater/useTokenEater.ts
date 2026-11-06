@@ -74,7 +74,7 @@ export interface TokenEaterGame {
   readonly powerups: typeof POWERUPS
   readonly nextProducer: Readonly<Ref<ProducerId | null>>
   click(): void
-  buyAutoClicker(): PurchaseResult
+  buyAutoClicker(amount?: number | 'max'): PurchaseResult
   buy(id: ProducerId, amount?: number | 'max'): PurchaseResult
   buyGlobalUpgrade(id: UpgradeId): PurchaseResult
   buyClick(id: ClickUpgradeId): PurchaseResult
@@ -247,8 +247,8 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
         persist()
       }
     },
-    buyAutoClicker() {
-      const result = buyAutoClickerState(state.value, now())
+    buyAutoClicker(amount = 1) {
+      const result = buyAutoClickerState(state.value, amount, now())
       if (result.ok) {
         state.value = result.state
         persist(true)

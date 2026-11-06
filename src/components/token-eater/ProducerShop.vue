@@ -10,8 +10,8 @@ import {
   type UpgradeId,
 } from '../../features/token-eater/content'
 import { UPGRADE_COST_MICRO, CLICK_UPGRADE_COST_MICRO } from '../../features/token-eater/content'
-import { producerCost } from '../../features/token-eater/engine'
-import { formatTokens, toMicro } from '../../features/token-eater/numbers'
+import { autoClickerCost, producerCost } from '../../features/token-eater/engine'
+import { formatTokens } from '../../features/token-eater/numbers'
 
 const props = withDefaults(
   defineProps<{
@@ -19,7 +19,7 @@ const props = withDefaults(
     producers: Record<ProducerId, number>
     upgrades: UpgradeId[]
     clickUpgrades: ClickUpgradeId[]
-    autoClickerOwned: boolean
+    autoClickers: number
     ratePerProducer: ReadonlyMap<ProducerId, bigint>
     mode?: 'all' | 'producers' | 'upgrades'
   }>(),
@@ -32,7 +32,7 @@ const emit = defineEmits<{
   buy: [id: ProducerId, amount: number | 'max']
   'buy-upgrade': [id: UpgradeId]
   'buy-click': [id: ClickUpgradeId]
-  'buy-auto-clicker': []
+  'buy-auto-clicker': [amount: number | 'max']
 }>()
 
 /** Which tier the shop should keep visible. Later tiers reveal as you earn. */
@@ -87,6 +87,14 @@ function upgradePrice(id: UpgradeId): bigint {
 
 function clickUpgradePrice(id: ClickUpgradeId): bigint {
   return CLICK_UPGRADE_COST_MICRO.get(id) ?? 0n
+}
+
+function autoClickerPrice(owned = props.autoClickers): bigint {
+  return autoClickerCost(owned)
+}
+
+function buyAutoClickers(mode: 'one' | 'ten' | 'max') {
+  emit('buy-auto-clicker', mode === 'max' ? 'max' : mode === 'ten' ? 10 : 1)
 }
 </script>
 
@@ -170,42 +178,65 @@ function clickUpgradePrice(id: ClickUpgradeId): bigint {
 
     <div v-if="mode !== 'producers'" class="shop__upgrades shop__automation">
       <h3>Automation</h3>
-      <p class="shop__upgrades-note">Ten tokens buys a staff member with exactly one task.</p>
+      <p class="shop__upgrades-note">
+        One intern costs ten tokens. Each new hire asks for a 10× raise.
+      </p>
       <div
         class="shop__upgrade"
         :class="{
-          'is-owned': autoClickerOwned,
-          'is-affordable': !autoClickerOwned && tokensMicro >= toMicro(AUTO_CLICKER.cost),
+          'is-owned': autoClickers > 0,
+          'is-affordable': tokensMicro >= autoClickerPrice(),
         }"
         data-auto-clicker
       >
         <div class="shop__identity">
           <UIcon :name="AUTO_CLICKER.icon" class="shop__icon" aria-hidden="true" />
           <div class="shop__text">
-            <span class="shop__name">{{ AUTO_CLICKER.name }}</span>
+            <span class="shop__name">
+              {{ AUTO_CLICKER.name }}
+              <span v-if="autoClickers > 0" class="shop__owned">{{ autoClickers }}</span>
+            </span>
             <span class="shop__blurb">{{ AUTO_CLICKER.blurb }}</span>
-            <span class="shop__rate">One automatic click every 10 seconds</span>
+            <span class="shop__rate">One automatic click per second each</span>
           </div>
         </div>
         <div class="shop__actions">
-          <span v-if="autoClickerOwned" class="shop__owned-tag">
-            <UIcon name="i-lucide-circle-check" aria-hidden="true" />
-            On duty
-          </span>
-          <template v-else>
-            <span class="shop__price">{{ formatTokens(toMicro(AUTO_CLICKER.cost)) }}</span>
+          <span class="shop__price">{{ formatTokens(autoClickerPrice()) }}</span>
+          <div class="shop__buttons">
             <UButton
               type="button"
               size="xs"
               color="neutral"
-              :variant="tokensMicro >= toMicro(AUTO_CLICKER.cost) ? 'soft' : 'ghost'"
-              :disabled="tokensMicro < toMicro(AUTO_CLICKER.cost)"
-              aria-label="Hire the unsupervised intern for 10 tokens"
-              @click="emit('buy-auto-clicker')"
+              variant="soft"
+              :disabled="tokensMicro < autoClickerPrice()"
+              aria-label="Hire one unsupervised intern"
+              @click="buyAutoClickers('one')"
             >
-              Hire
+              ×1
             </UButton>
-          </template>
+            <UButton
+              type="button"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              :disabled="tokensMicro < autoClickerPrice()"
+              aria-label="Hire ten unsupervised interns"
+              @click="buyAutoClickers('ten')"
+            >
+              ×10
+            </UButton>
+            <UButton
+              type="button"
+              size="xs"
+              color="neutral"
+              variant="ghost"
+              :disabled="tokensMicro < autoClickerPrice()"
+              aria-label="Hire as many unsupervised interns as possible"
+              @click="buyAutoClickers('max')"
+            >
+              Max
+            </UButton>
+          </div>
         </div>
       </div>
     </div>

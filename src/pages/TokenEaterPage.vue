@@ -119,10 +119,14 @@ function buyClickUpgrade(id: ClickUpgradeId) {
   }
 }
 
-function hireIntern() {
-  const result = game.buyAutoClicker()
+function hireIntern(amount: number | 'max') {
+  const before = game.state.value.autoClickers
+  const result = game.buyAutoClicker(amount)
   if (result.ok) {
-    showToast('The intern is on duty. One button click every ten seconds.')
+    const hired = result.state.autoClickers - before
+    showToast(
+      `${hired} intern${hired === 1 ? '' : 's'} on duty. ${hired} automatic click${hired === 1 ? '' : 's'} per second.`,
+    )
   }
 }
 
@@ -202,7 +206,7 @@ onUnmounted(() => {
           :producers="game.state.value.producers"
           :upgrades="game.state.value.upgrades"
           :click-upgrades="game.state.value.clickUpgrades"
-          :auto-clicker-owned="game.state.value.autoClickerOwned"
+          :auto-clickers="game.state.value.autoClickers"
           :rate-per-producer="ratePerProducer"
           @buy-upgrade="buyGlobalUpgrade"
           @buy-click="buyClickUpgrade"
@@ -282,7 +286,7 @@ onUnmounted(() => {
           :producers="game.state.value.producers"
           :upgrades="game.state.value.upgrades"
           :click-upgrades="game.state.value.clickUpgrades"
-          :auto-clicker-owned="game.state.value.autoClickerOwned"
+          :auto-clickers="game.state.value.autoClickers"
           :rate-per-producer="ratePerProducer"
           @buy="buyProducer"
           @buy-upgrade="buyGlobalUpgrade"

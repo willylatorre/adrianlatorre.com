@@ -54,6 +54,8 @@ export interface SerializedSave {
   upgrades: UpgradeId[]
   clickUpgrades: string[]
   clicks: number
+  autoClickers?: number
+  /** Read for compatibility with saves from the first one-intern release. */
   autoClickerOwned?: boolean
   autoClickRemainderMs?: number
   powerupReadyAt: Partial<Record<PowerupId, number>>
@@ -76,7 +78,7 @@ export function serializeState(state: EngineState, now: number): SerializedSave 
     upgrades: [...state.upgrades],
     clickUpgrades: [...state.clickUpgrades],
     clicks: state.clicks,
-    autoClickerOwned: state.autoClickerOwned,
+    autoClickers: state.autoClickers,
     autoClickRemainderMs: state.autoClickRemainderMs,
     powerupReadyAt: { ...state.powerupReadyAt },
     boostEndsAt: state.boostEndsAt,
@@ -189,6 +191,16 @@ function buildState(
     typeof value.boostEndsAt === 'number' && Number.isFinite(value.boostEndsAt)
       ? value.boostEndsAt
       : null
+  const autoClickers =
+    typeof value.autoClickers === 'number' && Number.isInteger(value.autoClickers)
+      ? Math.max(0, Math.min(1_000_000, value.autoClickers))
+      : value.autoClickerOwned === true
+        ? 1
+        : 0
+  const autoClickRemainderMs =
+    autoClickers > 0 && typeof value.autoClickRemainderMs === 'number'
+      ? Math.max(0, Math.min(AUTO_CLICKER.intervalMs - 1, Math.floor(value.autoClickRemainderMs)))
+      : 0
 
   return {
     savedAt,
@@ -199,16 +211,10 @@ function buildState(
       upgrades,
       clickUpgrades,
       clicks: typeof value.clicks === 'number' ? Math.max(0, Math.floor(value.clicks)) : 0,
-      // These fields were added additively. Older v1 saves start without the
-      // intern and remain fully playable.
-      autoClickerOwned: value.autoClickerOwned === true,
-      autoClickRemainderMs:
-        value.autoClickerOwned === true && typeof value.autoClickRemainderMs === 'number'
-          ? Math.max(
-              0,
-              Math.min(AUTO_CLICKER.intervalMs - 1, Math.floor(value.autoClickRemainderMs)),
-            )
-          : 0,
+      // Older v1 saves had either no intern field or a boolean for one intern.
+      // They remain playable; a saved intern migrates to a count of one.
+      autoClickers,
+      autoClickRemainderMs,
       powerupReadyAt,
       boostEndsAt,
       boostMultiplier:

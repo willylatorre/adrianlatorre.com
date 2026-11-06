@@ -77,24 +77,35 @@ describe('token-eater persistence', () => {
     expect(loaded?.state.tokens.toString()).toBe(huge.toString())
   })
 
-  it('round-trips the one-time automatic clicker and its partial interval', () => {
+  it('round-trips multiple automatic clickers and their partial interval', () => {
     const storage = memoryStorage()
-    const state = sampleState({ autoClickerOwned: true, autoClickRemainderMs: 6_250 })
+    const state = sampleState({ autoClickers: 4, autoClickRemainderMs: 625 })
     saveState(state, storage, NOW)
 
     const loaded = loadState(storage, NOW)
-    expect(loaded?.state.autoClickerOwned).toBe(true)
-    expect(loaded?.state.autoClickRemainderMs).toBe(6_250)
+    expect(loaded?.state.autoClickers).toBe(4)
+    expect(loaded?.state.autoClickRemainderMs).toBe(625)
   })
 
   it('loads an existing v1 save without automatic-clicker fields', () => {
     const oldSave = serializeState(sampleState(), NOW) as unknown as Record<string, unknown>
-    delete oldSave.autoClickerOwned
+    delete oldSave.autoClickers
     delete oldSave.autoClickRemainderMs
 
     const loaded = parseSave(JSON.stringify(oldSave), NOW)
-    expect(loaded?.state.autoClickerOwned).toBe(false)
+    expect(loaded?.state.autoClickers).toBe(0)
     expect(loaded?.state.autoClickRemainderMs).toBe(0)
+  })
+
+  it('migrates an older boolean intern save to one hire', () => {
+    const oldSave = serializeState(sampleState(), NOW) as unknown as Record<string, unknown>
+    delete oldSave.autoClickers
+    oldSave.autoClickerOwned = true
+    oldSave.autoClickRemainderMs = 700
+
+    const loaded = parseSave(JSON.stringify(oldSave), NOW)
+    expect(loaded?.state.autoClickers).toBe(1)
+    expect(loaded?.state.autoClickRemainderMs).toBe(700)
   })
 
   it('rejects malformed JSON without throwing', () => {

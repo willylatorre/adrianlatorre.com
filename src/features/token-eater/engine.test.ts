@@ -6,6 +6,7 @@ import {
   buyUpgrade,
   click,
   clickYieldMicro,
+  autoClickerCost,
   createInitialState,
   deriveStats,
   passiveRateMicro,
@@ -36,7 +37,7 @@ describe('token-eater engine', () => {
     const state = createInitialState(AT)
     expect(passiveRateMicro(state)).toBe(0n)
     expect(clickYieldMicro(state)).toBe(toMicro(1n))
-    expect(state.autoClickerOwned).toBe(false)
+    expect(state.autoClickers).toBe(0)
     expect(deriveStats(state, AT).progress).toBe(0)
   })
 
@@ -46,46 +47,67 @@ describe('token-eater engine', () => {
       tokens: toMicro(10n),
       lifetimeTokens: toMicro(10n),
     }
-    const result = buyAutoClicker(state, AT)
+    const result = buyAutoClicker(state, 1, AT)
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.state.tokens).toBe(0n)
-    expect(result.state.autoClickerOwned).toBe(true)
-    expect(passiveRateMicro(result.state)).toBe(100_000n)
+    expect(result.state.autoClickers).toBe(1)
+    expect(passiveRateMicro(result.state)).toBe(1_000_000n)
+    expect(autoClickerCost(1)).toBe(toMicro(100n))
+    expect(autoClickerCost(2)).toBe(toMicro(1_000n))
   })
 
   it('does not buy the intern before the ten-token price', () => {
-    const result = buyAutoClicker({ ...createInitialState(AT), tokens: toMicro(9n) }, AT)
+    const result = buyAutoClicker({ ...createInitialState(AT), tokens: toMicro(9n) }, 1, AT)
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.reason).toBe('insufficient')
   })
 
-  it('auto-clicks once after ten seconds and retains partial time between ticks', () => {
+  it('auto-clicks once after one second and retains partial time between ticks', () => {
     const bought = buyAutoClicker(
       {
         ...createInitialState(AT),
         tokens: toMicro(10n),
         lifetimeTokens: toMicro(10n),
       },
+      1,
       AT,
     )
     if (!bought.ok) throw new Error('setup failed')
 
-    const first = tick(bought.state, 4_000, AT + 4_000)
+    const first = tick(bought.state, 400, AT + 400)
     expect(first.tokens).toBe(0n)
-    expect(first.autoClickRemainderMs).toBe(4_000)
+    expect(first.autoClickRemainderMs).toBe(400)
 
-    const second = tick(first, 6_000, AT + 10_000)
+    const second = tick(first, 600, AT + 1_000)
     expect(second.tokens).toBe(toMicro(1n))
     expect(second.lifetimeTokens).toBe(toMicro(11n))
     expect(second.clicks).toBe(1)
     expect(second.autoClickRemainderMs).toBe(0)
   })
 
+  it('allows multiple hires and each adds one click per second', () => {
+    const hired = buyAutoClicker(
+      {
+        ...createInitialState(AT),
+        tokens: toMicro(500n),
+        lifetimeTokens: toMicro(500n),
+      },
+      'max',
+      AT,
+    )
+    if (!hired.ok) throw new Error('setup failed')
+    expect(hired.state.autoClickers).toBeGreaterThan(1)
+
+    const afterSecond = tick(hired.state, 1_000, AT + 1_000)
+    expect(afterSecond.clicks).toBe(hired.state.autoClickers)
+    expect(afterSecond.tokens).toBe(hired.state.tokens + toMicro(BigInt(hired.state.autoClickers)))
+  })
+
   it('saves a finished run without allowing the intern to click again', () => {
     const state = {
       ...createInitialState(AT),
-      autoClickerOwned: true,
+      autoClickers: 1,
       wonAt: AT,
       tokens: TOKEN_GOAL_MICRO,
       lifetimeTokens: TOKEN_GOAL_MICRO,
