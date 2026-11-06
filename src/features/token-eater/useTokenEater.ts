@@ -2,6 +2,7 @@ import { computed, getCurrentScope, onScopeDispose, ref, shallowRef, type Ref } 
 import {
   createInitialState,
   click as clickState,
+  buyAutoClicker as buyAutoClickerState,
   buyClickUpgrade,
   buyProducer,
   buyUpgrade,
@@ -73,6 +74,7 @@ export interface TokenEaterGame {
   readonly powerups: typeof POWERUPS
   readonly nextProducer: Readonly<Ref<ProducerId | null>>
   click(): void
+  buyAutoClicker(): PurchaseResult
   buy(id: ProducerId, amount?: number | 'max'): PurchaseResult
   buyGlobalUpgrade(id: UpgradeId): PurchaseResult
   buyClick(id: ClickUpgradeId): PurchaseResult
@@ -244,6 +246,14 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
         state.value = result.state
         persist()
       }
+    },
+    buyAutoClicker() {
+      const result = buyAutoClickerState(state.value, now())
+      if (result.ok) {
+        state.value = result.state
+        persist(true)
+      }
+      return result
     },
     buy(id, amount = 1) {
       const result = buyProducer(state.value, id, amount, now())

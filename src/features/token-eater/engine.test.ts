@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buyClickUpgrade,
+  buyAutoClicker,
   buyProducer,
   buyUpgrade,
   click,
@@ -35,7 +36,63 @@ describe('token-eater engine', () => {
     const state = createInitialState(AT)
     expect(passiveRateMicro(state)).toBe(0n)
     expect(clickYieldMicro(state)).toBe(toMicro(1n))
+    expect(state.autoClickerOwned).toBe(false)
     expect(deriveStats(state, AT).progress).toBe(0)
+  })
+
+  it('buys the unsupervised intern for ten tokens', () => {
+    const state = {
+      ...createInitialState(AT),
+      tokens: toMicro(10n),
+      lifetimeTokens: toMicro(10n),
+    }
+    const result = buyAutoClicker(state, AT)
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.state.tokens).toBe(0n)
+    expect(result.state.autoClickerOwned).toBe(true)
+    expect(passiveRateMicro(result.state)).toBe(100_000n)
+  })
+
+  it('does not buy the intern before the ten-token price', () => {
+    const result = buyAutoClicker({ ...createInitialState(AT), tokens: toMicro(9n) }, AT)
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.reason).toBe('insufficient')
+  })
+
+  it('auto-clicks once after ten seconds and retains partial time between ticks', () => {
+    const bought = buyAutoClicker(
+      {
+        ...createInitialState(AT),
+        tokens: toMicro(10n),
+        lifetimeTokens: toMicro(10n),
+      },
+      AT,
+    )
+    if (!bought.ok) throw new Error('setup failed')
+
+    const first = tick(bought.state, 4_000, AT + 4_000)
+    expect(first.tokens).toBe(0n)
+    expect(first.autoClickRemainderMs).toBe(4_000)
+
+    const second = tick(first, 6_000, AT + 10_000)
+    expect(second.tokens).toBe(toMicro(1n))
+    expect(second.lifetimeTokens).toBe(toMicro(11n))
+    expect(second.clicks).toBe(1)
+    expect(second.autoClickRemainderMs).toBe(0)
+  })
+
+  it('saves a finished run without allowing the intern to click again', () => {
+    const state = {
+      ...createInitialState(AT),
+      autoClickerOwned: true,
+      wonAt: AT,
+      tokens: TOKEN_GOAL_MICRO,
+      lifetimeTokens: TOKEN_GOAL_MICRO,
+    }
+    const result = tick(state, 10_000, AT + 10_000)
+    expect(result.tokens).toBe(TOKEN_GOAL_MICRO)
+    expect(result.clicks).toBe(0)
   })
 
   it('prices each successive unit above the last', () => {

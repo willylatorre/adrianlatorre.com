@@ -357,6 +357,14 @@ export const POWERUPS: readonly PowerupDefinition[] = [
 
 export type ClickUpgradeId = 'spoon' | 'ladle' | 'excavator' | 'vacuum' | 'horizon'
 
+export const AUTO_CLICKER = {
+  name: 'Unsupervised intern',
+  blurb: 'Has access to the big button. Clicks it every ten seconds. HR is reviewing the setup.',
+  icon: 'i-lucide-mouse-pointer-click',
+  cost: 10n,
+  intervalMs: 10_000,
+} as const
+
 export interface ClickUpgradeDefinition {
   id: ClickUpgradeId
   name: string

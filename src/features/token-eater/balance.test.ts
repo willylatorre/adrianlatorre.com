@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buyAutoClicker,
   buyClickUpgrade,
   buyProducer,
   buyUpgrade,
@@ -12,7 +13,7 @@ import {
   type EngineState,
 } from './engine'
 import { CLICK_UPGRADES, POWERUPS, PRODUCERS, UPGRADES, UPGRADE_COST_MICRO } from './content'
-import { TOKEN_GOAL_MICRO } from './numbers'
+import { TOKEN_GOAL_MICRO, toMicro } from './numbers'
 
 /**
  * A deliberately simple bot: every step it buys anything affordable that is
@@ -51,6 +52,14 @@ function runBot(options: BotOptions): BotResult {
   while (elapsedMs < maxMs && state.wonAt === null) {
     const now = START + elapsedMs
     let boughtSomething = false
+
+    if (!state.autoClickerOwned && state.tokens >= toMicro(10n)) {
+      const result = buyAutoClicker(state, now)
+      if (result.ok) {
+        state = result.state
+        boughtSomething = true
+      }
+    }
 
     // Global upgrades first: they multiply everything and are never a bad buy.
     for (const upgrade of UPGRADES) {

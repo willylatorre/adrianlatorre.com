@@ -172,9 +172,11 @@ The brief asked for powerups along the way, so each one is a real inference tech
 - **Test-time compute** multiplies by ten for 10 seconds.
 - **Distillation run** pays fifteen minutes, on a ten minute cooldown.
 
-The instant powerups pay a multiple of your *current* rate, so they scale with you and never become useless. The multipliers are short and strong, which makes them a decision about timing rather than a button you hold down.
+The instant powerups pay a multiple of your _current_ rate, so they scale with you and never become useless. The multipliers are short and strong, which makes them a decision about timing rather than a button you hold down.
 
 The clicking itself is also a producer. A click earns at least one token and at least 1% of your passive rate, multiplied by five click upgrades. Early on that is the fastest way out of the tutorial. Late in the run it is a rounding error, which is the joke the copy is making.
+
+The first automation is deliberately tiny: for ten tokens, hire an **unsupervised intern** who clicks the button once every ten seconds. That is the moment the game stops being only a clicker and becomes an incremental game. It also makes the loop legible: click ten times, buy the intern, then watch the number move on its own. The intern's partial interval is saved too, so a tab closing at nine seconds does not make them forget the job.
 
 ## Saving a number nobody stores
 

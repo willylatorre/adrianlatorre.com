@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import {
+  AUTO_CLICKER,
   CLICK_UPGRADES,
   PRODUCERS,
   UPGRADES,
@@ -10,7 +11,7 @@ import {
 } from '../../features/token-eater/content'
 import { UPGRADE_COST_MICRO, CLICK_UPGRADE_COST_MICRO } from '../../features/token-eater/content'
 import { producerCost } from '../../features/token-eater/engine'
-import { formatTokens } from '../../features/token-eater/numbers'
+import { formatTokens, toMicro } from '../../features/token-eater/numbers'
 
 const props = withDefaults(
   defineProps<{
@@ -18,6 +19,7 @@ const props = withDefaults(
     producers: Record<ProducerId, number>
     upgrades: UpgradeId[]
     clickUpgrades: ClickUpgradeId[]
+    autoClickerOwned: boolean
     ratePerProducer: ReadonlyMap<ProducerId, bigint>
     mode?: 'all' | 'producers' | 'upgrades'
   }>(),
@@ -30,6 +32,7 @@ const emit = defineEmits<{
   buy: [id: ProducerId, amount: number | 'max']
   'buy-upgrade': [id: UpgradeId]
   'buy-click': [id: ClickUpgradeId]
+  'buy-auto-clicker': []
 }>()
 
 /** Which tier the shop should keep visible. Later tiers reveal as you earn. */
@@ -164,6 +167,48 @@ function clickUpgradePrice(id: ClickUpgradeId): bigint {
         </div>
       </li>
     </ul>
+
+    <div v-if="mode !== 'producers'" class="shop__upgrades shop__automation">
+      <h3>Automation</h3>
+      <p class="shop__upgrades-note">Ten tokens buys a staff member with exactly one task.</p>
+      <div
+        class="shop__upgrade"
+        :class="{
+          'is-owned': autoClickerOwned,
+          'is-affordable': !autoClickerOwned && tokensMicro >= toMicro(AUTO_CLICKER.cost),
+        }"
+        data-auto-clicker
+      >
+        <div class="shop__identity">
+          <UIcon :name="AUTO_CLICKER.icon" class="shop__icon" aria-hidden="true" />
+          <div class="shop__text">
+            <span class="shop__name">{{ AUTO_CLICKER.name }}</span>
+            <span class="shop__blurb">{{ AUTO_CLICKER.blurb }}</span>
+            <span class="shop__rate">One automatic click every 10 seconds</span>
+          </div>
+        </div>
+        <div class="shop__actions">
+          <span v-if="autoClickerOwned" class="shop__owned-tag">
+            <UIcon name="i-lucide-circle-check" aria-hidden="true" />
+            On duty
+          </span>
+          <template v-else>
+            <span class="shop__price">{{ formatTokens(toMicro(AUTO_CLICKER.cost)) }}</span>
+            <UButton
+              type="button"
+              size="xs"
+              color="neutral"
+              :variant="tokensMicro >= toMicro(AUTO_CLICKER.cost) ? 'soft' : 'ghost'"
+              :disabled="tokensMicro < toMicro(AUTO_CLICKER.cost)"
+              aria-label="Hire the unsupervised intern for 10 tokens"
+              @click="emit('buy-auto-clicker')"
+            >
+              Hire
+            </UButton>
+          </template>
+        </div>
+      </div>
+    </div>
 
     <div v-if="mode !== 'producers'" class="shop__upgrades">
       <h2 v-if="mode === 'upgrades'" id="upgrades-heading" class="shop__main-heading">Upgrades</h2>

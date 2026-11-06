@@ -77,6 +77,26 @@ describe('token-eater persistence', () => {
     expect(loaded?.state.tokens.toString()).toBe(huge.toString())
   })
 
+  it('round-trips the one-time automatic clicker and its partial interval', () => {
+    const storage = memoryStorage()
+    const state = sampleState({ autoClickerOwned: true, autoClickRemainderMs: 6_250 })
+    saveState(state, storage, NOW)
+
+    const loaded = loadState(storage, NOW)
+    expect(loaded?.state.autoClickerOwned).toBe(true)
+    expect(loaded?.state.autoClickRemainderMs).toBe(6_250)
+  })
+
+  it('loads an existing v1 save without automatic-clicker fields', () => {
+    const oldSave = serializeState(sampleState(), NOW) as unknown as Record<string, unknown>
+    delete oldSave.autoClickerOwned
+    delete oldSave.autoClickRemainderMs
+
+    const loaded = parseSave(JSON.stringify(oldSave), NOW)
+    expect(loaded?.state.autoClickerOwned).toBe(false)
+    expect(loaded?.state.autoClickRemainderMs).toBe(0)
+  })
+
   it('rejects malformed JSON without throwing', () => {
     const storage = memoryStorage()
     storage.setItem(SAVE_KEY, '{not json')

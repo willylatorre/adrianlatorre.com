@@ -1,5 +1,6 @@
 import { createInitialState, type EngineState } from './engine'
 import {
+  AUTO_CLICKER,
   POWERUPS,
   PRODUCERS,
   type ClickUpgradeId,
@@ -53,6 +54,8 @@ export interface SerializedSave {
   upgrades: UpgradeId[]
   clickUpgrades: string[]
   clicks: number
+  autoClickerOwned?: boolean
+  autoClickRemainderMs?: number
   powerupReadyAt: Partial<Record<PowerupId, number>>
   boostEndsAt: number | null
   boostMultiplier: number
@@ -73,6 +76,8 @@ export function serializeState(state: EngineState, now: number): SerializedSave 
     upgrades: [...state.upgrades],
     clickUpgrades: [...state.clickUpgrades],
     clicks: state.clicks,
+    autoClickerOwned: state.autoClickerOwned,
+    autoClickRemainderMs: state.autoClickRemainderMs,
     powerupReadyAt: { ...state.powerupReadyAt },
     boostEndsAt: state.boostEndsAt,
     boostMultiplier: state.boostMultiplier,
@@ -194,6 +199,16 @@ function buildState(
       upgrades,
       clickUpgrades,
       clicks: typeof value.clicks === 'number' ? Math.max(0, Math.floor(value.clicks)) : 0,
+      // These fields were added additively. Older v1 saves start without the
+      // intern and remain fully playable.
+      autoClickerOwned: value.autoClickerOwned === true,
+      autoClickRemainderMs:
+        value.autoClickerOwned === true && typeof value.autoClickRemainderMs === 'number'
+          ? Math.max(
+              0,
+              Math.min(AUTO_CLICKER.intervalMs - 1, Math.floor(value.autoClickRemainderMs)),
+            )
+          : 0,
       powerupReadyAt,
       boostEndsAt,
       boostMultiplier:

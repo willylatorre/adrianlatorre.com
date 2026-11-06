@@ -119,6 +119,13 @@ function buyClickUpgrade(id: ClickUpgradeId) {
   }
 }
 
+function hireIntern() {
+  const result = game.buyAutoClicker()
+  if (result.ok) {
+    showToast('The intern is on duty. One button click every ten seconds.')
+  }
+}
+
 function activatePowerup(id: PowerupId) {
   const result = game.usePowerup(id)
   if (result.ok && result.gainedMicro > 0n) {
@@ -195,9 +202,11 @@ onUnmounted(() => {
           :producers="game.state.value.producers"
           :upgrades="game.state.value.upgrades"
           :click-upgrades="game.state.value.clickUpgrades"
+          :auto-clicker-owned="game.state.value.autoClickerOwned"
           :rate-per-producer="ratePerProducer"
           @buy-upgrade="buyGlobalUpgrade"
           @buy-click="buyClickUpgrade"
+          @buy-auto-clicker="hireIntern"
         />
       </aside>
     </div>
@@ -273,6 +282,7 @@ onUnmounted(() => {
           :producers="game.state.value.producers"
           :upgrades="game.state.value.upgrades"
           :click-upgrades="game.state.value.clickUpgrades"
+          :auto-clicker-owned="game.state.value.autoClickerOwned"
           :rate-per-producer="ratePerProducer"
           @buy="buyProducer"
           @buy-upgrade="buyGlobalUpgrade"
