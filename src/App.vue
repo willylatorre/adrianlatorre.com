@@ -113,6 +113,12 @@ const baseSearchGroups = [
         to: '/hashi',
         icon: 'i-lucide-git-branch',
       },
+      {
+        label: 'Token Eater',
+        suffix: 'Incremental token clicker',
+        to: '/token-eater',
+        icon: 'i-lucide-cookie',
+      },
     ],
   },
   {
@@ -191,6 +197,11 @@ const links = computed<NavigationMenuItem[]>(() => [
         label: 'Hashi',
         icon: 'i-lucide-git-branch',
         to: '/hashi',
+      },
+      {
+        label: 'Token Eater',
+        icon: 'i-lucide-cookie',
+        to: '/token-eater',
       },
       {
         label: 'Stocks',

@@ -63,6 +63,12 @@ const router = createRouter({
       component: lazy(() => import('../pages/HashiPage.vue')),
     },
     {
+      path: '/token-eater',
+      name: 'Token Eater',
+      meta: { widePanel: true },
+      component: lazy(() => import('../pages/TokenEaterPage.vue')),
+    },
+    {
       path: '/media',
       name: 'Media',
       component: lazy(() => import('../pages/MediaPage.vue')),

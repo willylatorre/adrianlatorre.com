@@ -43,6 +43,22 @@ describe('blog markdown frontmatter exports', () => {
     for (const kind of kinds) expect(source.default).toContain(`kind="${kind}"`)
   })
 
+  it('exports the Token Eater build notes metadata', async () => {
+    const mod = await import('./notes-from-a-game-about-big-numbers.md')
+
+    expect(mod.default).toBeTruthy()
+    expect(mod.title).toBe('Notes From A Game About Big Numbers')
+    expect(mod.date).toMatch(/^2026-11-06/)
+    expect(mod.description).toBeTruthy()
+  })
+
+  it('keeps the Token Eater post focused on numbers and saves', async () => {
+    const source = await import('./notes-from-a-game-about-big-numbers.md?raw')
+
+    expect(source.default).toContain('999,999,999,999,999,999')
+    expect(source.default).toContain('/token-eater')
+  })
+
   it('exports the Hashi follow-up metadata', async () => {
     const mod = await import('./notes-from-a-hashi-game-that-technically-worked.md')
 
