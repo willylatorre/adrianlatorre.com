@@ -46,25 +46,6 @@ const visibleProducers = computed(() => {
   return PRODUCERS.slice(0, Math.min(cutoff, PRODUCERS.length))
 })
 
-/**
- * Upgrades reveal in order, two ahead of the last owned one, so the shop is an
- * unfolding ladder rather than a wall of things you cannot afford. Owned
- * upgrades stay visible so the multipliers remain legible.
- */
-const visibleUpgrades = computed(() => {
-  const firstUnownedIndex = UPGRADES.findIndex((upgrade) => !props.upgrades.includes(upgrade.id))
-  const cutoff = firstUnownedIndex === -1 ? UPGRADES.length : firstUnownedIndex + 2
-  return UPGRADES.slice(0, Math.min(cutoff, UPGRADES.length))
-})
-
-const nextUpgrade = computed(
-  () => UPGRADES.find((upgrade) => !props.upgrades.includes(upgrade.id)) ?? null,
-)
-
-const pendingClickUpgrades = computed(() =>
-  CLICK_UPGRADES.filter((upgrade) => !props.clickUpgrades.includes(upgrade.id)).slice(0, 3),
-)
-
 function priceOf(id: ProducerId): bigint {
   return producerCost(id, props.producers[id] ?? 0)
 }
@@ -249,7 +230,7 @@ function buyAutoClickers(mode: 'one' | 'ten' | 'max') {
       </p>
       <ul class="shop__upgrade-list">
         <li
-          v-for="upgrade in visibleUpgrades"
+          v-for="upgrade in UPGRADES"
           :key="upgrade.id"
           class="shop__upgrade"
           :class="{
@@ -258,6 +239,8 @@ function buyAutoClickers(mode: 'one' | 'ten' | 'max') {
               !upgrades.includes(upgrade.id) && tokensMicro >= upgradePrice(upgrade.id),
           }"
           :data-upgrade="upgrade.id"
+          :aria-label="`${upgrade.name}. ${upgrade.blurb}`"
+          :title="upgrade.blurb"
         >
           <div class="shop__identity">
             <UIcon :name="upgrade.icon" class="shop__icon" aria-hidden="true" />
@@ -288,10 +271,6 @@ function buyAutoClickers(mode: 'one' | 'ten' | 'max') {
           </div>
         </li>
       </ul>
-      <p v-if="nextUpgrade" class="shop__next">
-        Next multiplier at {{ formatTokens(upgradePrice(nextUpgrade.id)) }} tokens:
-        {{ nextUpgrade.name }}.
-      </p>
     </div>
 
     <div v-if="mode !== 'producers'" class="shop__upgrades">
@@ -301,34 +280,49 @@ function buyAutoClickers(mode: 'one' | 'ten' | 'max') {
       </p>
       <ul class="shop__upgrade-list">
         <li
-          v-for="upgrade in pendingClickUpgrades"
+          v-for="upgrade in CLICK_UPGRADES"
           :key="upgrade.id"
           class="shop__upgrade"
           :class="{
-            'is-affordable': tokensMicro >= clickUpgradePrice(upgrade.id),
+            'is-owned': clickUpgrades.includes(upgrade.id),
+            'is-affordable':
+              !clickUpgrades.includes(upgrade.id) && tokensMicro >= clickUpgradePrice(upgrade.id),
           }"
           :data-click-upgrade="upgrade.id"
+          :aria-label="`${upgrade.name}. ${upgrade.blurb}`"
+          :title="upgrade.blurb"
         >
           <div class="shop__identity">
             <UIcon :name="upgrade.icon" class="shop__icon" aria-hidden="true" />
             <div class="shop__text">
-              <span class="shop__name">{{ upgrade.name }}</span>
+              <span class="shop__name">
+                {{ upgrade.name }}
+                <span v-if="clickUpgrades.includes(upgrade.id)" class="shop__owned">Owned</span>
+              </span>
               <span class="shop__blurb">{{ upgrade.blurb }}</span>
             </div>
           </div>
           <div class="shop__actions">
-            <span class="shop__price">{{ formatTokens(clickUpgradePrice(upgrade.id)) }}</span>
-            <UButton
-              type="button"
-              size="xs"
-              color="neutral"
-              :variant="tokensMicro >= clickUpgradePrice(upgrade.id) ? 'soft' : 'ghost'"
-              :disabled="tokensMicro < clickUpgradePrice(upgrade.id)"
-              :aria-label="`Buy ${upgrade.name}`"
-              @click="emit('buy-click', upgrade.id)"
-            >
-              ×{{ upgrade.multiplier }}
-            </UButton>
+            <template v-if="clickUpgrades.includes(upgrade.id)">
+              <span class="shop__owned-tag">
+                <UIcon name="i-lucide-circle-check" aria-hidden="true" />
+                Owned
+              </span>
+            </template>
+            <template v-else>
+              <span class="shop__price">{{ formatTokens(clickUpgradePrice(upgrade.id)) }}</span>
+              <UButton
+                type="button"
+                size="xs"
+                color="neutral"
+                :variant="tokensMicro >= clickUpgradePrice(upgrade.id) ? 'soft' : 'ghost'"
+                :disabled="tokensMicro < clickUpgradePrice(upgrade.id)"
+                :aria-label="`Buy ${upgrade.name}`"
+                @click="emit('buy-click', upgrade.id)"
+              >
+                ×{{ upgrade.multiplier }}
+              </UButton>
+            </template>
           </div>
         </li>
       </ul>
@@ -344,6 +338,43 @@ function buyAutoClickers(mode: 'one' | 'ten' | 'max') {
 
 .shop--upgrades {
   gap: 1rem;
+}
+
+.shop--upgrades .shop__upgrade-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+}
+
+.shop--upgrades .shop__upgrade {
+  min-width: 0;
+  padding: 0.48rem 0.55rem;
+  gap: 0.4rem;
+}
+
+.shop--upgrades .shop__identity {
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.shop--upgrades .shop__icon {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.shop--upgrades .shop__name {
+  font-size: 0.76rem;
+}
+
+.shop--upgrades .shop__blurb {
+  display: none;
+}
+
+.shop--upgrades .shop__actions {
+  gap: 0.3rem;
+}
+
+.shop--upgrades .shop__price {
+  font-size: 0.7rem;
 }
 
 .shop__main-heading {
@@ -504,12 +535,6 @@ function buyAutoClickers(mode: 'one' | 'ten' | 'max') {
   line-height: 1.5;
 }
 
-.shop__next {
-  margin: 0.7rem 0 0;
-  color: var(--site-faint);
-  font-size: 0.72rem;
-}
-
 @media (max-width: 620px) {
   .shop__item,
   .shop__upgrade {
@@ -520,6 +545,10 @@ function buyAutoClickers(mode: 'one' | 'ten' | 'max') {
 
   .shop__actions {
     justify-content: space-between;
+  }
+
+  .shop--upgrades .shop__upgrade-list {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>

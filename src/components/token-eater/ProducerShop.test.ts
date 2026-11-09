@@ -27,7 +27,12 @@ describe('ProducerShop modes', () => {
     const wrapper = mountShop('upgrades')
 
     expect(wrapper.find('[data-upgrade="batching"]').exists()).toBe(true)
+    // The final upgrade and click tool stay visible while unaffordable, so a
+    // player can scan the whole progression instead of discovering it one card
+    // at a time.
+    expect(wrapper.find('[data-upgrade="emergence"]').exists()).toBe(true)
     expect(wrapper.find('[data-click-upgrade="spoon"]').exists()).toBe(true)
+    expect(wrapper.find('[data-click-upgrade="horizon"]').exists()).toBe(true)
     expect(wrapper.find('[data-auto-clicker]').text()).toContain('Unsupervised intern')
     expect(wrapper.find('[data-auto-clicker]').text()).toContain('per second')
     expect(wrapper.find('[data-producer]').exists()).toBe(false)
