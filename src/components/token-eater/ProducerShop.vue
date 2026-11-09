@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import {
   AUTO_CLICKER,
   CLICK_UPGRADES,
-  PRODUCERS,
   UPGRADES,
   type ClickUpgradeId,
   type ProducerId,
   type UpgradeId,
+  visibleProducerDefinitions,
 } from '../../features/token-eater/content'
 import { UPGRADE_COST_MICRO, CLICK_UPGRADE_COST_MICRO } from '../../features/token-eater/content'
 import { autoClickerCost, producerCost } from '../../features/token-eater/engine'
@@ -34,17 +33,6 @@ const emit = defineEmits<{
   'buy-click': [id: ClickUpgradeId]
   'buy-auto-clicker': [amount: number | 'max']
 }>()
-
-/** Which tier the shop should keep visible. Later tiers reveal as you earn. */
-const visibleProducers = computed(() => {
-  const firstUnownedIndex = PRODUCERS.findIndex(
-    (producer) => (props.producers[producer.id] ?? 0) === 0,
-  )
-  // Show everything already owned, plus the next two unowned tiers, so there
-  // is always something to aim at without spoiling the whole ladder at once.
-  const cutoff = firstUnownedIndex === -1 ? PRODUCERS.length : firstUnownedIndex + 3
-  return PRODUCERS.slice(0, Math.min(cutoff, PRODUCERS.length))
-})
 
 function priceOf(id: ProducerId): bigint {
   return producerCost(id, props.producers[id] ?? 0)
@@ -92,7 +80,7 @@ function buyAutoClickers(mode: 'one' | 'ten' | 'max') {
 
     <ul v-if="mode !== 'upgrades'" class="shop__list">
       <li
-        v-for="producer in visibleProducers"
+        v-for="producer in visibleProducerDefinitions(producers)"
         :key="producer.id"
         class="shop__item"
         :class="{ 'is-affordable': affordable(producer.id) }"

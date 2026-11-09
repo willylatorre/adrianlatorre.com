@@ -8,11 +8,15 @@ import ProducerShop from '@/components/token-eater/ProducerShop.vue'
 import PowerupBar from '@/components/token-eater/PowerupBar.vue'
 import WinPanel from '@/components/token-eater/WinPanel.vue'
 import { useTokenEater } from '@/features/token-eater/useTokenEater'
-import { producerCost } from '@/features/token-eater/engine'
+import { autoClickerCost, producerCost } from '@/features/token-eater/engine'
 import {
   CLICK_UPGRADE_BY_ID,
+  CLICK_UPGRADE_COST_MICRO,
+  CLICK_UPGRADES,
   PRODUCERS,
   UPGRADES,
+  UPGRADE_COST_MICRO,
+  visibleProducerDefinitions,
   type ClickUpgradeId,
   type PowerupId,
   type ProducerId,
@@ -53,6 +57,41 @@ const elapsedLabel = computed(() => {
 
 const upgradeCount = computed(() => game.state.value.upgrades.length)
 const totalUpgrades = computed(() => UPGRADES.length)
+
+const affordableUpgradeCount = computed(() => {
+  const state = game.state.value
+  let count =
+    state.autoClickers < 1_000_000 && autoClickerCost(state.autoClickers) <= state.tokens ? 1 : 0
+  count += UPGRADES.filter(
+    (upgrade) =>
+      !state.upgrades.includes(upgrade.id) &&
+      (UPGRADE_COST_MICRO.get(upgrade.id) ?? 0n) <= state.tokens,
+  ).length
+  count += CLICK_UPGRADES.filter(
+    (upgrade) =>
+      !state.clickUpgrades.includes(upgrade.id) &&
+      (CLICK_UPGRADE_COST_MICRO.get(upgrade.id) ?? 0n) <= state.tokens,
+  ).length
+  return count
+})
+
+const affordableProducerCount = computed(() => {
+  const state = game.state.value
+  return visibleProducerDefinitions(state.producers).filter(
+    (producer) => producerCost(producer.id, state.producers[producer.id] ?? 0) <= state.tokens,
+  ).length
+})
+
+const upgradeTabLabel = computed(() =>
+  affordableUpgradeCount.value > 0
+    ? `Upgrades, ${affordableUpgradeCount.value} ready to buy`
+    : 'Upgrades',
+)
+const producerTabLabel = computed(() =>
+  affordableProducerCount.value > 0
+    ? `Build capacity, ${affordableProducerCount.value} affordable tiers`
+    : 'Build capacity',
+)
 
 const losingProduction = computed(() => {
   const next = game.nextProducer.value
@@ -274,11 +313,17 @@ onUnmounted(() => {
               role="tab"
               :aria-selected="shopTab === 'upgrades'"
               :aria-controls="'token-eater-shop-panel'"
+              :aria-label="upgradeTabLabel"
+              :title="upgradeTabLabel"
               :class="{ 'is-active': shopTab === 'upgrades' }"
               data-shop-tab="upgrades"
               @click="shopTab = 'upgrades'"
             >
-              Upgrades
+              <span>Upgrades</span>
+              <span v-if="affordableUpgradeCount > 0" class="token-eater__tab-notice">
+                <UIcon name="i-lucide-bell-dot" aria-hidden="true" />
+                {{ affordableUpgradeCount }}
+              </span>
             </button>
             <button
               id="token-eater-tab-producers"
@@ -286,11 +331,17 @@ onUnmounted(() => {
               role="tab"
               :aria-selected="shopTab === 'producers'"
               :aria-controls="'token-eater-shop-panel'"
+              :aria-label="producerTabLabel"
+              :title="producerTabLabel"
               :class="{ 'is-active': shopTab === 'producers' }"
               data-shop-tab="producers"
               @click="shopTab = 'producers'"
             >
-              Build capacity
+              <span>Build capacity</span>
+              <span v-if="affordableProducerCount > 0" class="token-eater__tab-notice">
+                <UIcon name="i-lucide-bell-dot" aria-hidden="true" />
+                {{ affordableProducerCount }}
+              </span>
             </button>
           </nav>
 
@@ -388,6 +439,9 @@ onUnmounted(() => {
 }
 
 .token-eater__shop-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.42rem 0.7rem;
   border: 1px solid transparent;
   border-radius: 0.35rem;
@@ -397,6 +451,20 @@ onUnmounted(() => {
   font-size: 0.78rem;
   font-weight: 620;
   cursor: pointer;
+}
+
+.token-eater__tab-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.16rem;
+  color: color-mix(in oklch, var(--site-accent) 74%, var(--site-ink));
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.token-eater__tab-notice :deep(svg) {
+  width: 0.78rem;
+  height: 0.78rem;
 }
 
 .token-eater__shop-tabs button:hover {

@@ -156,6 +156,13 @@ export const PRODUCERS: readonly ProducerDefinition[] = [
   },
 ] as const
 
+/** Producer tiers shown in the shop: owned tiers plus the next two to aim at. */
+export function visibleProducerDefinitions(owned: Record<ProducerId, number>) {
+  const firstUnownedIndex = PRODUCERS.findIndex((producer) => (owned[producer.id] ?? 0) === 0)
+  const cutoff = firstUnownedIndex === -1 ? PRODUCERS.length : firstUnownedIndex + 3
+  return PRODUCERS.slice(0, Math.min(cutoff, PRODUCERS.length))
+}
+
 export type UpgradeId =
   | 'batching'
   | 'caching'
