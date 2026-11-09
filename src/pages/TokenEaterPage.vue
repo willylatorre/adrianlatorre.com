@@ -8,6 +8,7 @@ import ProducerShop from '@/components/token-eater/ProducerShop.vue'
 import PowerupBar from '@/components/token-eater/PowerupBar.vue'
 import WinPanel from '@/components/token-eater/WinPanel.vue'
 import { useTokenEater } from '@/features/token-eater/useTokenEater'
+import { producerCost } from '@/features/token-eater/engine'
 import {
   CLICK_UPGRADE_BY_ID,
   PRODUCERS,
@@ -208,7 +209,15 @@ onUnmounted(() => {
             </template>
             <template v-else-if="losingProduction">
               Next tier: {{ losingProduction.name }} at
-              {{ formatTokens(BigInt(losingProduction.baseCost) * 1_000_000n) }} tokens.
+              {{
+                formatTokens(
+                  producerCost(
+                    losingProduction.id,
+                    game.state.value.producers[losingProduction.id] ?? 0,
+                  ),
+                )
+              }}
+              tokens.
             </template>
           </p>
 

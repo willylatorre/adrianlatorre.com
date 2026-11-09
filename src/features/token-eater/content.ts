@@ -432,7 +432,10 @@ export const CLICK_UPGRADE_BY_ID = new Map(CLICK_UPGRADES.map((item) => [item.id
 
 /** Converted once so the engine never multiplies a cost by a float. */
 export const PRODUCER_BASE_COST_MICRO: ReadonlyMap<ProducerId, bigint> = new Map(
-  PRODUCERS.map((item) => [item.id, toMicro(item.baseCost)]),
+  // The starter intern gives the player automation earlier than the original
+  // curve. Three cost units keep that more generous opening from shortening
+  // the whole run into a few minutes.
+  PRODUCERS.map((item) => [item.id, toMicro(item.baseCost) * 3n]),
 )
 
 export const PRODUCER_BASE_RATE_MICRO: ReadonlyMap<ProducerId, bigint> = new Map(

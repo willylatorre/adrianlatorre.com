@@ -54,7 +54,7 @@ function runBot(options: BotOptions): BotResult {
     let boughtSomething = false
 
     if (state.tokens >= toMicro(10n)) {
-        const result = buyAutoClicker(state, 'max')
+      const result = buyAutoClicker(state, 'max')
       if (result.ok) {
         state = result.state
         boughtSomething = true
@@ -66,7 +66,7 @@ function runBot(options: BotOptions): BotResult {
       if (state.upgrades.includes(upgrade.id)) continue
       const price = UPGRADE_COST_MICRO.get(upgrade.id) ?? 0n
       if (state.tokens < price) continue
-        const result = buyUpgrade(state, upgrade.id)
+      const result = buyUpgrade(state, upgrade.id)
       if (result.ok) {
         state = result.state
         boughtSomething = true
@@ -79,7 +79,7 @@ function runBot(options: BotOptions): BotResult {
     for (const upgrade of CLICK_UPGRADES) {
       if (state.clickUpgrades.includes(upgrade.id)) continue
       if (state.tokens < upgrade.cost * 1_000_000n) continue
-        const result = buyClickUpgrade(state, upgrade.id)
+      const result = buyClickUpgrade(state, upgrade.id)
       if (result.ok) {
         state = result.state
         boughtSomething = true
@@ -100,7 +100,7 @@ function runBot(options: BotOptions): BotResult {
       }
     }
     if (bestId) {
-        const result = buyProducer(state, bestId, 'max')
+      const result = buyProducer(state, bestId, 'max')
       if (result.ok) {
         state = result.state
         boughtSomething = true

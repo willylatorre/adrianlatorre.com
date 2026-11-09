@@ -149,7 +149,7 @@ Three things control the arc:
 
 Getting that last point right took more attempts than I expected. My first versions finished in six minutes because the upgrades were so cheap relative to income that a player could buy every multiplier almost immediately, and every multiplier compounds. The fix was not a smarter player model. It was making late content genuinely expensive, so the curve has a long tail instead of a cliff.
 
-The suite replays a greedy bot against the real catalog. With the new intern, the model finishes in about 10 minutes for an engaged player (2 clicks/s plus powerups), 14 for a casual player (0.5 clicks/s plus powerups), and 26 for a low-input run (0.2 clicks/s, no powerups). These are pacing checks, not promises about a human playthrough.
+The suite replays a greedy bot against the real catalog. With the one-click-per-second intern and its 10× hiring curve, the model finishes in about 19 minutes for an engaged player (2 clicks/s plus powerups), 25 for a casual player (0.5 clicks/s plus powerups), and 50 for a low-input run (0.2 clicks/s, no powerups). These are pacing checks, not promises about a human playthrough.
 
 That last one is a design rule, not a coincidence. Powerups should be a convenience, not a subscription to notifications. If the game cannot be finished without them, it is not a game, it is a schedule.
 

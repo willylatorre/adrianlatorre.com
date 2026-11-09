@@ -119,8 +119,8 @@ describe('token-eater engine', () => {
     const first = producerCost('autocomplete', 0)
     const second = producerCost('autocomplete', 1)
     const third = producerCost('autocomplete', 2)
-    expect(first).toBe(toMicro(30n))
-    expect(second).toBe(34_500_000n)
+    expect(first).toBe(toMicro(90n))
+    expect(second).toBe(103_500_000n)
     expect(third).toBeGreaterThan(second)
   })
 
