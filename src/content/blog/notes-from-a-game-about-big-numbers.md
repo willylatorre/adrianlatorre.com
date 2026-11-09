@@ -37,12 +37,18 @@ function costAt(owned) {
 }`
 
 const saveSnippet = `{
-  "version": 1,
+  "version": 2,
   "savedAt": 1762430400000,
   "tokens": "12345000000",
   "lifetimeTokens": "98765000000",
   "producers": { "autocomplete": 7, "chat": 2 },
   "upgrades": ["batching", "caching"],
+  "autoClickers": 2,
+  "autoClickRemainderMs": 250,
+  "playTimeMs": 263000,
+  "powerupCooldownMs": { "cache-hit": 45000 },
+  "boostRemainingMs": 0,
+  "boostMultiplier": 1,
   "wonAt": null
 }`
 
@@ -51,16 +57,6 @@ const bigintJsonSnippet = `JSON.stringify({ tokens: 1n })
 
 JSON.stringify({ tokens: 1n.toString() })
 // '{"tokens":"1"}'`
-
-const offlineSnippet = `const CAP = 8 * 60 * 60 * 1000
-
-function offlineElapsed(savedAt, now) {
-  if (now <= savedAt) return 0
-  return Math.min(now - savedAt, CAP)
-}
-
-// Pay it through the same tick() the live loop uses.
-// Offline time must not get its own economy.`
 
 const channelSnippet = `const channel = new BroadcastChannel('adrianlatorre.token-eater.v1')
 
@@ -117,7 +113,7 @@ Instead the engine stores **micro-tokens**. One token is one million micro-token
   </ProseCode>
 </ProsePre>
 
-The nice property is that the same integer arithmetic powers the live loop, the offline payout, and the save file. There is one representation and one path that mutates it. What you see is what is stored, scaled by a constant.
+The nice property is that the same integer arithmetic powers the live loop and the save file. There is one representation and one path that mutates it. What you see is what is stored, scaled by a constant.
 
 The unglamorous cost is discipline at the boundary. Anywhere a designer wants to write `0.5`, the code has to convert once, at module load, and never let the float back in. That conversion is a single function, and the balance tests fail loudly if a rate ever sneaks through unrounded.
 
@@ -177,7 +173,7 @@ The first automation is deliberately tiny: for ten tokens, hire an **unsupervise
 
 This is where I expected the trouble, and it delivered.
 
-Three separate problems, in order of how quickly they bite:
+Two separate problems, in order of how quickly they bite:
 
 **1. `JSON.stringify` refuses BigInt.**
 
@@ -202,20 +198,6 @@ The record is versioned. An unknown version is discarded rather than guessed at,
 Parsing validates far more than the JSON shape. Negative balances are rejected. A spendable balance larger than lifetime earnings is repaired, because money cannot exceed everything ever earned. Unknown producer ids are dropped. An absurd producer count is capped.
 
 This is not security. Anyone can edit `localStorage`. It is robustness: a hand-edited or partially written save should produce a boring fallback, not a broken page or a NaN that poisons every price.
-
-**3. Time passes while the tab is closed.**
-
-Offline progress is a feature. Unbounded offline progress is a way to skip the game.
-
-<ProsePre language="javascript" :code="offlineSnippet">
-  <ProseCode class="language-javascript">
-{{ offlineSnippet }}
-  </ProseCode>
-</ProsePre>
-
-The important detail is that offline time runs through the **same** `tick` as the live loop. It would have been easy and wrong to invent a separate offline formula; then the two economies drift and the save becomes a source of numbers the simulation cannot reproduce.
-
-The cap is eight hours. Return after a week and you get eight hours of production, not a shortcut to the end. Returning after two hours, which I tested with a seeded save, pays the rate you left with for exactly the elapsed time and shows it in a dialog. That dialog is the only modal in the experiment, and it exists because silent offline money is confusing.
 
 ## Two tabs, one truth
 
@@ -243,7 +225,7 @@ The math was the least interesting part, which surprised me.
 
 The second lesson is that a save file is a contract with your future self. Every field you write is a field you will have to migrate, validate, or explain. Keeping it flat, versioned, and string-heavy made it boring, and boring is what you want from the thing that holds a player's entire run.
 
-The third is that "local only" is not a limitation, it is a design position. There is no account, no leaderboard, no server, and no anti-cheat, because there is nothing to cheat at. The game is a conversation between the player and a curve. `localStorage`, an eight hour offline cap, and a broadcast channel are enough to make that conversation survive a closed tab and a second window.
+The third is that "local only" is not a limitation, it is a design position. There is no account, no leaderboard, no server, and no anti-cheat, because there is nothing to cheat at. The game is a conversation between the player and a curve. `localStorage` preserves the run, and a broadcast channel keeps a second tab from overwriting it with an older save.
 
 And the goal being one short of a round number is still the most realistic part of it.
 

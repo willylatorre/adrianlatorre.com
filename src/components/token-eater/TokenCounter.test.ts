@@ -27,7 +27,7 @@ function mountCounter(
   const state = createInitialState(AT)
   const tokensMicro = overrides.tokensMicro ?? 0n
   const lifetimeMicro = overrides.lifetimeMicro ?? tokensMicro
-  const stats = deriveStats({ ...state, tokens: tokensMicro, lifetimeTokens: lifetimeMicro }, AT)
+  const stats = deriveStats({ ...state, tokens: tokensMicro, lifetimeTokens: lifetimeMicro })
   const props: {
     tokensMicro: bigint
     lifetimeMicro: bigint

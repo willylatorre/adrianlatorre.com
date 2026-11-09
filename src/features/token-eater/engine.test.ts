@@ -38,7 +38,7 @@ describe('token-eater engine', () => {
     expect(passiveRateMicro(state)).toBe(0n)
     expect(clickYieldMicro(state)).toBe(toMicro(1n))
     expect(state.autoClickers).toBe(0)
-    expect(deriveStats(state, AT).progress).toBe(0)
+    expect(deriveStats(state).progress).toBe(0)
   })
 
   it('buys the unsupervised intern for ten tokens', () => {
@@ -47,7 +47,7 @@ describe('token-eater engine', () => {
       tokens: toMicro(10n),
       lifetimeTokens: toMicro(10n),
     }
-    const result = buyAutoClicker(state, 1, AT)
+    const result = buyAutoClicker(state, 1)
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.state.tokens).toBe(0n)
@@ -58,7 +58,7 @@ describe('token-eater engine', () => {
   })
 
   it('does not buy the intern before the ten-token price', () => {
-    const result = buyAutoClicker({ ...createInitialState(AT), tokens: toMicro(9n) }, 1, AT)
+    const result = buyAutoClicker({ ...createInitialState(AT), tokens: toMicro(9n) }, 1)
     expect(result.ok).toBe(false)
     if (!result.ok) expect(result.reason).toBe('insufficient')
   })
@@ -71,7 +71,6 @@ describe('token-eater engine', () => {
         lifetimeTokens: toMicro(10n),
       },
       1,
-      AT,
     )
     if (!bought.ok) throw new Error('setup failed')
 
@@ -94,7 +93,6 @@ describe('token-eater engine', () => {
         lifetimeTokens: toMicro(500n),
       },
       'max',
-      AT,
     )
     if (!hired.ok) throw new Error('setup failed')
     expect(hired.state.autoClickers).toBeGreaterThan(1)
@@ -128,13 +126,13 @@ describe('token-eater engine', () => {
 
   it('refuses a purchase the player cannot afford', () => {
     const state = createInitialState(AT)
-    const result = buyProducer(state, 'autocomplete', 1, AT)
+    const result = buyProducer(state, 'autocomplete', 1)
     expect(result.ok).toBe(false)
     expect(state.producers.autocomplete).toBe(0)
   })
 
   it('buys a producer and immediately earns at its rate', () => {
-    const bought = buyProducer(richState(), 'autocomplete', 1, AT)
+    const bought = buyProducer(richState(), 'autocomplete', 1)
     expect(bought.ok).toBe(true)
     if (!bought.ok) return
     expect(bought.state.producers.autocomplete).toBe(1)
@@ -143,7 +141,7 @@ describe('token-eater engine', () => {
 
   it('buys the maximum affordable amount and stops at the balance', () => {
     const state = { ...createInitialState(AT), tokens: toMicro(1_000n) }
-    const result = buyProducer(state, 'autocomplete', 'max', AT)
+    const result = buyProducer(state, 'autocomplete', 'max')
     expect(result.ok).toBe(true)
     if (!result.ok) return
     // 30, then 34.5, then 39.675 ... only a few fit inside 1,000 tokens.
@@ -155,25 +153,25 @@ describe('token-eater engine', () => {
 
   it('never produces a negative balance from a max purchase', () => {
     const state = { ...createInitialState(AT), tokens: 0n }
-    const result = buyProducer(state, 'autocomplete', 'max', AT)
+    const result = buyProducer(state, 'autocomplete', 'max')
     expect(result.ok).toBe(false)
     expect(state.tokens).toBe(0n)
   })
 
   it('applies a global upgrade multiplier to every producer', () => {
-    const owned = buyProducer(richState(), 'autocomplete', 1, AT)
+    const owned = buyProducer(richState(), 'autocomplete', 1)
     if (!owned.ok) throw new Error('setup failed')
     const rateBefore = passiveRateMicro(owned.state)
-    const upgraded = buyUpgrade(owned.state, 'batching', AT)
+    const upgraded = buyUpgrade(owned.state, 'batching')
     expect(upgraded.ok).toBe(true)
     if (!upgraded.ok) return
     expect(passiveRateMicro(upgraded.state)).toBe(rateBefore * 2n)
   })
 
   it('cannot buy the same upgrade twice', () => {
-    const owned = buyUpgrade(richState(), 'batching', AT)
+    const owned = buyUpgrade(richState(), 'batching')
     if (!owned.ok) throw new Error('setup failed')
-    const again = buyUpgrade(owned.state, 'batching', AT)
+    const again = buyUpgrade(owned.state, 'batching')
     expect(again.ok).toBe(false)
     if (again.ok) return
     expect(again.reason).toBe('already-owned')
@@ -182,7 +180,7 @@ describe('token-eater engine', () => {
   it('charges the upgrade price exactly once', () => {
     const state = richState()
     const price = UPGRADE_COST_MICRO.get('batching')!
-    const result = buyUpgrade(state, 'batching', AT)
+    const result = buyUpgrade(state, 'batching')
     if (!result.ok) throw new Error('expected purchase')
     expect(result.state.tokens).toBe(state.tokens - price)
   })
@@ -191,7 +189,7 @@ describe('token-eater engine', () => {
     const state = createInitialState(AT)
     expect(clickYieldMicro(state)).toBe(toMicro(1n))
 
-    const one = buyProducer({ ...state, tokens: toMicro(1_000n) }, 'autocomplete', 1, AT)
+    const one = buyProducer({ ...state, tokens: toMicro(1_000n) }, 'autocomplete', 1)
     if (!one.ok) throw new Error('setup failed')
     // 0.5 tokens/s => 0.005 tokens per click, below the floor of 1 token.
     expect(clickYieldMicro(one.state)).toBe(toMicro(1n))
@@ -199,7 +197,7 @@ describe('token-eater engine', () => {
 
   it('scales click yield with passive production once it clears the floor', () => {
     const state = richState()
-    const many = buyProducer(state, 'chat', 20, AT)
+    const many = buyProducer(state, 'chat', 20)
     if (!many.ok) throw new Error('setup failed')
     // 20 chats at 11 tokens/s = 220 tokens/s, so 1% is 2.2 tokens per click,
     // which is above the one-token floor.
@@ -210,7 +208,7 @@ describe('token-eater engine', () => {
 
   it('keeps the floor while passive production is still tiny', () => {
     const state = richState()
-    const one = buyProducer(state, 'autocomplete', 1, AT)
+    const one = buyProducer(state, 'autocomplete', 1)
     if (!one.ok) throw new Error('setup failed')
     // 0.5 tokens/s means 0.005 tokens per click, far below one token.
     expect(passiveRateMicro(one.state) / 100n).toBeLessThan(toMicro(1n))
@@ -220,13 +218,13 @@ describe('token-eater engine', () => {
   it('multiplies click yield with click upgrades', () => {
     const state = richState()
     const base = clickYieldMicro(state)
-    const bought = buyClickUpgrade(state, 'spoon', AT)
+    const bought = buyClickUpgrade(state, 'spoon')
     if (!bought.ok) throw new Error('setup failed')
     expect(clickYieldMicro(bought.state)).toBe(base * 3n)
   })
 
   it('ticks at the passive rate and preserves fractions', () => {
-    const bought = buyProducer(richState(), 'autocomplete', 1, AT)
+    const bought = buyProducer(richState(), 'autocomplete', 1)
     if (!bought.ok) throw new Error('setup failed')
     const ticked = tick(bought.state, 1_000, AT + 1_000)
     expect(ticked.tokens - bought.state.tokens).toBe(500_000n)
@@ -284,7 +282,7 @@ describe('token-eater engine', () => {
   })
 
   it('pays an instant powerup at the passive rate', () => {
-    const owned = buyProducer(richState(), 'chat', 10, AT)
+    const owned = buyProducer(richState(), 'chat', 10)
     if (!owned.ok) throw new Error('setup failed')
     const ready = { ...owned.state, lifetimeTokens: toMicro(100_000n) }
     const rate = passiveRateMicro(ready)
@@ -299,14 +297,17 @@ describe('token-eater engine', () => {
     const ready = { ...richState(), lifetimeTokens: toMicro(100_000n) }
     const used = usePowerup(ready, 'cache-hit', AT)
     if (!used.ok) throw new Error('setup failed')
-    expect(powerupCooldownRemainingMs(used.state, 'cache-hit', AT)).toBe(90_000)
+    expect(powerupCooldownRemainingMs(used.state, 'cache-hit')).toBe(90_000)
 
-    const blocked = usePowerup(used.state, 'cache-hit', AT + 1_000)
+    const oneSecondLater = tick(used.state, 1_000, AT + 1_000)
+    expect(powerupCooldownRemainingMs(oneSecondLater, 'cache-hit')).toBe(89_000)
+    const blocked = usePowerup(oneSecondLater, 'cache-hit', AT + 1_000)
     expect(blocked.ok).toBe(false)
     if (blocked.ok) return
     expect(blocked.reason).toBe('cooldown')
 
-    const later = usePowerup(used.state, 'cache-hit', AT + 90_000)
+    const cooldownComplete = tick(used.state, 90_000, AT + 90_000)
+    const later = usePowerup(cooldownComplete, 'cache-hit', AT + 90_000)
     expect(later.ok).toBe(true)
   })
 
@@ -321,23 +322,18 @@ describe('token-eater engine', () => {
     const ready = { ...richState(), lifetimeTokens: toMicro(10_000_000n) }
     const used = usePowerup(ready, 'overclock', AT)
     if (!used.ok) throw new Error('setup failed')
-    expect(used.state.boostEndsAt).toBe(AT + 20_000)
+    expect(used.state.boostRemainingMs).toBe(20_000)
 
-    const statsDuring = deriveStats(used.state, AT + 5_000)
+    const statsDuring = deriveStats(used.state)
     expect(statsDuring.boostMultiplier).toBe(3)
     expect(statsDuring.effectiveRateMicroPerSecond).toBe(statsDuring.rateMicroPerSecond * 3n)
 
-    const statsAfter = deriveStats(used.state, AT + 21_000)
+    const statsAfter = deriveStats(tick(used.state, 21_000, AT + 21_000))
     expect(statsAfter.boostMultiplier).toBe(1)
   })
 
   it('ticks with the boost applied, then drops back', () => {
-    const ready = buyProducer(
-      { ...richState(), lifetimeTokens: toMicro(10_000_000n) },
-      'chat',
-      5,
-      AT,
-    )
+    const ready = buyProducer({ ...richState(), lifetimeTokens: toMicro(10_000_000n) }, 'chat', 5)
     if (!ready.ok) throw new Error('setup failed')
 
     const boosted = usePowerup(ready.state, 'overclock', AT)
@@ -351,13 +347,15 @@ describe('token-eater engine', () => {
     )
 
     // Once the boost window closes, production returns to normal.
-    const afterBoost = tick(boosted.state, 1_000, AT + 21_000)
-    expect(afterBoost.tokens - boosted.state.tokens).toBe(baseline.tokens - ready.state.tokens)
+    const boostExpired = tick(boosted.state, 20_000, AT + 20_000)
+    expect(boostExpired.boostRemainingMs).toBe(0)
+    const afterBoost = tick(boostExpired, 1_000, AT + 21_000)
+    expect(afterBoost.tokens - boostExpired.tokens).toBe(baseline.tokens - ready.state.tokens)
   })
 
   it('exposes the next unowned producer as a hint', () => {
     const state = richState()
-    const bought = buyProducer(state, 'autocomplete', 1, AT)
+    const bought = buyProducer(state, 'autocomplete', 1)
     if (!bought.ok) throw new Error('setup failed')
     // The cheapest unowned tier is still chat even though autocomplete is owned.
     const unowned = PRODUCERS.find((item) => (bought.state.producers[item.id] ?? 0) === 0)

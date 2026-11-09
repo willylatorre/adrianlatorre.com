@@ -13,27 +13,18 @@ import { TOKEN_GOAL_MICRO } from './numbers'
 /**
  * Saving a clicker is the part nobody warns you about.
  *
- * Three problems show up immediately:
+ * Two problems show up immediately:
  *
  * 1. `JSON.stringify` throws on BigInt, and every currency value is a BigInt.
  *    The save therefore stores micro-token amounts as decimal strings.
  * 2. Tabs disagree. Two open tabs each advance the clock and write their own
  *    version of the truth. A `BroadcastChannel` lets the newest committed save
  *    win without a backend.
- * 3. Time passes while the page is closed. Offline progress is a feature, but
- *    an unbounded version means a player can return after a year and skip the
- *    game. The reward is therefore capped.
  */
 
 export const SAVE_KEY = 'adrianlatorre.token-eater.v1'
-export const SAVE_VERSION = 1
+export const SAVE_VERSION = 2
 export const CHANNEL_NAME = 'adrianlatorre.token-eater.v1'
-
-/** Offline progress is capped at eight hours of production. */
-export const OFFLINE_CAP_MS = 8 * 60 * 60 * 1_000
-
-/** Saves older than this are treated as a different run, not a resume. */
-export const MAX_SAVE_AGE_MS = 30 * 24 * 60 * 60 * 1_000
 
 export interface StorageLike {
   getItem(key: string): string | null
@@ -58,11 +49,15 @@ export interface SerializedSave {
   /** Read for compatibility with saves from the first one-intern release. */
   autoClickerOwned?: boolean
   autoClickRemainderMs?: number
-  powerupReadyAt: Partial<Record<PowerupId, number>>
-  boostEndsAt: number | null
+  powerupCooldownMs: Partial<Record<PowerupId, number>>
+  boostRemainingMs: number
   boostMultiplier: number
+  playTimeMs: number
   startedAt: number
   wonAt: number | null
+  /** Version 1 used epoch timestamps for cooldowns and boosts. */
+  powerupReadyAt?: Partial<Record<PowerupId, number>>
+  boostEndsAt?: number | null
 }
 
 const PRODUCER_IDS = new Set<string>(PRODUCERS.map((item) => item.id))
@@ -80,9 +75,10 @@ export function serializeState(state: EngineState, now: number): SerializedSave 
     clicks: state.clicks,
     autoClickers: state.autoClickers,
     autoClickRemainderMs: state.autoClickRemainderMs,
-    powerupReadyAt: { ...state.powerupReadyAt },
-    boostEndsAt: state.boostEndsAt,
+    powerupCooldownMs: { ...state.powerupCooldownMs },
+    boostRemainingMs: state.boostRemainingMs,
     boostMultiplier: state.boostMultiplier,
+    playTimeMs: state.playTimeMs,
     startedAt: state.startedAt,
     wonAt: state.wonAt,
   }
@@ -104,26 +100,23 @@ export function saveState(
   }
 }
 
-/** A gap shorter than this is not worth a dialog. */
-export const OFFLINE_REPORT_MIN_MS = 60_000
-
 export interface LoadedSave {
   state: EngineState
-  /** When the save was written, used to compute offline progress. */
+  /** When the save was written, used to reconcile the run clock and tabs. */
   savedAt: number
 }
 
-export function loadState(storage: StorageLike | null | undefined, now: number): LoadedSave | null {
+export function loadState(storage: StorageLike | null | undefined): LoadedSave | null {
   const target = resolveStorage(storage)
   if (!target) return null
   try {
-    return parseSave(target.getItem(SAVE_KEY), now)
+    return parseSave(target.getItem(SAVE_KEY))
   } catch {
     return null
   }
 }
 
-export function parseSave(raw: string | null, now: number): LoadedSave | null {
+export function parseSave(raw: string | null): LoadedSave | null {
   if (!raw) return null
   let value: unknown
   try {
@@ -131,11 +124,10 @@ export function parseSave(raw: string | null, now: number): LoadedSave | null {
   } catch {
     return null
   }
-  if (!isRecord(value) || value.version !== SAVE_VERSION) return null
+  if (!isRecord(value) || (value.version !== 1 && value.version !== SAVE_VERSION)) return null
 
   const savedAt = typeof value.savedAt === 'number' ? value.savedAt : null
   if (savedAt === null || !Number.isFinite(savedAt)) return null
-  if (now - savedAt > MAX_SAVE_AGE_MS) return null
 
   const tokens = parseAmount(value.tokens)
   const lifetimeTokens = parseAmount(value.lifetimeTokens)
@@ -173,12 +165,15 @@ function buildState(
     ? value.clickUpgrades.filter((id): id is ClickUpgradeId => typeof id === 'string')
     : []
 
-  const powerupReadyAt: Partial<Record<PowerupId, number>> = {}
-  if (isRecord(value.powerupReadyAt)) {
-    for (const [id, readyAt] of Object.entries(value.powerupReadyAt)) {
+  const powerupCooldownMs: Partial<Record<PowerupId, number>> = {}
+  const savedCooldowns = value.version === 1 ? value.powerupReadyAt : value.powerupCooldownMs
+  if (isRecord(savedCooldowns)) {
+    for (const [id, storedTime] of Object.entries(savedCooldowns)) {
       if (!POWERUP_IDS.has(id)) continue
-      if (typeof readyAt !== 'number' || !Number.isFinite(readyAt)) continue
-      powerupReadyAt[id as PowerupId] = readyAt
+      if (typeof storedTime !== 'number' || !Number.isFinite(storedTime)) continue
+      const remaining =
+        value.version === 1 ? Math.max(0, storedTime - savedAt) : Math.max(0, storedTime)
+      powerupCooldownMs[id as PowerupId] = remaining
     }
   }
 
@@ -187,10 +182,25 @@ function buildState(
     typeof value.startedAt === 'number' && Number.isFinite(value.startedAt)
       ? value.startedAt
       : savedAt
-  const boostEndsAt =
+  const legacyBoostEndsAt =
     typeof value.boostEndsAt === 'number' && Number.isFinite(value.boostEndsAt)
       ? value.boostEndsAt
       : null
+  const boostRemainingMs =
+    value.version === 1
+      ? legacyBoostEndsAt === null
+        ? 0
+        : Math.max(0, legacyBoostEndsAt - savedAt)
+      : typeof value.boostRemainingMs === 'number' && Number.isFinite(value.boostRemainingMs)
+        ? Math.max(0, value.boostRemainingMs)
+        : 0
+  // Version 1 used wall-clock time. Do not carry it into visible-play time.
+  const playTimeMs =
+    value.version === 1
+      ? 0
+      : typeof value.playTimeMs === 'number' && Number.isFinite(value.playTimeMs)
+        ? Math.max(0, value.playTimeMs)
+        : 0
   const autoClickers =
     typeof value.autoClickers === 'number' && Number.isInteger(value.autoClickers)
       ? Math.max(0, Math.min(1_000_000, value.autoClickers))
@@ -215,13 +225,13 @@ function buildState(
       // They remain playable; a saved intern migrates to a count of one.
       autoClickers,
       autoClickRemainderMs,
-      powerupReadyAt,
-      boostEndsAt,
+      powerupCooldownMs,
+      boostRemainingMs,
       boostMultiplier:
         typeof value.boostMultiplier === 'number' && value.boostMultiplier > 0
           ? value.boostMultiplier
           : 1,
-      lastTickAt: savedAt,
+      playTimeMs,
       startedAt,
       wonAt: wonAt ?? (lifetimeTokens >= TOKEN_GOAL_MICRO ? savedAt : null),
     },
@@ -244,16 +254,6 @@ function parseAmount(value: unknown): bigint | null {
     return BigInt(value)
   }
   return null
-}
-
-/**
- * Offline earnings are paid at the rate the player left with, for the elapsed
- * wall-clock time, capped. The same `tick` function is used, so offline time
- * cannot invent a different economy.
- */
-export function offlineElapsedMs(savedAt: number, now: number): number {
-  if (now <= savedAt) return 0
-  return Math.min(now - savedAt, OFFLINE_CAP_MS)
 }
 
 export interface SaveChannel {

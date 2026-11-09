@@ -192,7 +192,7 @@ export function formatRate(rateMicroPerSecond: bigint): string {
 }
 
 /**
- * Human duration such as `12m 04s`. Used for offline earnings and saves.
+ * Human duration such as `12m 04s`. Used for cooldown and run-time labels.
  */
 export function formatDuration(ms: number): string {
   const totalSeconds = Math.max(0, Math.floor(ms / 1_000))

@@ -25,8 +25,6 @@ import {
 import {
   createChannel,
   loadState,
-  OFFLINE_REPORT_MIN_MS,
-  offlineElapsedMs,
   saveState,
   type ChannelFactory,
   type SaveChannel,
@@ -41,7 +39,7 @@ import {
  *   replaced, never mutated, so Vue only re-renders on real transitions);
  * - run one animation-frame loop that advances the simulation;
  * - throttle writes to localStorage;
- * - pay offline earnings once on load;
+ * - pause the simulation whenever the document is hidden;
  * - adopt newer saves from other tabs over a BroadcastChannel.
  *
  * The engine itself stays pure, which is why this file is mostly scheduling.
@@ -59,16 +57,10 @@ export interface UseTokenEaterOptions {
   autoStart?: boolean
 }
 
-export interface OfflineReport {
-  elapsedMs: number
-  gainedMicro: bigint
-}
-
 export interface TokenEaterGame {
   readonly state: Readonly<Ref<EngineState>>
   readonly stats: Readonly<Ref<DerivedStats>>
   readonly won: Readonly<Ref<boolean>>
-  readonly offlineReport: Readonly<Ref<OfflineReport | null>>
   readonly saveError: Readonly<Ref<boolean>>
   readonly producers: typeof PRODUCERS
   readonly powerups: typeof POWERUPS
@@ -80,9 +72,6 @@ export interface TokenEaterGame {
   buyClick(id: ClickUpgradeId): PurchaseResult
   usePowerup(id: PowerupId): PowerupResult
   reset(): void
-  dismissOfflineReport(): void
-  /** Force a tick; useful when the tab was hidden and the loop was paused. */
-  refresh(): void
 }
 
 const DEFAULT_SAVE_INTERVAL_MS = 1_500
@@ -91,16 +80,14 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
   const now = options.now ?? Date.now
   const startedAt = now()
 
-  const restored = loadState(options.storage, startedAt)
+  const restored = loadState(options.storage)
   const initial = restored?.state ?? createInitialState(startedAt)
 
   const state = shallowRef<EngineState>(initial)
-  const offlineReport = ref<OfflineReport | null>(null)
   const saveError = ref(false)
-  const lastSavedAt = ref(startedAt)
-  const clock = ref(startedAt)
+  const lastSavedAt = ref(restored?.savedAt ?? startedAt)
 
-  const stats = computed(() => deriveStats(state.value, clock.value))
+  const stats = computed(() => deriveStats(state.value))
   const won = computed(() => state.value.wonAt !== null)
 
   const nextProducer = computed<ProducerId | null>(() => {
@@ -108,21 +95,6 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
     const locked = PRODUCERS.find((producer) => (current.producers[producer.id] ?? 0) === 0)
     return locked?.id ?? null
   })
-
-  // Pay offline progress exactly once, through the same tick used by the loop.
-  // Short gaps are simulated silently; only a real absence is worth a dialog.
-  if (restored) {
-    const elapsed = offlineElapsedMs(restored.savedAt, startedAt)
-    if (elapsed > 1_000) {
-      const before = restored.state.tokens
-      const advanced = tick(restored.state, elapsed, startedAt)
-      const gained = advanced.tokens - before
-      if (gained > 0n && elapsed >= OFFLINE_REPORT_MIN_MS) {
-        offlineReport.value = { elapsedMs: elapsed, gainedMicro: gained }
-      }
-      state.value = advanced
-    }
-  }
 
   const channel: SaveChannel | null = options.channelFactory
     ? createChannel(options.channelFactory)
@@ -165,11 +137,14 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
   let lastFrameAt = now()
 
   const advance = (frameAt: number) => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      lastFrameAt = frameAt
+      return
+    }
     const elapsed = Math.min(frameAt - lastFrameAt, 5_000)
     lastFrameAt = frameAt
-    clock.value = frameAt
     if (elapsed <= 0) return
-    const next = tick(state.value, elapsed, frameAt)
+    const next = tick(state.value, elapsed, now())
     if (next !== state.value) {
       state.value = next
       persist()
@@ -182,9 +157,11 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
     }
     let frame = 0
     let stopped = false
-    const loop = (at: number) => {
+    const loop = () => {
       if (stopped) return
-      callback(at)
+      // RAF timestamps are performance-relative, while saves and cooldowns
+      // use wall time. Feed the same clock used to seed lastFrameAt.
+      callback(now())
       frame = window.requestAnimationFrame(loop)
     }
     frame = window.requestAnimationFrame(loop)
@@ -211,18 +188,12 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
   if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
     const onVisibility = () => {
       if (document.visibilityState === 'hidden') {
+        lastFrameAt = now()
         persist(true)
       } else {
-        // Coming back from a hidden tab: the animation loop may have been
-        // throttled, so treat the gap as elapsed time and pay it through the
-        // same capped tick path.
-        const at = now()
-        const elapsed = Math.min(at - state.value.lastTickAt, 60 * 60 * 1_000)
-        lastFrameAt = at
-        if (elapsed > 0) {
-          clock.value = at
-          state.value = tick(state.value, elapsed, at)
-        }
+        // Restart the frame baseline without catching up hidden time. The
+        // economy and its cooldowns only advance while this tab is visible.
+        lastFrameAt = now()
       }
     }
     document.addEventListener('visibilitychange', onVisibility)
@@ -235,7 +206,6 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
     state,
     stats,
     won,
-    offlineReport,
     saveError,
     producers: PRODUCERS,
     powerups: POWERUPS,
@@ -248,7 +218,7 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
       }
     },
     buyAutoClicker(amount = 1) {
-      const result = buyAutoClickerState(state.value, amount, now())
+      const result = buyAutoClickerState(state.value, amount)
       if (result.ok) {
         state.value = result.state
         persist(true)
@@ -256,7 +226,7 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
       return result
     },
     buy(id, amount = 1) {
-      const result = buyProducer(state.value, id, amount, now())
+      const result = buyProducer(state.value, id, amount)
       if (result.ok) {
         state.value = result.state
         persist(true)
@@ -264,7 +234,7 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
       return result
     },
     buyGlobalUpgrade(id) {
-      const result = buyUpgrade(state.value, id, now())
+      const result = buyUpgrade(state.value, id)
       if (result.ok) {
         state.value = result.state
         persist(true)
@@ -272,7 +242,7 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
       return result
     },
     buyClick(id) {
-      const result = buyClickUpgrade(state.value, id, now())
+      const result = buyClickUpgrade(state.value, id)
       if (result.ok) {
         state.value = result.state
         persist(true)
@@ -290,20 +260,8 @@ export function useTokenEater(options: UseTokenEaterOptions = {}): TokenEaterGam
     reset() {
       state.value = createInitialState(now())
       lastFrameAt = now()
-      clock.value = lastFrameAt
       lastSavedAt.value = 0
-      offlineReport.value = null
       persist(true)
-    },
-    dismissOfflineReport() {
-      offlineReport.value = null
-    },
-    refresh() {
-      const at = now()
-      const elapsed = Math.min(at - state.value.lastTickAt, 60 * 60 * 1_000)
-      lastFrameAt = at
-      clock.value = at
-      if (elapsed > 0) state.value = tick(state.value, elapsed, at)
     },
   }
 }

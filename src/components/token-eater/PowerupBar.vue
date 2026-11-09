@@ -1,43 +1,22 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed } from 'vue'
 import { POWERUPS, type PowerupId } from '../../features/token-eater/content'
 import type { EngineState } from '../../features/token-eater/engine'
 import { powerupCooldownRemainingMs } from '../../features/token-eater/engine'
 import { formatDuration } from '../../features/token-eater/numbers'
 
-const props = defineProps<{
-  state: EngineState
-  now: number
-}>()
+const props = defineProps<{ state: EngineState }>()
 
 const emit = defineEmits<{
   activate: [id: PowerupId]
 }>()
-
-/**
- * Cooldown labels need to count down, but re-rendering the whole page every
- * second is wasteful. A one-second local clock is enough for a label; the
- * engine still uses wall-clock time for the actual gate.
- */
-const clock = ref(props.now)
-let timer: ReturnType<typeof setInterval> | undefined
-
-onMounted(() => {
-  timer = setInterval(() => {
-    clock.value = Date.now()
-  }, 500)
-})
-
-onUnmounted(() => {
-  if (timer) clearInterval(timer)
-})
 
 const visible = computed(() =>
   POWERUPS.filter((powerup) => props.state.lifetimeTokens >= powerup.unlockAt * 1_000_000n),
 )
 
 function remaining(powerupId: PowerupId): number {
-  return powerupCooldownRemainingMs(props.state, powerupId, clock.value)
+  return powerupCooldownRemainingMs(props.state, powerupId)
 }
 
 function isReady(powerupId: PowerupId): boolean {
@@ -45,12 +24,11 @@ function isReady(powerupId: PowerupId): boolean {
 }
 
 function boostActive(): boolean {
-  return props.state.boostEndsAt !== null && clock.value < props.state.boostEndsAt
+  return props.state.boostRemainingMs > 0
 }
 
 function boostRemaining(): string {
-  if (props.state.boostEndsAt === null) return ''
-  return formatDuration(Math.max(0, props.state.boostEndsAt - clock.value))
+  return formatDuration(props.state.boostRemainingMs)
 }
 </script>
 

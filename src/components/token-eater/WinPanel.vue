@@ -4,8 +4,7 @@ import { WIN_NOTE } from '../../features/token-eater/content'
 import { formatDuration, groupDigits, TOKEN_GOAL } from '../../features/token-eater/numbers'
 
 const props = defineProps<{
-  startedAt: number
-  finishedAt: number
+  playTimeMs: number
   clicks: number
   bestUpgrades: number
   totalUpgrades: number
@@ -15,7 +14,7 @@ const emit = defineEmits<{
   restart: []
 }>()
 
-const elapsed = computed(() => formatDuration(props.finishedAt - props.startedAt))
+const elapsed = computed(() => formatDuration(props.playTimeMs))
 const goalDigits = computed(() => groupDigits(TOKEN_GOAL))
 const upgradeLabel = computed(() =>
   props.bestUpgrades === props.totalUpgrades

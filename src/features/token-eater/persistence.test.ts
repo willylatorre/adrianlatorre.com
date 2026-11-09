@@ -1,11 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  OFFLINE_CAP_MS,
-  MAX_SAVE_AGE_MS,
   SAVE_KEY,
   SAVE_VERSION,
   loadState,
-  offlineElapsedMs,
   parseSave,
   saveState,
   serializeState,
@@ -36,7 +33,6 @@ function sampleState(overrides: Partial<EngineState> = {}): EngineState {
     upgrades: ['batching', 'caching'],
     clickUpgrades: ['spoon'],
     clicks: 42,
-    lastTickAt: NOW,
     ...overrides,
   }
 }
@@ -56,7 +52,7 @@ describe('token-eater persistence', () => {
     const state = sampleState()
     expect(saveState(state, storage, NOW)).toBe(true)
 
-    const loaded = loadState(storage, NOW)
+    const loaded = loadState(storage)
     expect(loaded).not.toBeNull()
     expect(loaded?.state.tokens).toBe(state.tokens)
     expect(loaded?.state.lifetimeTokens).toBe(state.lifetimeTokens)
@@ -70,7 +66,7 @@ describe('token-eater persistence', () => {
     const storage = memoryStorage()
     const huge = toMicro(999_999_999_999_999_999n - 1n)
     saveState(sampleState({ tokens: huge, lifetimeTokens: huge + 1n }), storage, NOW)
-    const loaded = loadState(storage, NOW)
+    const loaded = loadState(storage)
     expect(loaded?.state.tokens).toBe(huge)
     expect(loaded?.state.lifetimeTokens).toBe(huge + 1n)
     // Prove the round trip is exact and not accidentally a rounded double.
@@ -82,41 +78,57 @@ describe('token-eater persistence', () => {
     const state = sampleState({ autoClickers: 4, autoClickRemainderMs: 625 })
     saveState(state, storage, NOW)
 
-    const loaded = loadState(storage, NOW)
+    const loaded = loadState(storage)
     expect(loaded?.state.autoClickers).toBe(4)
     expect(loaded?.state.autoClickRemainderMs).toBe(625)
   })
 
   it('loads an existing v1 save without automatic-clicker fields', () => {
     const oldSave = serializeState(sampleState(), NOW) as unknown as Record<string, unknown>
+    oldSave.version = 1
     delete oldSave.autoClickers
     delete oldSave.autoClickRemainderMs
+    delete oldSave.powerupCooldownMs
+    delete oldSave.boostRemainingMs
+    delete oldSave.playTimeMs
+    oldSave.powerupReadyAt = {}
+    oldSave.boostEndsAt = null
 
-    const loaded = parseSave(JSON.stringify(oldSave), NOW)
+    const loaded = parseSave(JSON.stringify(oldSave))
     expect(loaded?.state.autoClickers).toBe(0)
     expect(loaded?.state.autoClickRemainderMs).toBe(0)
+    expect(loaded?.state.playTimeMs).toBe(0)
   })
 
   it('migrates an older boolean intern save to one hire', () => {
     const oldSave = serializeState(sampleState(), NOW) as unknown as Record<string, unknown>
+    oldSave.version = 1
     delete oldSave.autoClickers
+    delete oldSave.powerupCooldownMs
+    delete oldSave.boostRemainingMs
+    delete oldSave.playTimeMs
     oldSave.autoClickerOwned = true
     oldSave.autoClickRemainderMs = 700
+    oldSave.powerupReadyAt = { 'cache-hit': NOW + 45_000 }
+    oldSave.boostEndsAt = NOW + 12_000
 
-    const loaded = parseSave(JSON.stringify(oldSave), NOW)
+    const loaded = parseSave(JSON.stringify(oldSave))
     expect(loaded?.state.autoClickers).toBe(1)
     expect(loaded?.state.autoClickRemainderMs).toBe(700)
+    expect(loaded?.state.powerupCooldownMs['cache-hit']).toBe(45_000)
+    expect(loaded?.state.boostRemainingMs).toBe(12_000)
+    expect(loaded?.state.playTimeMs).toBe(0)
   })
 
   it('rejects malformed JSON without throwing', () => {
     const storage = memoryStorage()
     storage.setItem(SAVE_KEY, '{not json')
-    expect(loadState(storage, NOW)).toBeNull()
+    expect(loadState(storage)).toBeNull()
   })
 
   it('rejects an unknown save version', () => {
     const raw = JSON.stringify({ ...serializeState(sampleState(), NOW), version: 99 })
-    expect(parseSave(raw, NOW)).toBeNull()
+    expect(parseSave(raw)).toBeNull()
   })
 
   it('rejects negative balances', () => {
@@ -125,7 +137,7 @@ describe('token-eater persistence', () => {
       tokens: '-1000',
       lifetimeTokens: '-1000',
     })
-    expect(parseSave(raw, NOW)).toBeNull()
+    expect(parseSave(raw)).toBeNull()
   })
 
   it('rejects non-integer amount strings', () => {
@@ -134,7 +146,7 @@ describe('token-eater persistence', () => {
       tokens: '1.5',
       lifetimeTokens: '2',
     })
-    expect(parseSave(raw, NOW)).toBeNull()
+    expect(parseSave(raw)).toBeNull()
   })
 
   it('rejects an exponent form that would silently change magnitude', () => {
@@ -143,7 +155,7 @@ describe('token-eater persistence', () => {
       tokens: '1e18',
       lifetimeTokens: '1e18',
     })
-    expect(parseSave(raw, NOW)).toBeNull()
+    expect(parseSave(raw)).toBeNull()
   })
 
   it('repairs a save where spendable tokens exceed lifetime earnings', () => {
@@ -152,7 +164,7 @@ describe('token-eater persistence', () => {
       tokens: '5000000000',
       lifetimeTokens: '1000000',
     })
-    const parsed = parseSave(raw, NOW)
+    const parsed = parseSave(raw)
     expect(parsed).not.toBeNull()
     expect(parsed?.state.tokens).toBe(parsed?.state.lifetimeTokens)
   })
@@ -162,7 +174,7 @@ describe('token-eater persistence', () => {
       ...serializeState(sampleState(), NOW),
       producers: { autocomplete: 3, 'not-a-real-producer': 999 },
     })
-    const parsed = parseSave(raw, NOW)
+    const parsed = parseSave(raw)
     expect(parsed?.state.producers.autocomplete).toBe(3)
     expect('not-a-real-producer' in (parsed?.state.producers ?? {})).toBe(false)
   })
@@ -174,15 +186,8 @@ describe('token-eater persistence', () => {
       lifetimeTokens: '999999999999999999000000',
       producers: { autocomplete: 99_999_999 },
     })
-    const parsed = parseSave(raw, NOW)
+    const parsed = parseSave(raw)
     expect(parsed?.state.producers.autocomplete).toBe(1_000_000)
-  })
-
-  it('rejects a save from another month', () => {
-    const raw = JSON.stringify({
-      ...serializeState(sampleState(), NOW - MAX_SAVE_AGE_MS - 1),
-    })
-    expect(parseSave(raw, NOW)).toBeNull()
   })
 
   it('reports the API version it wrote', () => {
@@ -190,21 +195,9 @@ describe('token-eater persistence', () => {
     expect(serialized.version).toBe(SAVE_VERSION)
   })
 
-  it('caps offline progress at eight hours', () => {
-    const eightHours = 8 * 60 * 60 * 1_000
-    expect(offlineElapsedMs(NOW - 60_000, NOW)).toBe(60_000)
-    expect(offlineElapsedMs(NOW - eightHours * 3, NOW)).toBe(OFFLINE_CAP_MS)
-    expect(offlineElapsedMs(NOW - eightHours, NOW)).toBe(OFFLINE_CAP_MS)
-  })
-
-  it('never pays negative offline time', () => {
-    expect(offlineElapsedMs(NOW, NOW - 60_000)).toBe(0)
-    expect(offlineElapsedMs(NOW, NOW)).toBe(0)
-  })
-
   it('does not write when storage is unavailable', () => {
     expect(saveState(sampleState(), null, NOW)).toBe(false)
-    expect(loadState(null, NOW)).toBeNull()
+    expect(loadState(null)).toBeNull()
   })
 
   it('survives a storage that throws on write', () => {
@@ -226,7 +219,7 @@ describe('token-eater persistence', () => {
       wonAt: NOW - 1_000,
     })
     saveState(won, storage, NOW)
-    const loaded = loadState(storage, NOW)
+    const loaded = loadState(storage)
     expect(loaded?.state.wonAt).toBe(NOW - 1_000)
   })
 })

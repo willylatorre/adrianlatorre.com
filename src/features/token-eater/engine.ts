@@ -48,14 +48,14 @@ export interface EngineState {
   autoClickers: number
   /** Milliseconds accumulated toward the interns' next automatic click. */
   autoClickRemainderMs: number
-  /** Active powerup cooldowns, as epoch milliseconds when ready. */
-  powerupReadyAt: Partial<Record<PowerupId, number>>
-  /** End timestamp of an active multiplier powerup, if any. */
-  boostEndsAt: number | null
+  /** Remaining visible-play cooldown time, in milliseconds. */
+  powerupCooldownMs: Partial<Record<PowerupId, number>>
+  /** Remaining visible-play duration of an active multiplier boost. */
+  boostRemainingMs: number
   /** Multiplier of the active boost. */
   boostMultiplier: number
-  /** Epoch milliseconds of the last simulated moment. */
-  lastTickAt: number
+  /** Elapsed time while the game was visible, in milliseconds. */
+  playTimeMs: number
   /** Epoch milliseconds when this run started. */
   startedAt: number
   /** Epoch milliseconds when the goal was reached, if it was. */
@@ -92,10 +92,10 @@ export function createInitialState(now = 0): EngineState {
     clicks: 0,
     autoClickers: 0,
     autoClickRemainderMs: 0,
-    powerupReadyAt: {},
-    boostEndsAt: null,
+    powerupCooldownMs: {},
+    boostRemainingMs: 0,
     boostMultiplier: 1,
-    lastTickAt: now,
+    playTimeMs: 0,
     startedAt: now,
     wonAt: null,
   }
@@ -181,15 +181,14 @@ export function clickYieldMicro(state: EngineState): bigint {
   return base * BigInt(clickMultiplierOf(state))
 }
 
-export function boostMultiplierAt(state: EngineState, now: number): number {
-  if (state.boostEndsAt === null) return 1
-  if (now >= state.boostEndsAt) return 1
+export function boostMultiplierAt(state: EngineState): number {
+  if (state.boostRemainingMs <= 0) return 1
   return state.boostMultiplier > 0 ? state.boostMultiplier : 1
 }
 
-export function deriveStats(state: EngineState, now: number): DerivedStats {
+export function deriveStats(state: EngineState): DerivedStats {
   const rate = passiveRateMicro(state)
-  const boost = boostMultiplierAt(state, now)
+  const boost = boostMultiplierAt(state)
   const effectiveRate = rate * BigInt(boost)
   const reached = state.lifetimeTokens
   const nextMilestone = MILESTONES.find((milestone) => reached < toMicro(milestone.at)) ?? null
@@ -204,31 +203,36 @@ export function deriveStats(state: EngineState, now: number): DerivedStats {
   }
 }
 
-/**
- * Advances the simulation by `elapsedMs`. Returns a new state; the caller
- * decides when to persist. Elapsed time is clamped by the caller for offline
- * progress, not here, so the engine stays honest.
- */
+/** Advances visible-play simulation time by `elapsedMs`. */
 export function tick(state: EngineState, elapsedMs: number, now: number): EngineState {
-  if (state.wonAt !== null) {
-    return { ...state, lastTickAt: now }
-  }
+  if (state.wonAt !== null) return state
 
-  const seconds = Math.max(0, elapsedMs)
+  const tickMs = Math.max(0, Math.round(elapsedMs))
   // Producer income is continuous. The intern's clicks are applied as discrete
   // events below, so do not also add its averaged rate here.
   const rate = producerRateMicro(state)
-  const boost = boostMultiplierAt(state, now)
-  const boostedRate = rate * BigInt(boost)
-  const productionGained = earningsFor(boostedRate, seconds)
-  const tickMs = Math.max(0, Math.round(seconds))
+  const boost = boostMultiplierAt(state)
+  const boostedMs = Math.min(tickMs, Math.max(0, Math.floor(state.boostRemainingMs)))
+  const unboostedMs = tickMs - boostedMs
+  const productionGained =
+    earningsFor(rate * BigInt(boost), boostedMs) + earningsFor(rate, unboostedMs)
   const autoElapsed = state.autoClickers > 0 ? state.autoClickRemainderMs + tickMs : 0
   const autoPeriods = state.autoClickers > 0 ? Math.floor(autoElapsed / AUTO_CLICKER.intervalMs) : 0
   const autoClicks = autoPeriods * state.autoClickers
   const autoClickRemainderMs = state.autoClickers > 0 ? autoElapsed % AUTO_CLICKER.intervalMs : 0
-  const automatedClicks = BigInt(autoClicks)
+  const boostedPeriods =
+    state.autoClickers > 0
+      ? Math.min(
+          autoPeriods,
+          Math.floor((state.autoClickRemainderMs + boostedMs) / AUTO_CLICKER.intervalMs),
+        )
+      : 0
+  const boostedAutoClicks = BigInt(boostedPeriods * state.autoClickers)
+  const normalAutoClicks = BigInt((autoPeriods - boostedPeriods) * state.autoClickers)
   const autoGained =
-    state.autoClickers > 0 ? automaticClickYieldMicro(state) * automatedClicks * BigInt(boost) : 0n
+    state.autoClickers > 0
+      ? automaticClickYieldMicro(state) * (boostedAutoClicks * BigInt(boost) + normalAutoClicks)
+      : 0n
   const gained = productionGained + autoGained
 
   const lifetimeTokens = state.lifetimeTokens + gained
@@ -239,12 +243,17 @@ export function tick(state: EngineState, elapsedMs: number, now: number): Engine
     ...state,
     tokens,
     lifetimeTokens,
-    boostEndsAt: state.boostEndsAt !== null && now >= state.boostEndsAt ? null : state.boostEndsAt,
-    boostMultiplier:
-      state.boostEndsAt !== null && now >= state.boostEndsAt ? 1 : state.boostMultiplier,
+    powerupCooldownMs: Object.fromEntries(
+      Object.entries(state.powerupCooldownMs).map(([id, remaining]) => [
+        id,
+        Math.max(0, (remaining ?? 0) - tickMs),
+      ]),
+    ) as Partial<Record<PowerupId, number>>,
+    boostRemainingMs: Math.max(0, state.boostRemainingMs - tickMs),
+    boostMultiplier: state.boostRemainingMs <= tickMs ? 1 : state.boostMultiplier,
     autoClickRemainderMs,
     clicks: state.clicks + autoClicks,
-    lastTickAt: now,
+    playTimeMs: state.playTimeMs + tickMs,
     wonAt,
   }
 }
@@ -257,7 +266,6 @@ export function buyProducer(
   state: EngineState,
   id: ProducerId,
   amount: number | 'max',
-  now: number,
 ): PurchaseResult {
   if (state.wonAt !== null) return { ok: false, reason: 'won' }
   const definition = PRODUCERS.find((item) => item.id === id)
@@ -295,17 +303,12 @@ export function buyProducer(
     ...state,
     tokens,
     producers: { ...state.producers, [id]: owned },
-    lastTickAt: now,
   }
   return { ok: true, state: next }
 }
 
 /** Purchases one or more interns; each contributes one automatic click per second. */
-export function buyAutoClicker(
-  state: EngineState,
-  amount: number | 'max',
-  now: number,
-): PurchaseResult {
+export function buyAutoClicker(state: EngineState, amount: number | 'max'): PurchaseResult {
   if (state.wonAt !== null) return { ok: false, reason: 'won' }
   let tokens = state.tokens
   let owned = state.autoClickers
@@ -338,12 +341,11 @@ export function buyAutoClicker(
       ...state,
       tokens,
       autoClickers: owned,
-      lastTickAt: now,
     },
   }
 }
 
-export function buyUpgrade(state: EngineState, id: UpgradeId, now: number): PurchaseResult {
+export function buyUpgrade(state: EngineState, id: UpgradeId): PurchaseResult {
   if (state.wonAt !== null) return { ok: false, reason: 'won' }
   const definition = UPGRADE_BY_ID.get(id)
   if (!definition) return { ok: false, reason: 'unknown' }
@@ -357,16 +359,11 @@ export function buyUpgrade(state: EngineState, id: UpgradeId, now: number): Purc
       ...state,
       tokens: state.tokens - price,
       upgrades: [...state.upgrades, id],
-      lastTickAt: now,
     },
   }
 }
 
-export function buyClickUpgrade(
-  state: EngineState,
-  id: ClickUpgradeId,
-  now: number,
-): PurchaseResult {
+export function buyClickUpgrade(state: EngineState, id: ClickUpgradeId): PurchaseResult {
   if (state.wonAt !== null) return { ok: false, reason: 'won' }
   const definition = CLICK_UPGRADE_BY_ID.get(id)
   if (!definition) return { ok: false, reason: 'unknown' }
@@ -380,7 +377,6 @@ export function buyClickUpgrade(
       ...state,
       tokens: state.tokens - price,
       clickUpgrades: [...state.clickUpgrades, id],
-      lastTickAt: now,
     },
   }
 }
@@ -391,10 +387,8 @@ export function isPowerupUnlocked(state: EngineState, id: PowerupId): boolean {
   return state.lifetimeTokens >= toMicro(definition.unlockAt)
 }
 
-export function powerupCooldownRemainingMs(state: EngineState, id: PowerupId, now: number): number {
-  const readyAt = state.powerupReadyAt[id]
-  if (!readyAt) return 0
-  return Math.max(0, readyAt - now)
+export function powerupCooldownRemainingMs(state: EngineState, id: PowerupId): number {
+  return Math.max(0, state.powerupCooldownMs[id] ?? 0)
 }
 
 export type PowerupResult =
@@ -406,15 +400,14 @@ export function usePowerup(state: EngineState, id: PowerupId, now: number): Powe
   const definition = POWERUP_BY_ID.get(id)
   if (!definition) return { ok: false, reason: 'unknown' }
   if (!isPowerupUnlocked(state, id)) return { ok: false, reason: 'locked' }
-  if (powerupCooldownRemainingMs(state, id, now) > 0) {
+  if (powerupCooldownRemainingMs(state, id) > 0) {
     return { ok: false, reason: 'cooldown' }
   }
 
-  const readyAt = now + definition.cooldownSeconds * 1_000
+  const cooldownMs = definition.cooldownSeconds * 1_000
   const base: EngineState = {
     ...state,
-    powerupReadyAt: { ...state.powerupReadyAt, [id]: readyAt },
-    lastTickAt: now,
+    powerupCooldownMs: { ...state.powerupCooldownMs, [id]: cooldownMs },
   }
 
   if (definition.kind === 'instant') {
@@ -438,7 +431,7 @@ export function usePowerup(state: EngineState, id: PowerupId, now: number): Powe
     gainedMicro: 0n,
     state: {
       ...base,
-      boostEndsAt: now + (definition.durationSeconds ?? 0) * 1_000,
+      boostRemainingMs: (definition.durationSeconds ?? 0) * 1_000,
       boostMultiplier: definition.multiplier ?? 1,
     },
   }
@@ -464,7 +457,6 @@ export function click(state: EngineState, now: number): ClickResult {
       tokens: state.tokens + gained,
       lifetimeTokens,
       clicks: state.clicks + 1,
-      lastTickAt: now,
       wonAt: won ? now : state.wonAt,
     },
   }

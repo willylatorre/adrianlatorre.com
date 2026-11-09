@@ -7,7 +7,6 @@ import TokenCounter from '@/components/token-eater/TokenCounter.vue'
 import ProducerShop from '@/components/token-eater/ProducerShop.vue'
 import PowerupBar from '@/components/token-eater/PowerupBar.vue'
 import WinPanel from '@/components/token-eater/WinPanel.vue'
-import OfflineReport from '@/components/token-eater/OfflineReport.vue'
 import { useTokenEater } from '@/features/token-eater/useTokenEater'
 import {
   CLICK_UPGRADE_BY_ID,
@@ -48,9 +47,7 @@ const ratePerProducer = computed(() => {
 })
 
 const elapsedLabel = computed(() => {
-  const state = game.state.value
-  const end = state.wonAt ?? Date.now()
-  return formatDuration(Math.max(0, end - state.startedAt))
+  return formatDuration(game.state.value.playTimeMs)
 })
 
 const upgradeCount = computed(() => game.state.value.upgrades.length)
@@ -181,8 +178,7 @@ onUnmounted(() => {
         <section class="token-eater__counter-column" aria-label="Token counter">
           <WinPanel
             v-if="game.won.value"
-            :started-at="game.state.value.startedAt"
-            :finished-at="game.state.value.wonAt ?? Date.now()"
+            :play-time-ms="game.state.value.playTimeMs"
             :clicks="game.state.value.clicks"
             :best-upgrades="upgradeCount"
             :total-upgrades="totalUpgrades"
@@ -216,7 +212,7 @@ onUnmounted(() => {
             </template>
           </p>
 
-          <PowerupBar :state="game.state.value" :now="Date.now()" @activate="activatePowerup" />
+          <PowerupBar :state="game.state.value" @activate="activatePowerup" />
 
           <div class="token-eater__notes">
             <h2>Run notes</h2>
@@ -229,11 +225,10 @@ onUnmounted(() => {
                 A click always earns at least one token, and at least 1% of your passive rate.
               </li>
               <li>
-                Progress saves in <code>localStorage</code> about every 1.5 seconds. Offline
-                earnings are capped at eight hours.
+                Progress saves locally about every 1.5 seconds. No account or server is required.
               </li>
               <li v-if="!game.won.value">
-                You are {{ formatDuration(Date.now() - game.state.value.startedAt) }} into this run.
+                You are {{ formatDuration(game.state.value.playTimeMs) }} into this run.
               </li>
             </ul>
           </div>
@@ -316,15 +311,8 @@ onUnmounted(() => {
       </div>
     </section>
 
-    <OfflineReport
-      :open="game.offlineReport.value !== null"
-      :elapsed-ms="game.offlineReport.value?.elapsedMs ?? 0"
-      :gained-micro="game.offlineReport.value?.gainedMicro ?? 0n"
-      @close="game.dismissOfflineReport"
-    />
-
     <ExperimentFooter
-      :conclusion="'An incremental game is a curve with a personality. The interesting work was not the clicking; it was deciding how large the numbers get, how to store them without losing units, and how to make a save survive a closed tab.'"
+      :conclusion="'An incremental game is a curve with a personality. The interesting work was not the clicking; it was deciding how large the numbers get and how to store them without losing units.'"
       :links="[
         { label: 'Read the build notes', href: '/blog/notes-from-a-game-about-big-numbers' },
         {
