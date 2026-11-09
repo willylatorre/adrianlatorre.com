@@ -132,9 +132,10 @@ function boostRemaining(): string {
   align-items: center;
   gap: 0.65rem;
   padding: 0.6rem 0.75rem;
-  border: 1px solid var(--site-border);
-  border-radius: 0.55rem;
-  background: var(--site-bg);
+  border: 0;
+  border-bottom: 1px solid var(--site-border);
+  border-radius: 0;
+  background: transparent;
   color: var(--site-ink);
   font: inherit;
   text-align: left;
@@ -146,12 +147,12 @@ function boostRemaining(): string {
 }
 
 .powerups__button.is-ready {
-  border-color: color-mix(in oklch, var(--site-accent) 40%, var(--site-border));
-  background: color-mix(in oklch, var(--site-accent) 6%, var(--site-bg));
+  border-color: color-mix(in oklch, var(--site-accent) 34%, var(--site-border));
+  background: color-mix(in oklch, var(--site-accent) 5%, transparent);
 }
 
 .powerups__button.is-ready:hover {
-  border-color: color-mix(in oklch, var(--site-accent) 62%, var(--site-border));
+  background: color-mix(in oklch, var(--site-accent) 9%, transparent);
 }
 
 .powerups__button.is-cooling {

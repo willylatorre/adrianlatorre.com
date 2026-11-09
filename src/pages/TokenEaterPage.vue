@@ -27,6 +27,7 @@ import {
 
 const game = useTokenEater()
 const exactView = ref(false)
+const shopTab = ref<'upgrades' | 'producers'>('upgrades')
 const toast = ref<{ id: number; text: string } | null>(null)
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -175,125 +176,145 @@ onUnmounted(() => {
       description="Click to consume a token. Buy the machinery that consumes them for you. Reach 999,999,999,999,999,999 and stop."
     />
 
-    <div class="token-eater__stage">
-      <section class="token-eater__counter-column" aria-label="Token counter">
-        <WinPanel
-          v-if="game.won.value"
-          :started-at="game.state.value.startedAt"
-          :finished-at="game.state.value.wonAt ?? Date.now()"
-          :clicks="game.state.value.clicks"
-          :best-upgrades="upgradeCount"
-          :total-upgrades="totalUpgrades"
-          @restart="restart"
-        />
-        <TokenCounter
-          :tokens-micro="game.state.value.tokens"
-          :lifetime-micro="game.state.value.lifetimeTokens"
-          :stats="game.stats.value"
-          :next-milestone="game.stats.value.nextMilestone"
-          :click-yield-micro="game.stats.value.clickYieldMicro"
-          :exact-view="exactView"
-          :won="game.won.value"
-          @click="handleClick"
-          @toggle-exact="exactView = !exactView"
-        />
-      </section>
+    <section class="token-eater__board" aria-label="Token Eater game">
+      <div class="token-eater__console">
+        <section class="token-eater__counter-column" aria-label="Token counter">
+          <WinPanel
+            v-if="game.won.value"
+            :started-at="game.state.value.startedAt"
+            :finished-at="game.state.value.wonAt ?? Date.now()"
+            :clicks="game.state.value.clicks"
+            :best-upgrades="upgradeCount"
+            :total-upgrades="totalUpgrades"
+            @restart="restart"
+          />
+          <TokenCounter
+            :tokens-micro="game.state.value.tokens"
+            :lifetime-micro="game.state.value.lifetimeTokens"
+            :stats="game.stats.value"
+            :next-milestone="game.stats.value.nextMilestone"
+            :click-yield-micro="game.stats.value.clickYieldMicro"
+            :exact-view="exactView"
+            :won="game.won.value"
+            @click="handleClick"
+            @toggle-exact="exactView = !exactView"
+          />
+          <p class="token-eater__goal">
+            The goal is <strong data-goal-number>{{ goalDigits }}</strong> tokens. That number is
+            one short of a quintillion, and larger than a JavaScript number can store exactly.
+          </p>
+          <p aria-live="polite" class="token-eater__status" data-live-status>
+            <template v-if="game.won.value">
+              Run complete in {{ elapsedLabel }}. Start a new run whenever you like.
+            </template>
+            <template v-else-if="toast">
+              {{ toast.text }}
+            </template>
+            <template v-else-if="losingProduction">
+              Next tier: {{ losingProduction.name }} at
+              {{ formatTokens(BigInt(losingProduction.baseCost) * 1_000_000n) }} tokens.
+            </template>
+          </p>
 
-      <aside class="token-eater__stage-upgrades" aria-label="Upgrades">
-        <ProducerShop
-          mode="upgrades"
-          :tokens-micro="game.state.value.tokens"
-          :producers="game.state.value.producers"
-          :upgrades="game.state.value.upgrades"
-          :click-upgrades="game.state.value.clickUpgrades"
-          :auto-clickers="game.state.value.autoClickers"
-          :rate-per-producer="ratePerProducer"
-          @buy-upgrade="buyGlobalUpgrade"
-          @buy-click="buyClickUpgrade"
-          @buy-auto-clicker="hireIntern"
-        />
-      </aside>
-    </div>
+          <PowerupBar :state="game.state.value" :now="Date.now()" @activate="activatePowerup" />
 
-    <p class="token-eater__goal">
-      The goal is <strong data-goal-number>{{ goalDigits }}</strong> tokens. That number is one
-      short of a quintillion, and larger than a JavaScript number can store exactly.
-    </p>
-
-    <p aria-live="polite" class="token-eater__status" data-live-status>
-      <template v-if="game.won.value">
-        Run complete in {{ elapsedLabel }}. Start a new run whenever you like.
-      </template>
-      <template v-else-if="toast">
-        {{ toast.text }}
-      </template>
-      <template v-else-if="losingProduction">
-        Next tier: {{ losingProduction.name }} at
-        {{ formatTokens(BigInt(losingProduction.baseCost) * 1_000_000n) }} tokens.
-      </template>
-    </p>
-
-    <div class="token-eater__layout">
-      <section class="token-eater__primary" aria-label="Powerups and run notes">
-        <PowerupBar :state="game.state.value" :now="Date.now()" @activate="activatePowerup" />
-
-        <div class="token-eater__notes">
-          <h2>Run notes</h2>
-          <ul data-run-notes>
-            <li>
-              Prices rise 15% per unit. Rates grow faster than prices between tiers, which is why
-              the curve bends upward instead of flattening.
-            </li>
-            <li>A click always earns at least one token, and at least 1% of your passive rate.</li>
-            <li>
-              Progress saves in <code>localStorage</code> about every 1.5 seconds. Offline earnings
-              are capped at eight hours.
-            </li>
-            <li v-if="!game.won.value">
-              You are {{ formatDuration(Date.now() - game.state.value.startedAt) }} into this run.
-            </li>
-          </ul>
-        </div>
-
-        <details class="token-eater__help">
-          <summary>How the numbers work</summary>
-          <div class="token-eater__help-body">
-            <p>
-              Currency is stored as integer micro-tokens, one token being one million micro-tokens.
-              That keeps a half-token-per-second rate exact without ever putting a float back into
-              the simulation.
-            </p>
-            <p>
-              Prices use exact fractions too: the 15% growth is the rational number 115/100, not the
-              float 1.15, so a price after fifty purchases is still an exact integer.
-            </p>
-            <p>
-              The win condition is 999,999,999,999,999,999 tokens. That value is larger than
-              <code>Number.MAX_SAFE_INTEGER</code>, so the whole economy uses <code>bigint</code>.
-            </p>
+          <div class="token-eater__notes">
+            <h2>Run notes</h2>
+            <ul data-run-notes>
+              <li>
+                Prices rise 15% per unit. Rates grow faster than prices between tiers, which is why
+                the curve bends upward instead of flattening.
+              </li>
+              <li>
+                A click always earns at least one token, and at least 1% of your passive rate.
+              </li>
+              <li>
+                Progress saves in <code>localStorage</code> about every 1.5 seconds. Offline
+                earnings are capped at eight hours.
+              </li>
+              <li v-if="!game.won.value">
+                You are {{ formatDuration(Date.now() - game.state.value.startedAt) }} into this run.
+              </li>
+            </ul>
           </div>
-        </details>
 
-        <p v-if="game.saveError.value" class="token-eater__save-error" role="status">
-          The browser refused to save. Check that storage is available in private windows.
-        </p>
-      </section>
+          <details class="token-eater__help">
+            <summary>How the numbers work</summary>
+            <div class="token-eater__help-body">
+              <p>
+                Currency is stored as integer micro-tokens, one token being one million
+                micro-tokens. That keeps a half-token-per-second rate exact without ever putting a
+                float back into the simulation.
+              </p>
+              <p>
+                Prices use exact fractions too: the 15% growth is the rational number 115/100, not
+                the float 1.15, so a price after fifty purchases is still an exact integer.
+              </p>
+              <p>
+                The win condition is 999,999,999,999,999,999 tokens. That value is larger than
+                <code>Number.MAX_SAFE_INTEGER</code>, so the whole economy uses <code>bigint</code>.
+              </p>
+            </div>
+          </details>
 
-      <aside class="token-eater__secondary" aria-label="Shop">
-        <ProducerShop
-          mode="producers"
-          :tokens-micro="game.state.value.tokens"
-          :producers="game.state.value.producers"
-          :upgrades="game.state.value.upgrades"
-          :click-upgrades="game.state.value.clickUpgrades"
-          :auto-clickers="game.state.value.autoClickers"
-          :rate-per-producer="ratePerProducer"
-          @buy="buyProducer"
-          @buy-upgrade="buyGlobalUpgrade"
-          @buy-click="buyClickUpgrade"
-        />
-      </aside>
-    </div>
+          <p v-if="game.saveError.value" class="token-eater__save-error" role="status">
+            The browser refused to save. Check that storage is available in private windows.
+          </p>
+        </section>
+
+        <section class="token-eater__shop-column" aria-label="Game shop">
+          <nav class="token-eater__shop-tabs" role="tablist" aria-label="Shop category">
+            <button
+              id="token-eater-tab-upgrades"
+              type="button"
+              role="tab"
+              :aria-selected="shopTab === 'upgrades'"
+              :aria-controls="'token-eater-shop-panel'"
+              :class="{ 'is-active': shopTab === 'upgrades' }"
+              data-shop-tab="upgrades"
+              @click="shopTab = 'upgrades'"
+            >
+              Upgrades
+            </button>
+            <button
+              id="token-eater-tab-producers"
+              type="button"
+              role="tab"
+              :aria-selected="shopTab === 'producers'"
+              :aria-controls="'token-eater-shop-panel'"
+              :class="{ 'is-active': shopTab === 'producers' }"
+              data-shop-tab="producers"
+              @click="shopTab = 'producers'"
+            >
+              Build capacity
+            </button>
+          </nav>
+
+          <div
+            id="token-eater-shop-panel"
+            role="tabpanel"
+            :aria-labelledby="
+              shopTab === 'upgrades' ? 'token-eater-tab-upgrades' : 'token-eater-tab-producers'
+            "
+            class="token-eater__shop-panel"
+          >
+            <ProducerShop
+              :mode="shopTab"
+              :tokens-micro="game.state.value.tokens"
+              :producers="game.state.value.producers"
+              :upgrades="game.state.value.upgrades"
+              :click-upgrades="game.state.value.clickUpgrades"
+              :auto-clickers="game.state.value.autoClickers"
+              :rate-per-producer="ratePerProducer"
+              @buy="buyProducer"
+              @buy-upgrade="buyGlobalUpgrade"
+              @buy-click="buyClickUpgrade"
+              @buy-auto-clicker="hireIntern"
+            />
+          </div>
+        </section>
+      </div>
+    </section>
 
     <OfflineReport
       :open="game.offlineReport.value !== null"
@@ -331,26 +352,101 @@ onUnmounted(() => {
   max-width: 76rem;
 }
 
-.token-eater__stage {
+.token-eater__board {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--site-border);
+  border-radius: 0.85rem;
+  background: var(--site-surface);
+}
+
+.token-eater__console {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(19rem, 0.95fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   align-items: start;
-  gap: 1rem;
 }
 
 .token-eater__counter-column {
   display: grid;
   min-width: 0;
-  gap: 1rem;
+  align-content: start;
+  gap: 0.8rem;
+  padding: clamp(1rem, 2vw, 1.35rem);
 }
 
-.token-eater__stage-upgrades {
+.token-eater__shop-column {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 0.9rem;
+  padding: clamp(1rem, 2vw, 1.35rem);
+  border-left: 1px solid var(--site-border);
+}
+
+.token-eater__shop-tabs {
+  display: flex;
+  gap: 0.3rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--site-border);
+}
+
+.token-eater__shop-tabs button {
+  padding: 0.42rem 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--site-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 620;
+  cursor: pointer;
+}
+
+.token-eater__shop-tabs button:hover {
+  color: var(--site-ink);
+}
+
+.token-eater__shop-tabs button.is-active {
+  border-color: var(--site-border);
+  background: var(--site-surface-soft);
+  color: var(--site-ink);
+}
+
+.token-eater__shop-tabs button:focus-visible {
+  outline: 2px solid var(--site-accent);
+  outline-offset: 2px;
+}
+
+.token-eater__shop-panel {
   min-width: 0;
 }
 
+.token-eater__counter-column :deep(.counter) {
+  padding: 0.25rem 0.1rem 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.token-eater__counter-column :deep(.counter__value) {
+  font-size: clamp(2.1rem, 4.2vw, 3.5rem);
+}
+
+.token-eater__counter-column :deep(.counter__value.is-exact) {
+  font-size: clamp(1.3rem, 2.6vw, 2.25rem);
+}
+
+.token-eater__counter-column :deep(.win) {
+  padding: 0 0 0.9rem;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--site-border);
+  background: transparent;
+}
+
 .token-eater__goal {
-  max-width: 46rem;
-  margin: 1rem 0 0;
+  max-width: 54ch;
+  margin: 0;
   color: var(--site-muted);
   font-size: 0.84rem;
   line-height: 1.65;
@@ -363,27 +459,11 @@ onUnmounted(() => {
 
 .token-eater__status {
   min-height: 1.4em;
-  max-width: 46rem;
-  margin: 0.45rem 0 0;
+  max-width: 54ch;
+  margin: 0;
   color: var(--site-faint);
   font-size: 0.78rem;
   line-height: 1.55;
-}
-
-.token-eater__layout {
-  display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  gap: clamp(1.5rem, 3vw, 2.75rem);
-  align-items: start;
-  margin-top: clamp(2rem, 4vw, 3rem);
-  padding-top: clamp(1.5rem, 3vw, 2rem);
-  border-top: 1px solid var(--site-border);
-}
-
-.token-eater__primary,
-.token-eater__secondary {
-  display: grid;
-  gap: 1.4rem;
 }
 
 .token-eater__notes h2 {
@@ -451,16 +531,17 @@ onUnmounted(() => {
 }
 
 @media (max-width: 960px) {
-  .token-eater__stage {
+  .token-eater__console {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .token-eater__stage-upgrades {
-    padding-top: 0.5rem;
+  .token-eater__shop-column {
+    border-top: 1px solid var(--site-border);
+    border-left: 0;
   }
 
-  .token-eater__layout {
-    grid-template-columns: 1fr;
+  .token-eater__shop-tabs {
+    overflow-x: auto;
   }
 }
 </style>

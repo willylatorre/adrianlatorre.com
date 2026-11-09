@@ -223,7 +223,7 @@ function buyAutoClickers(mode: 'one' | 'ten' | 'max') {
     </div>
 
     <div v-if="mode !== 'producers'" class="shop__upgrades">
-      <h2 v-if="mode === 'upgrades'" id="upgrades-heading" class="shop__main-heading">Upgrades</h2>
+      <h2 v-if="mode === 'upgrades'" id="upgrades-heading" class="sr-only">Upgrades</h2>
       <h3>Efficiency</h3>
       <p class="shop__upgrades-note">
         One-time multipliers. They apply to everything you already own.
@@ -349,6 +349,23 @@ function buyAutoClickers(mode: 'one' | 'ten' | 'max') {
   min-width: 0;
   padding: 0.48rem 0.55rem;
   gap: 0.4rem;
+}
+
+.shop--producers .shop__item,
+.shop--upgrades .shop__upgrade {
+  border: 0;
+  border-bottom: 1px solid var(--site-border);
+  border-radius: 0;
+  background: transparent;
+}
+
+.shop--producers .shop__item {
+  padding-inline: 0.15rem;
+}
+
+.shop--producers .shop__item.is-affordable,
+.shop--upgrades .shop__upgrade.is-affordable {
+  background: color-mix(in oklch, var(--site-accent) 5%, transparent);
 }
 
 .shop--upgrades .shop__identity {
